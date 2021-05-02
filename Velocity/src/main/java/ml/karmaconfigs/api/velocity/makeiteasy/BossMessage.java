@@ -1,8 +1,7 @@
 package ml.karmaconfigs.api.velocity.makeiteasy;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.proxy.Player;
-import com.velocitypowered.api.proxy.ProxyServer;
 import ml.karmaconfigs.api.common.boss.BossColor;
 import ml.karmaconfigs.api.common.boss.BossNotFoundException;
 import ml.karmaconfigs.api.common.boss.BossType;
@@ -27,7 +26,7 @@ import java.util.*;
  */
 public final class BossMessage {
 
-    private final Plugin plugin;
+    private final PluginContainer plugin;
 
     private String message;
     private final double live_time;
@@ -57,7 +56,7 @@ public final class BossMessage {
      * @param _message the message
      * @param duration the message duration
      */
-    public BossMessage(final Plugin owner, final String _message, final int duration) {
+    public BossMessage(final PluginContainer owner, final String _message, final int duration) {
         plugin = owner;
 
         message = _message;

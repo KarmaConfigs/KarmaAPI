@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.velocity.timer;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.TimerNotFoundException;
 
@@ -47,7 +47,7 @@ public final class AdvancedPluginTimer {
 
     private boolean async = false;
 
-    private final Plugin plugin;
+    private final PluginContainer plugin;
     private final int timerId;
 
     /**
@@ -57,7 +57,7 @@ public final class AdvancedPluginTimer {
      * @param time the time to count from
      * @param restartTimer restart the timer when it ends
      */
-    public AdvancedPluginTimer(final Plugin owner, final int time, final boolean restartTimer) {
+    public AdvancedPluginTimer(final PluginContainer owner, final int time, final boolean restartTimer) {
         plugin = owner;
         back = time;
         original = time;
@@ -75,7 +75,7 @@ public final class AdvancedPluginTimer {
      * @param owner the owner of the plugin timer
      * @param periodTime the period time
      */
-    public AdvancedPluginTimer(final Plugin owner, final int periodTime) {
+    public AdvancedPluginTimer(final PluginContainer owner, final int periodTime) {
         plugin = owner;
         back = 1;
         original = 1;

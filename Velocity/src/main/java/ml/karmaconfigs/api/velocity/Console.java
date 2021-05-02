@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.velocity;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +24,7 @@ public interface Console {
      * @param issuer the issuer plugin
      * @param prefix the prefix
      */
-    static void setOkPrefix(@NotNull final Plugin issuer, @NotNull String prefix) {
+    static void setOkPrefix(@NotNull final PluginContainer issuer, @NotNull String prefix) {
         PrefixConsoleData data = new PrefixConsoleData(issuer);
         data.setOkPrefix(prefix);
     }
@@ -35,7 +35,7 @@ public interface Console {
      * @param issuer the issuer plugin
      * @param prefix the prefix
      */
-    static void setInfoPrefix(@NotNull final Plugin issuer, @NotNull String prefix) {
+    static void setInfoPrefix(@NotNull final PluginContainer issuer, @NotNull String prefix) {
         PrefixConsoleData data = new PrefixConsoleData(issuer);
         data.setInfoPrefix(prefix);
     }
@@ -46,7 +46,7 @@ public interface Console {
      * @param issuer the issuer plugin
      * @param prefix the prefix
      */
-    static void setWarningPrefix(@NotNull final Plugin issuer, @NotNull String prefix) {
+    static void setWarningPrefix(@NotNull final PluginContainer issuer, @NotNull String prefix) {
         PrefixConsoleData data = new PrefixConsoleData(issuer);
         data.setWarnPrefix(prefix);
     }
@@ -57,7 +57,7 @@ public interface Console {
      * @param issuer the issuer plugin
      * @param prefix the prefix
      */
-    static void setGravePrefix(@NotNull final Plugin issuer, @NotNull String prefix) {
+    static void setGravePrefix(@NotNull final PluginContainer issuer, @NotNull String prefix) {
         PrefixConsoleData data = new PrefixConsoleData(issuer);
         data.setGravPrefix(prefix);
     }
@@ -96,7 +96,7 @@ public interface Console {
      * @param message the message
      * @param level   the message level
      */
-    static void send(@NotNull final Plugin sender, @NotNull String message, @NotNull final Level level) {
+    static void send(@NotNull final PluginContainer sender, @NotNull String message, @NotNull final Level level) {
         String prefix = "&b[ &fALERT &b] &7NONE: &b";
 
         PrefixConsoleData data = new PrefixConsoleData(sender);
@@ -129,7 +129,7 @@ public interface Console {
      * @param level    the message level
      * @param replaces the replaces
      */
-    static void send(@NotNull final Plugin sender, @NotNull String message, @NotNull final Level level, @NotNull final Object... replaces) {
+    static void send(@NotNull final PluginContainer sender, @NotNull String message, @NotNull final Level level, @NotNull final Object... replaces) {
         String prefix = "&b[ &fALERT &b] &7NONE: &b";
 
         PrefixConsoleData data = new PrefixConsoleData(sender);
@@ -173,12 +173,12 @@ public interface Console {
  */
 final class PrefixConsoleData {
 
-    private final static HashMap<Plugin, String> okPrefix = new HashMap<>();
-    private final static HashMap<Plugin, String> infoPrefix = new HashMap<>();
-    private final static HashMap<Plugin, String> warnPrefix = new HashMap<>();
-    private final static HashMap<Plugin, String> gravPrefix = new HashMap<>();
+    private final static HashMap<PluginContainer, String> okPrefix = new HashMap<>();
+    private final static HashMap<PluginContainer, String> infoPrefix = new HashMap<>();
+    private final static HashMap<PluginContainer, String> warnPrefix = new HashMap<>();
+    private final static HashMap<PluginContainer, String> gravPrefix = new HashMap<>();
 
-    private final Plugin Main;
+    private final PluginContainer Main;
 
     /**
      * Initialize the prefix console data
@@ -186,7 +186,7 @@ final class PrefixConsoleData {
      *
      * @param p the plugin
      */
-    public PrefixConsoleData(@NotNull final Plugin p) {
+    public PrefixConsoleData(@NotNull final PluginContainer p) {
         Main = p;
     }
 

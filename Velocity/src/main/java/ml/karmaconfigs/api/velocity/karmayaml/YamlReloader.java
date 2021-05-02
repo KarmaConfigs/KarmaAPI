@@ -1,11 +1,8 @@
 package ml.karmaconfigs.api.velocity.karmayaml;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.bungee.Configuration;
 import ml.karmaconfigs.api.bungee.YamlConfiguration;
-import ml.karmaconfigs.api.common.JarInjector;
-import ml.karmaconfigs.api.common.Level;
-import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.velocity.Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +24,7 @@ public final class YamlReloader {
 
     private final File file;
     private final String fileName;
-    private final Plugin Main;
+    private final PluginContainer main;
 
     /**
      * Initialize the yaml reloader
@@ -38,18 +35,18 @@ public final class YamlReloader {
      * @throws NotYamlError if the file extension is not .yml
      * @throws IOException if something goes wrong while copying defaults
      */
-    public YamlReloader(@NotNull final Plugin main, @NotNull final File file, @NotNull final String fileName) throws NotYamlError, IOException {
+    public YamlReloader(@NotNull final PluginContainer main, @NotNull final File file, @NotNull final String fileName) throws NotYamlError, IOException {
         Util util = new Util(main);
         util.initialize();
 
-        Main = main;
+        this.main = main;
 
         if (file.getName().contains(".")) {
             String[] nameDat = file.getName().split("\\.");
             String ext = nameDat[nameDat.length - 1];
             if (ext.equals("yml")) {
                 try {
-                    FileCopy copy = new FileCopy(Main, fileName);
+                    FileCopy copy = new FileCopy(this.main, fileName);
                     copy.copy(file);
                 } catch (Throwable ex) {
                     throw new IOException(ex);
@@ -84,7 +81,7 @@ public final class YamlReloader {
     @Nullable
     public final Configuration reloadAndCopy() {
         try {
-            FileCopy copy = new FileCopy(Main, fileName);
+            FileCopy copy = new FileCopy(main, fileName);
             copy.copy(file);
 
             return YamlConfiguration.getProvider(YamlConfiguration.class).load(file);

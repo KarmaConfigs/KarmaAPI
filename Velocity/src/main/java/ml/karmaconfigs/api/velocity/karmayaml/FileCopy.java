@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.velocity.karmayaml;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.*;
 import ml.karmaconfigs.api.common.Console;
 import ml.karmaconfigs.api.common.utils.FileUtilities;
@@ -42,12 +42,12 @@ public final class FileCopy {
      * @param main a java plugin instance
      * @param name the file name
      */
-    public FileCopy(final Plugin main, final String name) {
+    public FileCopy(final PluginContainer main, final String name) {
         Util util = new Util(main);
         util.initialize();
 
         this.inFile = name;
-        this.main = main.getClass();
+        this.main = (Class<?>) main.getInstance().get();
     }
 
     /**

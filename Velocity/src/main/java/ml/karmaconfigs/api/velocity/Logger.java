@@ -1,6 +1,7 @@
 package ml.karmaconfigs.api.velocity;
 
 import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.LogExtension;
 import ml.karmaconfigs.api.common.utils.StringUtils;
@@ -23,11 +24,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class Logger {
 
-    private final static HashMap<Plugin, Calendar> calendar_type = new HashMap<>();
-    private final static HashMap<Plugin, LogExtension> ext_type = new HashMap<>();
-    private final static HashMap<Plugin, Integer> max_size = new HashMap<>();
+    private final static HashMap<PluginContainer, Calendar> calendar_type = new HashMap<>();
+    private final static HashMap<PluginContainer, LogExtension> ext_type = new HashMap<>();
+    private final static HashMap<PluginContainer, Integer> max_size = new HashMap<>();
 
-    private final Plugin plugin;
+    private final PluginContainer plugin;
 
     /**
      * Initialize the logger
@@ -35,7 +36,7 @@ public class Logger {
      *
      * @param p the plugin
      */
-    public Logger(@NotNull final Plugin p) {
+    public Logger(@NotNull final PluginContainer p) {
         plugin = p;
     }
 
@@ -145,10 +146,12 @@ public class Logger {
                             while ((line = reader.readLine()) != null) {
                                 if (line.startsWith("Plugin version:")) {
                                     String log_version = line.replace("Plugin version: ", "").replace("<br>", "");
-                                    String plugin_version = plugin.version();
+                                    if (plugin.getDescription().getVersion().isPresent()) {
+                                    String plugin_version = plugin.getDescription().getVersion().get();
 
                                     if (!log_version.equals(plugin_version))
                                         line = "Plugin version: " + plugin_version + "<br>";
+                                    }
                                 }
                                 lines.add(line + "\n");
                             }
@@ -164,14 +167,16 @@ public class Logger {
                                 writer.write("JVM architecture: " + jvm_arch + "<br>\n");
                                 writer.write("Architecture: " + realArch + "<br>\n");
                                 writer.write("Model: " + model + "<br>\n");
-                                writer.write("# " + plugin.name() + " info<br>\n");
+                                writer.write("# " + (plugin.getDescription().getName().isPresent() ? plugin.getDescription().getName().get() : plugin.getDescription().getId()) + " info<br>\n");
                                 writer.write("Server version: Velocity<br>\n");
-                                writer.write("Plugin version: " + plugin.version() + "<br>\n");
+                                if (plugin.getDescription().getVersion().isPresent())
+                                    writer.write("Plugin version: " + plugin.getDescription().getVersion().get() + "<br>\n");
                                 writer.write("Plugin authors: \n\n");
-                                for (String author : plugin.authors()) {
+                                for (String author : plugin.getDescription().getAuthors()) {
                                     writer.write("      - " + author + "\n");
                                 }
-                                writer.write("Plugin description: " + plugin.description() + "<br>\n");
+                                if (plugin.getDescription().getDescription().isPresent())
+                                    writer.write("Plugin description: " + plugin.getDescription().getDescription().get() + "<br>\n");
                             }
                             for (String str : lines) {
                                 writer.write(str + (!str.endsWith("\n") ? "\n" : ""));
@@ -315,10 +320,12 @@ public class Logger {
                             while ((line = reader.readLine()) != null) {
                                 if (line.startsWith("Plugin version:")) {
                                     String log_version = line.replace("Plugin version: ", "").replace("<br>", "");
-                                    String plugin_version = plugin.version();
+                                    if (plugin.getDescription().getVersion().isPresent()) {
+                                        String plugin_version = plugin.getDescription().getVersion().get();
 
-                                    if (!log_version.equals(plugin_version))
-                                        line = "Plugin version: " + plugin_version + "<br>";
+                                        if (!log_version.equals(plugin_version))
+                                            line = "Plugin version: " + plugin_version + "<br>";
+                                    }
                                 }
                                 lines.add(line + "\n");
                             }
@@ -334,14 +341,16 @@ public class Logger {
                                 writer.write("JVM architecture: " + jvm_arch + "<br>\n");
                                 writer.write("Architecture: " + realArch + "<br>\n");
                                 writer.write("Model: " + model + "<br>\n");
-                                writer.write("# " + plugin.name() + " info<br>\n");
+                                writer.write("# " + (plugin.getDescription().getName().isPresent() ? plugin.getDescription().getName().get() : plugin.getDescription().getId()) + " info<br>\n");
                                 writer.write("Server version: Velocity<br>\n");
-                                writer.write("Plugin version: " + plugin.version() + "<br>\n");
+                                if (plugin.getDescription().getVersion().isPresent())
+                                    writer.write("Plugin version: " + plugin.getDescription().getVersion().get() + "<br>\n");
                                 writer.write("Plugin authors: \n\n");
-                                for (String author : plugin.authors()) {
+                                for (String author : plugin.getDescription().getAuthors()) {
                                     writer.write("      - " + author + "\n");
                                 }
-                                writer.write("Plugin description: " + plugin.description() + "<br>\n");
+                                if (plugin.getDescription().getDescription().isPresent())
+                                    writer.write("Plugin description: " + plugin.getDescription().getDescription().get() + "<br>\n");
                             }
                             for (String str : lines) {
                                 writer.write(str + (!str.endsWith("\n") ? "\n" : ""));
@@ -486,10 +495,12 @@ public class Logger {
                             while ((line = reader.readLine()) != null) {
                                 if (line.startsWith("Plugin version:")) {
                                     String log_version = line.replace("Plugin version: ", "").replace("<br>", "");
-                                    String plugin_version = plugin.version();
+                                    if (plugin.getDescription().getVersion().isPresent()) {
+                                        String plugin_version = plugin.getDescription().getVersion().get();
 
-                                    if (!log_version.equals(plugin_version))
-                                        line = "Plugin version: " + plugin_version + "<br>";
+                                        if (!log_version.equals(plugin_version))
+                                            line = "Plugin version: " + plugin_version + "<br>";
+                                    }
                                 }
                                 lines.add(line + "\n");
                             }
@@ -516,14 +527,16 @@ public class Logger {
                                 writer.write("JVM architecture: " + jvm_arch + "<br>\n");
                                 writer.write("Architecture: " + realArch + "<br>\n");
                                 writer.write("Model: " + model + "<br>\n");
-                                writer.write("# " + plugin.name() + " info<br>\n");
+                                writer.write("# " + (plugin.getDescription().getName().isPresent() ? plugin.getDescription().getName().get() : plugin.getDescription().getId()) + " info<br>\n");
                                 writer.write("Server version: Velocity<br>\n");
-                                writer.write("Plugin version: " + plugin.version() + "<br>\n");
+                                if (plugin.getDescription().getVersion().isPresent())
+                                    writer.write("Plugin version: " + plugin.getDescription().getVersion().get() + "<br>\n");
                                 writer.write("Plugin authors: \n\n");
-                                for (String author : plugin.authors()) {
+                                for (String author : plugin.getDescription().getAuthors()) {
                                     writer.write("      - " + author + "\n");
                                 }
-                                writer.write("Plugin description: " + plugin.description() + "<br>\n");
+                                if (plugin.getDescription().getDescription().isPresent())
+                                    writer.write("Plugin description: " + plugin.getDescription().getDescription().get() + "<br>\n");
                             }
                             for (String str : lines) {
                                 writer.write(str + (!str.endsWith("\n") ? "\n" : ""));

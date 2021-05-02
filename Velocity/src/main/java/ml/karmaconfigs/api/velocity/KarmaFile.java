@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.velocity;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.karmafile.Key;
 import ml.karmaconfigs.api.common.utils.FileUtilities;
@@ -30,7 +30,7 @@ public final class KarmaFile implements Serializable {
     private final File file;
     private final List<File> folders = new ArrayList<>();
 
-    private final Plugin main;
+    private final PluginContainer main;
 
     private boolean broadcast_file_creation = true;
     private boolean broadcast_folder_creation = true;
@@ -42,7 +42,7 @@ public final class KarmaFile implements Serializable {
      * @param plugin the plugin that will create the file
      * @param name   the custom file name
      */
-    public KarmaFile(@NotNull final Plugin plugin, final String name) {
+    public KarmaFile(@NotNull final PluginContainer plugin, final String name) {
         Util util = new Util(plugin);
         util.initialize();
 
@@ -59,7 +59,7 @@ public final class KarmaFile implements Serializable {
      * @param name   the file name
      * @param dirs   the file directory
      */
-    public KarmaFile(@NotNull final Plugin plugin, final String name, final String... dirs) {
+    public KarmaFile(@NotNull final PluginContainer plugin, final String name, final String... dirs) {
         Util util = new Util(plugin);
         util.initialize();
 

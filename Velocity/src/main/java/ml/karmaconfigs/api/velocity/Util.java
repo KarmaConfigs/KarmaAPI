@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.velocity;
 
-import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Console;
 import ml.karmaconfigs.api.common.JarInjector;
 import ml.karmaconfigs.api.common.Level;
@@ -13,14 +13,14 @@ import java.io.File;
  */
 public final class Util {
 
-    private final Plugin plugin;
+    private final PluginContainer plugin;
 
     /**
      * Initialize the velocity plugin util
      *
      * @param owner the velocity plugin owner
      */
-    public Util(final Plugin owner) {
+    public Util(final PluginContainer owner) {
         plugin = owner;
     }
 
@@ -39,7 +39,7 @@ public final class Util {
                     lombok_injector.download(lombok);
 
                 if (lombok_injector.inject(plugin)) {
-                    ml.karmaconfigs.api.common.Console.send("&aInjected Lombok dependency ( from KarmaAPI ) into " + plugin.name(), Level.OK);
+                    ml.karmaconfigs.api.common.Console.send("&aInjected Lombok dependency ( from KarmaAPI ) into " + plugin.getDescription().getId(), Level.OK);
                     injected = true;
                 } else {
                     Console.send("&cCouldn't inject Lombok dependency ( from KarmaAPI ), some features like yaml manager or commented yaml files won't be available", Level.GRAVE);
@@ -58,6 +58,6 @@ public final class Util {
     public final File getDataFolder() {
         File plugins = FileUtilities.getPluginsFolder();
 
-        return new File(plugins, plugin.name());
+        return new File(plugins, (plugin.getDescription().getName().isPresent() ? plugin.getDescription().getName().get() : plugin.getDescription().getId()));
     }
 }

@@ -1,11 +1,9 @@
 package ml.karmaconfigs.api.velocity.karmayaml;
 
-import com.velocitypowered.api.plugin.Plugin;
-import ml.karmaconfigs.api.common.JarInjector;
+import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.bungee.Configuration;
 import ml.karmaconfigs.api.bungee.YamlConfiguration;
-import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.velocity.Console;
 import ml.karmaconfigs.api.velocity.Util;
 
@@ -28,7 +26,7 @@ public final class YamlManager {
     private final File file;
     private Configuration managed;
 
-    private final Plugin main;
+    private final PluginContainer main;
 
     /**
      * Starts the file manager
@@ -37,7 +35,7 @@ public final class YamlManager {
      * @param fileName the file name ( do not include .yml )
      * @param directory the file directory
      */
-    public YamlManager(final Plugin plugin, final String fileName, final String... directory) {
+    public YamlManager(final PluginContainer plugin, final String fileName, final String... directory) {
         Util util = new Util(plugin);
         util.initialize();
 
