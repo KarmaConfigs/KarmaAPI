@@ -8,7 +8,7 @@ import ml.karmaconfigs.api.common.boss.BossNotFoundException;
 import ml.karmaconfigs.api.common.boss.BossType;
 import ml.karmaconfigs.api.common.boss.ProgressiveBar;
 import ml.karmaconfigs.api.bukkit.timer.AdvancedPluginTimer;
-import ml.karmaconfigs.api.bukkit.timer.TimeCondition;
+import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

@@ -1,5 +1,7 @@
 package ml.karmaconfigs.api.bungee.timer;
 
+import ml.karmaconfigs.api.common.timer.TimeCondition;
+import ml.karmaconfigs.api.common.timer.TimerNotFoundException;
 import net.md_5.bungee.api.plugin.Plugin;
 
 import java.util.HashMap;

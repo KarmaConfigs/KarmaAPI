@@ -26,7 +26,7 @@ import java.util.*;
  * or (fallback domain) <a href="https://karmaconfigs.github.io/page/license"> here </a>
  */
 @SuppressWarnings("unused")
-public final class KarmaFile {
+public final class KarmaFile implements Serializable {
 
     private final File file;
     private final List<File> folders = new ArrayList<>();

@@ -7,7 +7,7 @@
     <groupId>ml.karmaconfigs</groupId>
     <artifactId>KarmaAPI</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.7</version>
+    <version>1.1.8</version>
 
     <build>
         <plugins>
@@ -32,9 +32,10 @@
 
     <modules>
         <module>Common</module>
-        <module>Bukkit</module>
         <module>Bungee</module>
         <module>Bundle</module>
+        <module>Velocity</module>
+        <module>Bukkit</module>
     </modules>
 
     <properties>

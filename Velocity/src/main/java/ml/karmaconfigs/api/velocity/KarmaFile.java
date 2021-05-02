@@ -1,12 +1,11 @@
-package ml.karmaconfigs.api.bukkit;
+package ml.karmaconfigs.api.velocity;
 
+import com.velocitypowered.api.plugin.Plugin;
+import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.karmafile.Key;
 import ml.karmaconfigs.api.common.utils.FileUtilities;
-import ml.karmaconfigs.api.bukkit.karmayaml.FileCopy;
-import ml.karmaconfigs.api.common.Level;
-import org.bukkit.plugin.java.JavaPlugin;
+import ml.karmaconfigs.api.velocity.karmayaml.FileCopy;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -31,8 +30,7 @@ public final class KarmaFile implements Serializable {
     private final File file;
     private final List<File> folders = new ArrayList<>();
 
-    @Nullable
-    private final JavaPlugin main;
+    private final Plugin main;
 
     private boolean broadcast_file_creation = true;
     private boolean broadcast_folder_creation = true;
@@ -44,9 +42,12 @@ public final class KarmaFile implements Serializable {
      * @param plugin the plugin that will create the file
      * @param name   the custom file name
      */
-    public KarmaFile(@NotNull final JavaPlugin plugin, final String name) {
-        file = new File(plugin.getDataFolder(), name);
-        folders.add(plugin.getDataFolder());
+    public KarmaFile(@NotNull final Plugin plugin, final String name) {
+        Util util = new Util(plugin);
+        util.initialize();
+
+        file = new File(util.getDataFolder(), name);
+        folders.add(util.getDataFolder());
         main = plugin;
     }
 
@@ -58,7 +59,10 @@ public final class KarmaFile implements Serializable {
      * @param name   the file name
      * @param dirs   the file directory
      */
-    public KarmaFile(@NotNull final JavaPlugin plugin, final String name, final String... dirs) {
+    public KarmaFile(@NotNull final Plugin plugin, final String name, final String... dirs) {
+        Util util = new Util(plugin);
+        util.initialize();
+
         List<String> directories = new ArrayList<>(Arrays.asList(dirs));
         String folderPath;
         StringBuilder builder = new StringBuilder();
@@ -73,8 +77,8 @@ public final class KarmaFile implements Serializable {
         folderPath = builder.toString();
 
         File lastFolder;
-        file = new File(plugin.getDataFolder() + "/" + folderPath, name);
-        lastFolder = plugin.getDataFolder();
+        file = new File(util.getDataFolder() + "/" + folderPath, name);
+        lastFolder = util.getDataFolder();
         for (String str : dirs) {
             File newFolder = new File(lastFolder + "/" + str.replace("/", ""));
             folders.add(newFolder);

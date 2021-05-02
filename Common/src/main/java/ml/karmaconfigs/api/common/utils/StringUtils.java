@@ -1,8 +1,9 @@
 package ml.karmaconfigs.api.common.utils;
 
 import ml.karmaconfigs.api.common.Console;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
@@ -497,6 +498,48 @@ public interface StringUtils {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Serialize a object into a string
+     *
+     * @param instance the object instance
+     * @return the serialized instance
+     */
+    static String serialize(final Object instance) {
+        try {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            ObjectOutputStream so = new ObjectOutputStream(bo);
+            so.writeObject(instance);
+            so.flush();
+            return Base64.getEncoder().encodeToString(bo.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return "";
+    }
+
+    /**
+     * Load the serialized object
+     *
+     * @param instance the object string instance
+     * @param <T> object type
+     * @return the un-serialized object
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable
+    static <T> T load(final String instance) {
+        try {
+            byte[] bytes = Base64.getDecoder().decode(instance.getBytes(StandardCharsets.UTF_8));
+            ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
+            ObjectInputStream si = new ObjectInputStream(bi);
+            return (T) si.readObject();
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 
     /**

@@ -1,13 +1,13 @@
-package ml.karmaconfigs.api.bukkit.timer;
+package ml.karmaconfigs.api.velocity.timer;
 
+import com.velocitypowered.api.plugin.Plugin;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.TimerNotFoundException;
-import org.bukkit.plugin.IllegalPluginAccessException;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,7 +25,7 @@ public final class AdvancedPluginTimer {
 
     private int back;
     private final int original;
-    private int period = 20;
+    private int period = 1000;
 
     private final boolean restart;
 
@@ -83,7 +83,7 @@ public final class AdvancedPluginTimer {
         lastId++;
         timerId = lastId;
         timersData.put(timerId, this);
-        period = periodTime;
+        period = (int) TimeUnit.SECONDS.toMillis(periodTime);
     }
 
     /**
@@ -97,10 +97,11 @@ public final class AdvancedPluginTimer {
      * Start counting back
      */
     public final void start() {
-        try {
-            executeOnStartTasks();
-            if (async)
-                new BukkitRunnable() {
+        executeOnStartTasks();
+        if (async) {
+            new Thread(() -> {
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
                         if (!cancelled && !refresh) {
@@ -111,7 +112,7 @@ public final class AdvancedPluginTimer {
                                     back = original;
                                     executeOnRestartTasks();
                                 } else {
-                                    cancel();
+                                    timer.cancel();
                                     timersData.remove(timerId);
                                     runningTimers.remove(timerId);
                                 }
@@ -129,39 +130,41 @@ public final class AdvancedPluginTimer {
                             refresh = false;
                         }
                     }
-                }.runTaskTimerAsynchronously(plugin, 0, period);
-            else
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!cancelled && !refresh) {
-                            runningTimers.add(timerId);
-                            if (back == 0) {
-                                executeOnEndTasks();
-                                if (restart) {
-                                    back = original;
-                                    executeOnRestartTasks();
-                                } else {
-                                    cancel();
-                                    timersData.remove(timerId);
-                                    runningTimers.remove(timerId);
-                                }
-                            }
-                            executeTaskActionAt(back);
-                            back--;
-                        } else {
-                            cancel();
-                            if (!refresh) {
+                }, 0, 1000);
+            }).start();
+        } else {
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if (!cancelled && !refresh) {
+                        runningTimers.add(timerId);
+                        if (back == 0) {
+                            executeOnEndTasks();
+                            if (restart) {
+                                back = original;
+                                executeOnRestartTasks();
+                            } else {
+                                timer.cancel();
                                 timersData.remove(timerId);
                                 runningTimers.remove(timerId);
-                                executeOnCancelTasks();
                             }
-
-                            refresh = false;
                         }
+                        executeTaskActionAt(back);
+                        back--;
+                    } else {
+                        cancel();
+                        if (!refresh) {
+                            timersData.remove(timerId);
+                            runningTimers.remove(timerId);
+                            executeOnCancelTasks();
+                        }
+
+                        refresh = false;
                     }
-                }.runTaskTimer(plugin, 0, period);
-        } catch (IllegalPluginAccessException ignored) {}
+                }
+            }, 0, 1000);
+        }
     }
 
     /**
@@ -171,11 +174,45 @@ public final class AdvancedPluginTimer {
         if (isRunning()) {
             refresh = true;
 
-            try {
                 executeOnRestartTasks();
 
-                if (async)
-                    new BukkitRunnable() {
+                if (async) {
+                    new Thread(() -> {
+                        Timer timer = new Timer();
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                if (!cancelled && !refresh) {
+                                    runningTimers.add(timerId);
+                                    if (back == 0) {
+                                        executeOnEndTasks();
+                                        if (restart) {
+                                            back = original;
+                                            executeOnRestartTasks();
+                                        } else {
+                                            cancel();
+                                            timersData.remove(timerId);
+                                            runningTimers.remove(timerId);
+                                        }
+                                    }
+                                    executeTaskActionAt(back);
+                                    back--;
+                                } else {
+                                    cancel();
+                                    if (!refresh) {
+                                        timersData.remove(timerId);
+                                        runningTimers.remove(timerId);
+                                        executeOnCancelTasks();
+                                    }
+
+                                    refresh = false;
+                                }
+                            }
+                        }, 0, period);
+                    }).start();
+                } else {
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
                         @Override
                         public void run() {
                             if (!cancelled && !refresh) {
@@ -204,39 +241,8 @@ public final class AdvancedPluginTimer {
                                 refresh = false;
                             }
                         }
-                    }.runTaskTimerAsynchronously(plugin, 0, period);
-                else
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            if (!cancelled && !refresh) {
-                                runningTimers.add(timerId);
-                                if (back == 0) {
-                                    executeOnEndTasks();
-                                    if (restart) {
-                                        back = original;
-                                        executeOnRestartTasks();
-                                    } else {
-                                        cancel();
-                                        timersData.remove(timerId);
-                                        runningTimers.remove(timerId);
-                                    }
-                                }
-                                executeTaskActionAt(back);
-                                back--;
-                            } else {
-                                cancel();
-                                if (!refresh) {
-                                    timersData.remove(timerId);
-                                    runningTimers.remove(timerId);
-                                    executeOnCancelTasks();
-                                }
-
-                                refresh = false;
-                            }
-                        }
-                    }.runTaskTimer(plugin, 0, period);
-            } catch (IllegalPluginAccessException ignored) {}
+                    }, 0, period);
+                }
         }
     }
 
