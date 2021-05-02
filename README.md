@@ -44,7 +44,7 @@
 <dependency>
     <groupId>ml.karmaconfigs</groupId>
     <artifactId>KarmaAPI-{Bukkit/Bungee/Common/Bundle}</artifactId>
-    <version>1.1.6</version>
+    <version>1.1.7</version>
     <scope>compile</scope>
 </dependency>
 ```
