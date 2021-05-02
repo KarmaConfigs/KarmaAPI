@@ -6,14 +6,29 @@ import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Private GSA code
+ * <p>
+ * The use of this code
+ * without GSA team authorization
+ * will be a violation of
+ * terms of use determined
+ * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
+ */
 public final class RGBTextComponent {
 
     private final boolean parseSimple;
     private final boolean parseHEX;
 
     private final Pattern hexPattern = Pattern.compile("#[a-fA-f0-9]{6}");
-    private final Pattern simplePattern = Pattern.compile("([0-9]{1,3},[0-9]{1,3},[0-9]{1,3})");
+    private final Pattern simplePattern = Pattern.compile("rgb\\([0-9]{1,3},[0-9]{1,3},[0-9]{1,3}\\)", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * Initialize the RGB text component
+     *
+     * @param simple scan for simple RGB
+     * @param hex scan for hex
+     */
     public RGBTextComponent(final boolean simple, final boolean hex) {
         parseSimple = simple;
         parseHEX = hex;
