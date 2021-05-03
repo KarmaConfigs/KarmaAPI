@@ -138,6 +138,9 @@ public final class BossMessage {
 
         bar_objects.put(id, bar);
 
+        for (Player player : players)
+            player.showBossBar(bar);
+
         bar_timer = new AdvancedPluginTimer(plugin, (int) live_time, false);
         bar_timer.addActionOnEnd(() -> {
             for (Player player : players)

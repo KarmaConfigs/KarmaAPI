@@ -41,13 +41,17 @@ public final class FileCopy {
      *
      * @param main a java plugin instance
      * @param name the file name
+     * @throws IllegalArgumentException if the specified plugin container is not valid
      */
-    public FileCopy(final PluginContainer main, final String name) {
+    public FileCopy(final PluginContainer main, final String name) throws IllegalArgumentException {
         Util util = new Util(main);
         util.initialize();
 
         this.inFile = name;
-        this.main = (Class<?>) main.getInstance().get();
+        if (main.getInstance().isPresent())
+            this.main = main.getInstance().get().getClass();
+        else
+            throw new IllegalArgumentException("Couldn't initialize file copy from non-plugin object " + main);
     }
 
     /**

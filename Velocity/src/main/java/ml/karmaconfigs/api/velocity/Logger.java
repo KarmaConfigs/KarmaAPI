@@ -1,6 +1,5 @@
 package ml.karmaconfigs.api.velocity;
 
-import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.LogExtension;
@@ -660,22 +659,19 @@ final class AsyncScheduler {
         if (scheduler == null) {
             scheduler = new Timer();
 
-            new Thread(() -> {
-                scheduler.schedule(
-                        new TimerTask() {
-                            @Override
-                            public void run() {
-                                int next = completed + 1;
+            new Thread(() -> scheduler.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    int next = completed + 1;
 
-                                if (tasks.containsKey(next) && tasks.get(next) != null) {
-                                    Runnable runnable = tasks.get(next);
-                                    runnable.run();
+                    if (tasks.containsKey(next) && tasks.get(next) != null) {
+                        Runnable runnable = tasks.get(next);
+                        runnable.run();
 
-                                    completed++;
-                                }
-                            }
-                        }, 0, TimeUnit.SECONDS.convert(1, TimeUnit.MILLISECONDS));
-            }).start();
+                        completed++;
+                    }
+                }
+            }, 0, 1000)).start();
         }
     }
 

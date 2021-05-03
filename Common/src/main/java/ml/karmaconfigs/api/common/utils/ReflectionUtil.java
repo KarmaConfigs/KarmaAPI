@@ -1,10 +1,12 @@
 package ml.karmaconfigs.api.common.utils;
 
+import ml.karmaconfigs.api.common.Console;
 import ml.karmaconfigs.api.common.Level;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 /**
  * Private GSA code
@@ -63,7 +65,7 @@ public interface ReflectionUtil {
 
                 sendMessage.invoke(bungeeConsole, component);
             } catch (Throwable exc) {
-                System.out.println(StringUtils.toConsoleColor(message));
+                Console.send(message);
             }
         }
     }
@@ -124,7 +126,7 @@ public interface ReflectionUtil {
 
                 sendMessage.invoke(bungeeConsole, component);
             } catch (Throwable exc) {
-                System.out.println(StringUtils.toConsoleColor(message));
+                Console.send(message, replaces);
             }
         }
     }
@@ -138,21 +140,25 @@ public interface ReflectionUtil {
      */
     static void scheduleLog(final Object plugin, final Level level, final String info) {
         if (plugin != null) {
-            Class<?> loggerClass;
-
             try {
-                loggerClass = Class.forName("ml.karmaconfigs.api.bukkit.Logger");
+                Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.bukkit.Logger");
+                Class<?> bukkitPlugin = Class.forName("org.bukkit.plugin.java.JavaPlugin");
+
+                Constructor<?> loggerConstructor = loggerClass.getConstructor(bukkitPlugin);
+                loggerConstructor.setAccessible(true);
+
+                Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
+
+                Method logError = logger.getMethod("scheduleLog", Level.class, String.class);
+                logError.setAccessible(true);
+
+                logError.invoke(logger, level, info);
             } catch (Throwable ex) {
                 try {
-                    loggerClass = Class.forName("ml.karmaconfigs.api.bungee.Logger");
-                } catch (Throwable exc) {
-                    loggerClass = null;
-                }
-            }
+                    Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.bungee.Logger");
+                    Class<?> bungeePlugin = Class.forName("net.md_5.bungee.api.plugin.Plugin");
 
-            if (loggerClass != null) {
-                try {
-                    Constructor<?> loggerConstructor = loggerClass.getConstructor(Object.class);
+                    Constructor<?> loggerConstructor = loggerClass.getConstructor(bungeePlugin);
                     loggerConstructor.setAccessible(true);
 
                     Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
@@ -161,8 +167,23 @@ public interface ReflectionUtil {
                     logError.setAccessible(true);
 
                     logError.invoke(logger, level, info);
-                } catch (Throwable ex) {
-                    ex.printStackTrace();
+                } catch (Throwable exc) {
+                    try {
+                        Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.velocity.Logger");
+                        Class<?> velocityPlugin = Class.forName("com.velocitypowered.api.plugin.PluginContainer");
+
+                        Constructor<?> loggerConstructor = loggerClass.getConstructor(velocityPlugin);
+                        loggerConstructor.setAccessible(true);
+
+                        Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
+
+                        Method logError = logger.getMethod("scheduleLog", Level.class, String.class);
+                        logError.setAccessible(true);
+
+                        logError.invoke(logger, level, info);
+                    } catch (Throwable exce) {
+                        exce.printStackTrace();
+                    }
                 }
             }
         }
@@ -177,21 +198,25 @@ public interface ReflectionUtil {
      */
     static void scheduleLog(final Object plugin, final Level level, final Throwable error) {
         if (plugin != null) {
-            Class<?> loggerClass;
-
             try {
-                loggerClass = Class.forName("ml.karmaconfigs.api.bukkit.Logger");
+                Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.bukkit.Logger");
+                Class<?> bukkitPlugin = Class.forName("org.bukkit.plugin.java.JavaPlugin");
+
+                Constructor<?> loggerConstructor = loggerClass.getConstructor(bukkitPlugin);
+                loggerConstructor.setAccessible(true);
+
+                Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
+
+                Method logError = logger.getMethod("scheduleLog", Level.class, Throwable.class);
+                logError.setAccessible(true);
+
+                logError.invoke(logger, level, error);
             } catch (Throwable ex) {
                 try {
-                    loggerClass = Class.forName("ml.karmaconfigs.api.bungee.Logger");
-                } catch (Throwable exc) {
-                    loggerClass = null;
-                }
-            }
+                    Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.bungee.Logger");
+                    Class<?> bungeePlugin = Class.forName("net.md_5.bungee.api.plugin.Plugin");
 
-            if (loggerClass != null) {
-                try {
-                    Constructor<?> loggerConstructor = loggerClass.getConstructor(Object.class);
+                    Constructor<?> loggerConstructor = loggerClass.getConstructor(bungeePlugin);
                     loggerConstructor.setAccessible(true);
 
                     Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
@@ -200,8 +225,23 @@ public interface ReflectionUtil {
                     logError.setAccessible(true);
 
                     logError.invoke(logger, level, error);
-                } catch (Throwable ex) {
-                    ex.printStackTrace();
+                } catch (Throwable exc) {
+                    try {
+                        Class<?> loggerClass = Class.forName("ml.karmaconfigs.api.velocity.Logger");
+                        Class<?> velocityPlugin = Class.forName("com.velocitypowered.api.plugin.PluginContainer");
+
+                        Constructor<?> loggerConstructor = loggerClass.getConstructor(velocityPlugin);
+                        loggerConstructor.setAccessible(true);
+
+                        Class<?> logger = (Class<?>) loggerConstructor.newInstance(plugin);
+
+                        Method logError = logger.getMethod("scheduleLog", Level.class, Throwable.class);
+                        logError.setAccessible(true);
+
+                        logError.invoke(logger, level, error);
+                    } catch (Throwable exce) {
+                        exce.printStackTrace();
+                    }
                 }
             }
         }
@@ -220,12 +260,25 @@ public interface ReflectionUtil {
 
             Object pluginDescription = getDescription.invoke(plugin);
 
-            Method getName = pluginDescription.getClass().getMethod("getName");
-            getName.setAccessible(true);
+            Method getVersion = pluginDescription.getClass().getMethod("getVersion");
+            getVersion.setAccessible(true);
 
-            return (String) getName.invoke(pluginDescription);
+            return (String) getVersion.invoke(pluginDescription);
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            try {
+                Method getDescription = plugin.getClass().getDeclaredMethod("getDescription");
+                getDescription.setAccessible(true);
+
+                Object pluginDescription = getDescription.invoke(plugin);
+
+                Method getName = pluginDescription.getClass().getMethod("getName");
+                getName.setAccessible(true);
+
+                Optional<String> version = (Optional<String>) getName.invoke(pluginDescription);
+                return version.orElse("");
+            } catch (Throwable exc) {
+                exc.printStackTrace();
+            }
         }
 
         return "";
@@ -249,7 +302,20 @@ public interface ReflectionUtil {
 
             return (String) getVersion.invoke(pluginDescription);
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            try {
+                Method getDescription = plugin.getClass().getDeclaredMethod("getDescription");
+                getDescription.setAccessible(true);
+
+                Object pluginDescription = getDescription.invoke(plugin);
+
+                Method getVersion = pluginDescription.getClass().getMethod("getVersion");
+                getVersion.setAccessible(true);
+
+                Optional<String> version = (Optional<String>) getVersion.invoke(pluginDescription);
+                return version.orElse("");
+            } catch (Throwable exc) {
+                exc.printStackTrace();
+            }
         }
 
         return "";

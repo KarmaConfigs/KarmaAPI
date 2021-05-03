@@ -17,10 +17,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Private GSA code
@@ -147,13 +144,33 @@ public final class JarInjector {
      * @param plugin the plugin
      * @return if the jar file could be injected
      */
-    public final boolean inject(@NotNull final Object plugin) {
+    public final boolean inject(@NotNull Object plugin) {
         if (isDownloaded()) {
             Set<File> jarFiles = injected.getOrDefault(plugin, new HashSet<>());
+
+            Class<?> pluginContainer = null;
+            try {
+                pluginContainer = Class.forName("com.velocitypowered.api.plugin.PluginContainer");
+            } catch (Throwable ignored) {}
 
             if (!jarFiles.contains(jarFile)) {
                 try {
                     ReflectionUtil.tryBroadcast("&aInjecting dependency &f{0}&e into plugin &f{1}", jarFile.getName(), ReflectionUtil.getName(plugin));
+
+                    if (pluginContainer != null) {
+                        if (pluginContainer.isAssignableFrom(plugin.getClass()) || plugin.getClass().isAssignableFrom(pluginContainer)) {
+                            plugin = plugin.getClass().getMethod("getInstance").invoke(plugin);
+
+                            Optional<?> instance = (Optional<?>) plugin;
+                            if (instance.isPresent()) {
+                                plugin = instance.get();
+                            } else {
+                                plugin = null;
+                                Console.send("Plugin instance is null, couldn't inject " + jarFile.getName());
+                                return false;
+                            }
+                        }
+                    }
 
                     // Get the ClassLoader class
                     URLClassLoader cl = (URLClassLoader) plugin.getClass().getClassLoader();
