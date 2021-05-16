@@ -76,10 +76,12 @@ public final class FileCopy {
      * copied
      */
     public final void copy(File destFile) throws Throwable {
+        destFile = new File(FileUtilities.getPath(destFile));
+
         if (main != null) {
-            if (!FileUtilities.getFilePath(destFile).exists() && FileUtilities.getFilePath(destFile).mkdirs())
+            if (!FileUtilities.getFixedFile(destFile).exists() && FileUtilities.getFixedFile(destFile).mkdirs())
                 if (debug)
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFilePath(destFile)));
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(destFile), '/'));
 
             if (destFile.exists()) {
                 InputStream in;
@@ -100,7 +102,7 @@ public final class FileCopy {
                         String last_section = "";
 
                         if (debug)
-                            Console.send("&7Preparing writer for file generation ( {0} )", FileUtilities.getPath(FileUtilities.getFilePath(destFile)));
+                            Console.send("&7Preparing writer for file generation ( {0} )", FileUtilities.getPath(FileUtilities.getFixedFile(destFile), '/'));
 
                         while ((line = reader.readLine()) != null) {
                             if (!line.replaceAll("\\s", "").isEmpty()) {
@@ -182,7 +184,7 @@ public final class FileCopy {
 
                         //Check if the builder is empty, if it is, the file will be saved from in-jar
                         if (builder.toString().replaceAll("\\s", "").isEmpty()) {
-                            Console.send("&7Writing to {0} using in-jar file", FileUtilities.getPath(destFile));
+                            Console.send("&7Writing to {0} using in-jar file", FileUtilities.getPath(destFile, '/'));
                             in = this.main.getResourceAsStream("/" + this.inFile);
 
                             if (in != null) {
@@ -209,7 +211,7 @@ public final class FileCopy {
                 }
             } else {
                 if (destFile.createNewFile()) {
-                    Console.send("&7Writing to {0} using in-jar file", FileUtilities.getPath(destFile));
+                    Console.send("&7Writing to {0} using in-jar file", FileUtilities.getPath(destFile, '/'));
                     InputStream in = this.main.getResourceAsStream("/" + this.inFile);
 
                     if (in != null) {

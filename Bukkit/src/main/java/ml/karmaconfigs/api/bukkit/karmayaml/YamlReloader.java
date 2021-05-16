@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.bukkit.karmayaml;
 
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -46,7 +47,7 @@ public final class YamlReloader {
                     throw new IOException(ex);
                 }
                 this.fileName = fileName;
-                this.file = file;
+                this.file = FileUtilities.getFixedFile(file);
                 yamlString = YamlConfiguration.loadConfiguration(file).saveToString();
                 return;
             }

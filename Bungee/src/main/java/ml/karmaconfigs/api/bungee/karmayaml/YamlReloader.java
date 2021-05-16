@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.bungee.karmayaml;
 
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.YamlConfiguration;
@@ -48,7 +49,7 @@ public final class YamlReloader {
                 }
 
                 this.fileName = fileName;
-                this.file = file;
+                this.file = FileUtilities.getFixedFile(file);
                 Configuration yamlString = YamlConfiguration.getProvider(YamlConfiguration.class).load(file);
                 YamlConfiguration.getProvider(YamlConfiguration.class).save(yamlString, file);
                 return;

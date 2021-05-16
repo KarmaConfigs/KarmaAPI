@@ -1,11 +1,12 @@
 package ml.karmaconfigs.api.bukkit;
 
+import ml.karmaconfigs.api.bukkit.util.AsyncScheduler;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.LogExtension;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -107,6 +108,8 @@ public class Logger {
                         logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + "_" + amount + (ext_type.getOrDefault(Main, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
                     }
                 } catch (Throwable ignored) {}
+
+                logFile = FileUtilities.getFixedFile(logFile);
 
                 InputStream inLog = null;
                 InputStreamReader inReader = null;
@@ -284,6 +287,8 @@ public class Logger {
                     }
                 } catch (Throwable ignored) {}
 
+                logFile = FileUtilities.getFixedFile(logFile);
+
                 InputStream inLog = null;
                 InputStreamReader inReader = null;
                 BufferedReader reader = null;
@@ -460,6 +465,8 @@ public class Logger {
                         logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + "_" + amount + (ext_type.getOrDefault(Main, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
                     }
                 } catch (Throwable ignored) {}
+
+                logFile = FileUtilities.getFixedFile(logFile);
 
                 InputStream inLog = null;
                 InputStreamReader inReader = null;
@@ -644,52 +651,3 @@ public class Logger {
     }
 }
 
-/**
- * Private GSA code
- * <p>
- * The use of this code
- * without GSA team authorization
- * will be a violation of
- * terms of use determined
- * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
- */
-final class AsyncScheduler {
-
-    private final static HashMap<Integer, Runnable> tasks = new HashMap<>();
-    private static int completed = 0;
-    private static BukkitScheduler scheduler = null;
-
-    /**
-     * Initialize the AsyncScheduler
-     * located on the specified plugin
-     *
-     * @param p the plugin
-     */
-    public AsyncScheduler(@NotNull final JavaPlugin p) {
-        if (scheduler == null) {
-            scheduler = p.getServer().getScheduler();
-
-            scheduler.runTaskTimerAsynchronously(p, () -> {
-                int next = completed + 1;
-
-                if (tasks.containsKey(next) && tasks.get(next) != null) {
-                    Runnable runnable = tasks.get(next);
-                    runnable.run();
-
-                    completed++;
-                }
-            }, 0, 20);
-        }
-    }
-
-    /**
-     * Add a task to the task list
-     *
-     * @param task the task
-     */
-    public final void addTask(Runnable task) {
-        int amount = tasks.size();
-        int index = amount + 1;
-        tasks.put(index, task);
-    }
-}

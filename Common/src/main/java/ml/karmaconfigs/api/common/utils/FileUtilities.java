@@ -30,13 +30,28 @@ public interface FileUtilities {
     static void create(@NotNull final File file) {
         if (!file.isDirectory()) {
             try {
-                if (!file.getParentFile().exists())
-                    Files.createDirectories(file.getParentFile().toPath());
+                createDirectory(file);
                 if (!file.exists())
                     Files.createFile(file.toPath());
             } catch (Throwable ignored) {
             }
         }
+    }
+
+    /**
+     * Create the file directory
+     *
+     * @param file the file
+     */
+    static void createDirectory(final File file) {
+        try {
+            File path = new File(getDirPath(file));
+            if (path.isDirectory()) {
+                if (!path.exists()) {
+                    Files.createDirectories(path.toPath());
+                }
+            }
+        } catch (Throwable ignored) {}
     }
 
     /**
@@ -98,47 +113,73 @@ public interface FileUtilities {
     }
 
     /**
-     * Get the file complete path, replacing
-     * ugly "\" with "/"
+     * Get the file complete path
      *
      * @param file the file to get path
      * @return the file path
      */
     static String getPath(@NotNull final File file) {
-        /*
-        String path = file.getAbsolutePath().replaceAll("\\\\", "/").replace("%20", " ");
-        if (path.startsWith("/"))
-            path = path.replaceFirst("/", "{bar}");
+        return getPath(file, ' ');
+    }
 
-        path = path.replaceAll("\\\\", "/");
-        String[] data = path.split("/");
-        Set<String> invalid_paths = new HashSet<>();
+    /**
+     * Get the directory complete path
+     *
+     * @param file the directory
+     * @return the directory path
+     */
+    static String getDirPath(final File file) {
+        return getDirPath(file, ' ');
+    }
 
-        String last = "";
-        int barsAmount = 0;
-        for (String str : data) {
-            if (StringUtils.isNullOrEmpty(last) && !StringUtils.isNullOrEmpty(str)) {
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < barsAmount; i++) {
-                    builder.append("/");
-                }
-                invalid_paths.add(builder.toString());
-                barsAmount = 0;
-            } else {
-                barsAmount++;
-            }
+    /**
+     * Get the file complete path
+     *
+     * @param file the file to get path
+     * @return the file path
+     */
+    static String getPrettyPath(@NotNull final File file) {
+        return getPath(file, '/');
+    }
 
-            last = str;
+    /**
+     * Get the directory complete path
+     *
+     * @param file the directory
+     * @return the directory path
+     */
+    static String getPrettyDirPath(final File file) {
+        return getDirPath(file, '/');
+    }
+
+    /**
+     * Get the file complete path
+     *
+     * @param file the file to get path
+     * @param barReplace the replacement for file separator ( null or empty to not replace )
+     * @return the file path
+     */
+    static String getPath(@NotNull final File file, final char barReplace) {
+        if (Character.isSpaceChar(barReplace)) {
+            return file.getParentFile().getAbsolutePath().replaceAll("%20", " ");
+        } else {
+            return file.getParentFile().getAbsolutePath().replaceAll("%20", " ").replace(File.separatorChar, barReplace);
         }
+    }
 
-        for (String str : invalid_paths) {
-            path = path.replace(str, "/");
+    /**
+     * Get the directory complete path
+     *
+     * @param file the directory to get path
+     * @param barReplace the replacement for file separator ( null or empty to not replace )
+     * @return the directory path
+     */
+    static String getDirPath(@NotNull final File file, final char barReplace) {
+        if (Character.isSpaceChar(barReplace)) {
+            return file.getAbsolutePath().replaceAll("%20", " ");
+        } else {
+            return file.getAbsolutePath().replaceAll("%20", " ").replace(File.separatorChar, barReplace);
         }
-
-        path = path.replace("/", "{file_separator}").replaceAll("\\\\", "").replace("{bar}", "/");
-        return path.replace("{file_separator}", "\\");*/
-
-        return file.getAbsolutePath().replaceAll("\\\\", "/").replace("%20", " ");
     }
 
     /**
@@ -180,14 +221,8 @@ public interface FileUtilities {
      *             path
      * @return the file with valid absolute path
      */
-    static File getFilePath(@NotNull final File file) {
-        if (!file.isDirectory()) {
-            String name = file.getName();
-
-            return new File(getPath(file).replace("/" + name, "").replaceAll("%20", " "));
-        } else {
-            return file;
-        }
+    static File getFixedFile(@NotNull final File file) {
+        return new File(getDirPath(file, ' '));
     }
 
     /**
@@ -205,9 +240,9 @@ public interface FileUtilities {
 
         File folder = new File(jar.getAbsolutePath().replace(jar.getName(), ""));
         if (!folder.getName().equals("plugins")) {
-            String path = folder.getAbsolutePath().replaceAll("\\\\", "/");
+            String path = folder.getAbsolutePath();
             if (path.contains("plugins")) {
-                String[] path_data = path.split("/");
+                String[] path_data = path.split(File.separator.replace("\\", "\\\\"));
 
                 int plugins_amount = 0;
                 for (String data : path_data)
@@ -220,7 +255,7 @@ public interface FileUtilities {
                     if (data.equals("plugins"))
                         plugins_count++;
 
-                    builder.append(data).append("\\\\");
+                    builder.append(data).append(File.separatorChar);
 
                     if (plugins_count >= plugins_amount)
                         break;
@@ -239,6 +274,15 @@ public interface FileUtilities {
      * @return the server main folder
      */
     static File getServerFolder() {
-        return getPluginsFolder().getParentFile();
+        return getFixedFile(getPluginsFolder().getParentFile());
+    }
+
+    /**
+     * Get the plugin main folder
+     *
+     * @return the plugin main folder
+     */
+    static File getPluginFolder(final Object plugin) {
+        return getFixedFile(new File(getPluginsFolder(), ReflectionUtil.getName(plugin)));
     }
 }

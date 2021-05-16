@@ -3,6 +3,7 @@ package ml.karmaconfigs.api.velocity.karmayaml;
 import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.bungee.Configuration;
 import ml.karmaconfigs.api.bungee.YamlConfiguration;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.velocity.Util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +54,7 @@ public final class YamlReloader {
                 }
 
                 this.fileName = fileName;
-                this.file = file;
+                this.file = FileUtilities.getFixedFile(file);
                 Configuration yamlString = YamlConfiguration.getProvider(YamlConfiguration.class).load(file);
                 YamlConfiguration.getProvider(YamlConfiguration.class).save(yamlString, file);
                 return;

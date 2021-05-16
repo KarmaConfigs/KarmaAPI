@@ -266,16 +266,23 @@ public interface ReflectionUtil {
             return (String) getVersion.invoke(pluginDescription);
         } catch (Throwable ex) {
             try {
-                Method getDescription = plugin.getClass().getDeclaredMethod("getDescription");
-                getDescription.setAccessible(true);
+                Class<?> pluginContainer = null;
+                try {
+                    pluginContainer = Class.forName("com.velocitypowered.api.plugin.PluginContainer");
+                } catch (Throwable ignored) {}
 
-                Object pluginDescription = getDescription.invoke(plugin);
+                Object pluginDescription;
+                if (pluginContainer != null) {
+                    if (pluginContainer.isAssignableFrom(plugin.getClass()) || plugin.getClass().isAssignableFrom(pluginContainer)) {
+                        pluginDescription = plugin.getClass().getMethod("getDescription").invoke(plugin);
 
-                Method getName = pluginDescription.getClass().getMethod("getName");
-                getName.setAccessible(true);
+                        Method getName = pluginDescription.getClass().getMethod("getName");
 
-                Optional<String> version = (Optional<String>) getName.invoke(pluginDescription);
-                return version.orElse("");
+                        Optional<String> name = (Optional<String>) getName.invoke(pluginDescription);
+                        if (name.isPresent())
+                            return name.get();
+                    }
+                }
             } catch (Throwable exc) {
                 exc.printStackTrace();
             }

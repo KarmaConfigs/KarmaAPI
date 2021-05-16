@@ -3,14 +3,15 @@ package ml.karmaconfigs.api.velocity;
 import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.common.LogExtension;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.StringUtils;
+import ml.karmaconfigs.api.velocity.util.AsyncScheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Private GSA code
@@ -106,6 +107,8 @@ public class Logger {
                     logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + "_" + amount + (ext_type.getOrDefault(plugin, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
                 }
             } catch (Throwable ignored) {}
+
+            logFile = FileUtilities.getFixedFile(logFile);
 
             InputStream inLog = null;
             InputStreamReader inReader = null;
@@ -281,6 +284,8 @@ public class Logger {
                 }
             } catch (Throwable ignored) {}
 
+            logFile = FileUtilities.getFixedFile(logFile);
+
             InputStream inLog = null;
             InputStreamReader inReader = null;
             BufferedReader reader = null;
@@ -455,6 +460,8 @@ public class Logger {
                     logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + "_" + amount + (ext_type.getOrDefault(plugin, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
                 }
             } catch (Throwable ignored) {}
+
+            logFile = FileUtilities.getFixedFile(logFile);
 
             InputStream inLog = null;
             InputStreamReader inReader = null;
@@ -637,52 +644,3 @@ public class Logger {
     }
 }
 
-/**
- * Private GSA code
- * <p>
- * The use of this code
- * without GSA team authorization
- * will be a violation of
- * terms of use determined
- * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
- */
-final class AsyncScheduler {
-
-    private final static HashMap<Integer, Runnable> tasks = new HashMap<>();
-    private static int completed = 0;
-    private static Timer scheduler = null;
-
-    /**
-     * Initialize the AsyncScheduler
-     */
-    public AsyncScheduler() {
-        if (scheduler == null) {
-            scheduler = new Timer();
-
-            new Thread(() -> scheduler.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    int next = completed + 1;
-
-                    if (tasks.containsKey(next) && tasks.get(next) != null) {
-                        Runnable runnable = tasks.get(next);
-                        runnable.run();
-
-                        completed++;
-                    }
-                }
-            }, 0, 1000)).start();
-        }
-    }
-
-    /**
-     * Add a task to the task list
-     *
-     * @param task the task
-     */
-    public final void addTask(Runnable task) {
-        int amount = tasks.size();
-        int index = amount + 1;
-        tasks.put(index, task);
-    }
-}

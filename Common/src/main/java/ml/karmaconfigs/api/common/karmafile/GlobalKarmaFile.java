@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.common.karmafile;
 
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.ReflectionUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,7 +36,7 @@ public final class GlobalKarmaFile {
      * @param target the target file where to read or write
      */
     public GlobalKarmaFile(final File target) {
-        file = target;
+        file = FileUtilities.getFixedFile(target);
     }
 
     /**

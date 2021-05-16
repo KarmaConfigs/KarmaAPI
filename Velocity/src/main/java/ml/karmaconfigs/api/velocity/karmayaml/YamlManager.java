@@ -4,6 +4,7 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import ml.karmaconfigs.api.common.Level;
 import ml.karmaconfigs.api.bungee.Configuration;
 import ml.karmaconfigs.api.bungee.YamlConfiguration;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.velocity.Console;
 import ml.karmaconfigs.api.velocity.Util;
 
@@ -41,24 +42,20 @@ public final class YamlManager {
 
         main = plugin;
 
+        File tmp_file;
         StringBuilder dirBuilder = new StringBuilder();
         if (directory.length > 0) {
             for (String dir : directory)
                 dirBuilder.append(File.separator).append(dir);
 
-            file = new File(util.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
+            tmp_file = new File(util.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
         } else {
-            file = new File(util.getDataFolder(), fileName + ".yml");
+            tmp_file = new File(util.getDataFolder(), fileName + ".yml");
         }
+        file = FileUtilities.getFixedFile(tmp_file);
 
         try {
-            if (!file.getParentFile().exists()) {
-                Files.createDirectory(file.getParentFile().toPath());
-            }
-            if (!file.exists()) {
-                Files.createFile(file.toPath());
-            }
-
+            FileUtilities.create(file);
             managed = YamlConfiguration.getProvider(YamlConfiguration.class).load(file);
         } catch (Throwable ex) {
             Console.send(plugin, "Error while creating/loading file " + fileName, Level.GRAVE);

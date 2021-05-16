@@ -45,7 +45,7 @@ public final class JarInjector {
         if (!file.isDirectory()) {
             String extension = FileUtilities.getExtension(file);
             if (extension.equals("jar")) {
-                jarFile = file;
+                jarFile = FileUtilities.getFixedFile(file);
             } else {
                 throw new NoJarException(file);
             }
@@ -65,11 +65,7 @@ public final class JarInjector {
         ReadableByteChannel rbc = null;
         FileOutputStream fos = null;
         try {
-            if (!jarFile.getParentFile().exists())
-                Files.createDirectories(jarFile.getParentFile().toPath());
-
-            if (!jarFile.exists())
-                Files.createFile(jarFile.toPath());
+            FileUtilities.create(jarFile);
 
             TrustManager[] trustManagers = new TrustManager[]{new NvbTrustManager()};
             final SSLContext context = SSLContext.getInstance("SSL");
@@ -159,15 +155,28 @@ public final class JarInjector {
 
                     if (pluginContainer != null) {
                         if (pluginContainer.isAssignableFrom(plugin.getClass()) || plugin.getClass().isAssignableFrom(pluginContainer)) {
-                            plugin = plugin.getClass().getMethod("getInstance").invoke(plugin);
+                            if (plugin instanceof Class<?>) {
+                                plugin = ((Class<?>) plugin).getMethod("getInstance").invoke(plugin);
 
-                            Optional<?> instance = (Optional<?>) plugin;
-                            if (instance.isPresent()) {
-                                plugin = instance.get();
+                                Optional<?> instance = (Optional<?>) plugin;
+                                if (instance.isPresent()) {
+                                    plugin = instance.get();
+                                } else {
+                                    plugin = null;
+                                    Console.send("Plugin instance is null, couldn't inject " + jarFile.getName());
+                                    return false;
+                                }
                             } else {
-                                plugin = null;
-                                Console.send("Plugin instance is null, couldn't inject " + jarFile.getName());
-                                return false;
+                                plugin = plugin.getClass().getMethod("getInstance").invoke(plugin);
+
+                                Optional<?> instance = (Optional<?>) plugin;
+                                if (instance.isPresent()) {
+                                    plugin = instance.get();
+                                } else {
+                                    plugin = null;
+                                    Console.send("Plugin instance is null, couldn't inject " + jarFile.getName());
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -207,6 +216,4 @@ public final class JarInjector {
     public final boolean isDownloaded() {
         return jarFile.exists();
     }
-
-
 }

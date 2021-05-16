@@ -45,7 +45,7 @@ public final class KarmaFile implements Serializable {
      * @param name   the custom file name
      */
     public KarmaFile(@NotNull final JavaPlugin plugin, final String name) {
-        file = new File(plugin.getDataFolder(), name);
+        file = FileUtilities.getFixedFile(new File(plugin.getDataFolder(), name));
         folders.add(plugin.getDataFolder());
         main = plugin;
     }
@@ -73,10 +73,10 @@ public final class KarmaFile implements Serializable {
         folderPath = builder.toString();
 
         File lastFolder;
-        file = new File(plugin.getDataFolder() + "/" + folderPath, name);
+        file = FileUtilities.getFixedFile(new File(plugin.getDataFolder() + "/" + folderPath, name));
         lastFolder = plugin.getDataFolder();
         for (String str : dirs) {
-            File newFolder = new File(lastFolder + "/" + str.replace("/", ""));
+            File newFolder = FileUtilities.getFixedFile(new File(lastFolder + "/" + str.replace("/", "")));
             folders.add(newFolder);
             lastFolder = newFolder;
         }
@@ -92,9 +92,9 @@ public final class KarmaFile implements Serializable {
      */
     public KarmaFile(final File f) {
         main = null;
-        file = f;
+        file = FileUtilities.getFixedFile(f);
 
-        File path = new File(FileUtilities.getPath(f).replace(f.getName(), ""));
+        File path = new File(FileUtilities.getPath(f, ' ').replace(f.getName(), ""));
         folders.add(path);
     }
 

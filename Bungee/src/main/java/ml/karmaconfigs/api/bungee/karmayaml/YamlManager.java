@@ -2,6 +2,7 @@ package ml.karmaconfigs.api.bungee.karmayaml;
 
 import ml.karmaconfigs.api.bungee.Console;
 import ml.karmaconfigs.api.common.Level;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.YamlConfiguration;
@@ -38,23 +39,19 @@ public final class YamlManager {
         main = plugin;
 
         StringBuilder dirBuilder = new StringBuilder();
+        File tmp_file;
         if (directory.length > 0) {
             for (String dir : directory)
                 dirBuilder.append(File.separator).append(dir);
 
-            file = new File(plugin.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
+            tmp_file = new File(plugin.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
         } else {
-            file = new File(plugin.getDataFolder(), fileName + ".yml");
+            tmp_file = new File(plugin.getDataFolder(), fileName + ".yml");
         }
+        file = FileUtilities.getFixedFile(tmp_file);
 
         try {
-            if (!file.getParentFile().exists()) {
-                Files.createDirectory(file.getParentFile().toPath());
-            }
-            if (!file.exists()) {
-                Files.createFile(file.toPath());
-            }
-
+            FileUtilities.create(file);
             managed = YamlConfiguration.getProvider(YamlConfiguration.class).load(file);
         } catch (Throwable ex) {
             Console.send(plugin, "Error while creating/loading file " + fileName, Level.GRAVE);

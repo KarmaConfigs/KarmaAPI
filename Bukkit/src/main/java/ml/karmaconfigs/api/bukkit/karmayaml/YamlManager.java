@@ -2,6 +2,7 @@ package ml.karmaconfigs.api.bukkit.karmayaml;
 
 import ml.karmaconfigs.api.bukkit.Console;
 import ml.karmaconfigs.api.common.Level;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -39,22 +40,19 @@ public final class YamlManager {
         main = plugin;
 
         StringBuilder dirBuilder = new StringBuilder();
+        File tmp_file;
         if (directory.length > 0) {
             for (String dir : directory)
                 dirBuilder.append(File.separator).append(dir);
 
-            file = new File(plugin.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
+            tmp_file = new File(plugin.getDataFolder() + dirBuilder.toString(), fileName + ".yml");
         } else {
-            file = new File(plugin.getDataFolder(), fileName + ".yml");
+            tmp_file = new File(plugin.getDataFolder(), fileName + ".yml");
         }
+        file = FileUtilities.getFixedFile(tmp_file);
 
         try {
-            if (!file.getParentFile().exists()) {
-                Files.createDirectory(file.getParentFile().toPath());
-            }
-            if (!file.exists()) {
-                Files.createFile(file.toPath());
-            }
+            FileUtilities.create(file);
         } catch (Throwable ex) {
             Console.send(plugin, "Error while creating file " + fileName, Level.GRAVE);
         }
