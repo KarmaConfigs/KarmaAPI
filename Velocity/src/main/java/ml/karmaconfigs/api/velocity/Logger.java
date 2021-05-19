@@ -94,10 +94,6 @@ public class Logger {
             File logYearFolder = new File(logFolder, String.valueOf(calendar.get(Calendar.YEAR)));
             File logMonthFolder = new File(logYearFolder, calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault()));
             File logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + (logsAmount() > 0 ? "_" + logsAmount() : "") + (ext_type.getOrDefault(plugin, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
-            if (!logMonthFolder.exists() && logMonthFolder.mkdirs()) {
-                String path = logMonthFolder.getAbsolutePath().replaceAll("\\\\", "/");
-                KarmaConsoleSender.send("Created directory {0}", Level.INFO, path);
-            }
 
             try {
                 long kbSize = Files.size(logFile.toPath()) / 1024;
@@ -109,6 +105,7 @@ public class Logger {
             } catch (Throwable ignored) {}
 
             logFile = FileUtilities.getFixedFile(logFile);
+            FileUtilities.create(logFile);
 
             InputStream inLog = null;
             InputStreamReader inReader = null;
@@ -270,10 +267,6 @@ public class Logger {
             File logYearFolder = new File(logFolder, String.valueOf(calendar.get(Calendar.YEAR)));
             File logMonthFolder = new File(logYearFolder, calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault()));
             File logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + (logsAmount() > 0 ? "_" + logsAmount() : "") + (ext_type.getOrDefault(plugin, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
-            if (!logMonthFolder.exists() && logMonthFolder.mkdirs()) {
-                String path = logMonthFolder.getAbsolutePath().replaceAll("\\\\", "/");
-                KarmaConsoleSender.send("Created directory {0}", Level.INFO, path);
-            }
 
             try {
                 long kbSize = Files.size(logFile.toPath()) / 1024;
@@ -285,6 +278,7 @@ public class Logger {
             } catch (Throwable ignored) {}
 
             logFile = FileUtilities.getFixedFile(logFile);
+            FileUtilities.create(logFile);
 
             InputStream inLog = null;
             InputStreamReader inReader = null;
@@ -447,10 +441,6 @@ public class Logger {
             File logYearFolder = new File(logFolder, String.valueOf(calendar.get(Calendar.YEAR)));
             File logMonthFolder = new File(logYearFolder, calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault()));
             File logFile = new File(logMonthFolder, calendar.get(Calendar.DAY_OF_MONTH) + (logsAmount() > 0 ? "_" + logsAmount() : "") + (ext_type.getOrDefault(plugin, LogExtension.MARKDOWN).equals(LogExtension.MARKDOWN) ? ".md" : ".log"));
-            if (!logMonthFolder.exists() && logMonthFolder.mkdirs()) {
-                String path = logMonthFolder.getAbsolutePath().replaceAll("\\\\", "/");
-                KarmaConsoleSender.send("Created directory {0}", Level.INFO, path);
-            }
 
             try {
                 long kbSize = Files.size(logFile.toPath()) / 1024;
@@ -462,6 +452,7 @@ public class Logger {
             } catch (Throwable ignored) {}
 
             logFile = FileUtilities.getFixedFile(logFile);
+            FileUtilities.create(logFile);
 
             InputStream inLog = null;
             InputStreamReader inReader = null;
@@ -626,14 +617,21 @@ public class Logger {
         Calendar calendar = calendar_type.getOrDefault(plugin, GregorianCalendar.getInstance());
 
         File logFolder = new File(util.getDataFolder(), "logs");
+        logFolder = FileUtilities.getFixedFile(logFolder);
+
         File logYearFolder = new File(logFolder, String.valueOf(calendar.get(Calendar.YEAR)));
+        logYearFolder = FileUtilities.getFixedFile(logYearFolder);
+
         File logMonthFolder = new File(logYearFolder, calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault()));
+        logMonthFolder = FileUtilities.getFixedFile(logMonthFolder);
         if (logMonthFolder.exists()) {
             File[] files = logMonthFolder.listFiles();
             if (files != null) {
                 String expecting = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
 
                 for (File file : files) {
+                    file = FileUtilities.getFixedFile(file);
+
                     if (file.getName().startsWith(expecting + "_"))
                         amount++;
                 }

@@ -79,10 +79,6 @@ public final class FileCopy {
         destFile = new File(FileUtilities.getPath(destFile));
 
         if (main != null) {
-            if (!FileUtilities.getFixedFile(destFile).exists() && FileUtilities.getFixedFile(destFile).mkdirs())
-                if (debug)
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(destFile), '/'));
-
             if (destFile.exists()) {
                 InputStream in;
                 InputStreamReader inReader;
@@ -210,6 +206,9 @@ public final class FileCopy {
                     reader.close();
                 }
             } else {
+                if (!destFile.getParentFile().exists() && destFile.getParentFile().mkdirs())
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(destFile.getParentFile()), '/'));
+
                 if (destFile.createNewFile()) {
                     Console.send("&7Writing to {0} using in-jar file", FileUtilities.getPath(destFile, '/'));
                     InputStream in = this.main.getResourceAsStream("/" + this.inFile);

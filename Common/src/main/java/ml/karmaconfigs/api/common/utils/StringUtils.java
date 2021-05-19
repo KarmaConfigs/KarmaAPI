@@ -512,7 +512,7 @@ public interface StringUtils {
             ObjectOutputStream so = new ObjectOutputStream(bo);
             so.writeObject(instance);
             so.flush();
-            return Base64.getEncoder().encodeToString(bo.toString().getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(bo.toByteArray());
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
@@ -524,22 +524,33 @@ public interface StringUtils {
      * Load the serialized object
      *
      * @param instance the object string instance
-     * @param <T> object type
      * @return the un-serialized object
      */
-    @SuppressWarnings("unchecked")
     @Nullable
-    static <T> T load(final String instance) {
+    static Object load(final String instance) {
         try {
-            byte[] bytes = Base64.getDecoder().decode(instance.getBytes(StandardCharsets.UTF_8));
+            byte[] bytes = Base64.getDecoder().decode(instance);
             ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
             ObjectInputStream si = new ObjectInputStream(bi);
-            return (T) si.readObject();
+            return si.readObject();
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
 
         return null;
+    }
+
+    /**
+     * Load and cast the object to the
+     * required type
+     *
+     * @param instance the object string instance
+     * @param <T> the object type
+     * @return the object instance as the required type
+     */
+    @Nullable
+    static @SuppressWarnings("unchecked") <T> T loadUnsafe(final String instance) {
+        return (T) load(instance);
     }
 
     /**

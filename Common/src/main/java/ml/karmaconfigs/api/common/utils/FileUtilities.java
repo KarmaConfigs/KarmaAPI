@@ -1,14 +1,14 @@
 package ml.karmaconfigs.api.common.utils;
 
+import ml.karmaconfigs.api.common.Console;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Private GSA code
@@ -30,43 +30,37 @@ public interface FileUtilities {
     static void create(@NotNull final File file) {
         if (!file.isDirectory()) {
             try {
-                createDirectory(file);
-                if (!file.exists())
+                if (!file.getParentFile().exists()) {
+                    Files.createDirectories(file.getParentFile().toPath());
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+                }
+
+                if (!file.exists()) {
                     Files.createFile(file.toPath());
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+                }
             } catch (Throwable ignored) {
             }
         }
     }
 
     /**
-     * Create the file directory
-     *
-     * @param file the file
-     */
-    static void createDirectory(final File file) {
-        try {
-            File path = new File(getDirPath(file));
-            if (path.isDirectory()) {
-                if (!path.exists()) {
-                    Files.createDirectories(path.toPath());
-                }
-            }
-        } catch (Throwable ignored) {}
-    }
-
-    /**
      * Create a new file but return an exception
      *
      * @param file the file to create
-     * @throws Throwable if the file throws an exception
+     * @throws IOException as part of Files#createDirectories and Files#createFile methods
      */
-    static void createWithException(@NotNull final File file) throws Throwable {
+    static void createWithException(@NotNull final File file) throws IOException {
         if (!file.isDirectory()) {
-            if (!file.getParentFile().exists())
+            if (!file.getParentFile().exists()) {
                 Files.createDirectories(file.getParentFile().toPath());
+                Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+            }
 
-            if (!file.exists())
+            if (!file.exists()) {
                 Files.createFile(file.toPath());
+                Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+            }
         }
     }
 
@@ -79,10 +73,14 @@ public interface FileUtilities {
     static boolean createWithResults(@NotNull final File file) {
         if (!file.isDirectory()) {
             try {
-                if (!file.getParentFile().exists())
+                if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                if (!file.exists())
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+                }
+                if (!file.exists()) {
                     Files.createFile(file.toPath());
+                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+                }
 
                 return true;
             } catch (Throwable ex) {
@@ -261,11 +259,11 @@ public interface FileUtilities {
                         break;
                 }
 
-                return new File(builder.toString());
+                return getFixedFile(new File(builder.toString()));
             }
         }
 
-        return folder;
+        return getFixedFile(folder);
     }
 
     /**
