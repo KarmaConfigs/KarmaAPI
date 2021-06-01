@@ -285,9 +285,7 @@ public final class BossMessage {
                                         break;
                                 }
                             } catch (Throwable ex) {
-                                ex.printStackTrace();
-                                bar_timer.setCancelled();
-                                hp_timer.setCancelled();
+                                cancel();
                             }
                         } else {
                             bar_timer.setCancelled();
@@ -352,9 +350,7 @@ public final class BossMessage {
                                 break;
                         }
                     } catch (Throwable ex) {
-                        ex.printStackTrace();
-                        bar_timer.setCancelled();
-                        hp_timer.setCancelled();
+                        cancel();
                     }
                 } else {
                     bar_timer.setCancelled();

@@ -32,12 +32,12 @@ public interface FileUtilities {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+                    Console.send("&b[ KarmaAPI ] &3Created directory {0}", FileUtilities.getPrettyDirPath(file.getParentFile()));
                 }
 
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+                    Console.send("&b[ KarmaAPI ] &3Created file {0}", FileUtilities.getPrettyDirPath(file));
                 }
             } catch (Throwable ignored) {
             }
@@ -54,12 +54,12 @@ public interface FileUtilities {
         if (!file.isDirectory()) {
             if (!file.getParentFile().exists()) {
                 Files.createDirectories(file.getParentFile().toPath());
-                Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+                Console.send("&b[ KarmaAPI ] &3Created directory {0}", FileUtilities.getPrettyDirPath(file.getParentFile()));
             }
 
             if (!file.exists()) {
                 Files.createFile(file.toPath());
-                Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+                Console.send("&b[ KarmaAPI ] &3Created file {0}", FileUtilities.getPrettyDirPath(file));
             }
         }
     }
@@ -75,11 +75,11 @@ public interface FileUtilities {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file.getParentFile()), '/'));
+                    Console.send("&b[ KarmaAPI ] &3Created directory {0}", FileUtilities.getPrettyDirPath(file.getParentFile()));
                 }
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    Console.send("&7Created directory {0}", FileUtilities.getPath(FileUtilities.getFixedFile(file), '/'));
+                    Console.send("&b[ KarmaAPI ] &3Created file {0}", FileUtilities.getPrettyDirPath(file));
                 }
 
                 return true;
@@ -278,6 +278,7 @@ public interface FileUtilities {
     /**
      * Get the plugin main folder
      *
+     * @param plugin the plugin object
      * @return the plugin main folder
      */
     static File getPluginFolder(final Object plugin) {

@@ -76,7 +76,7 @@ public final class FileCopy {
      * copied
      */
     public final void copy(File destFile) throws Throwable {
-        destFile = new File(FileUtilities.getPath(destFile));
+        destFile = FileUtilities.getFixedFile(destFile);
 
         if (main != null) {
             if (destFile.exists()) {

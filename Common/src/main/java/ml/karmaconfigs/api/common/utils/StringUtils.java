@@ -28,7 +28,19 @@ public interface StringUtils {
      * @return the replaced text
      */
     static String replaceLast(final String text, final String regex, final String replace) {
-        return text.replaceFirst("(?s)" + regex + "(?!.*?" + regex + ")", replace);
+        try {
+            return text.replaceFirst("(?s)" + regex + "(?!.*?" + regex + ")", replace);
+        } catch (Throwable ex) {
+            try {
+                return escapeString(text).replaceFirst("(?s)" + regex + "(?!.*?" + regex + ")", replace);
+            } catch (Throwable exc) {
+                try {
+                    return escapeString(text).replaceFirst("(?s)" + escapeString(regex) + "(?!.*?" + escapeString(regex) + ")", replace);
+                } catch (Throwable exce) {
+                    return escapeString(text).replaceFirst("(?s)" + escapeString(regex) + "(?!.*?" + escapeString(regex) + ")", escapeString(replace));
+                }
+            }
+        }
     }
 
     /**
@@ -495,6 +507,53 @@ public interface StringUtils {
                 builder.append(line).append((i < lines.size() - 1 ? " " : ""));
             else
                 builder.append(line).append((i < lines.size() - 1) ? "\n" : "");
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Un escape the string
+     *
+     * @param text the escaped text
+     * @return the un-escaped text
+     */
+    static String unEscapeString(final String text) {
+        return text.replaceAll("\\\\", "");
+    }
+
+    /**
+     * Scape the string
+     *
+     * @param text the original text
+     * @return the escaped text
+     */
+    static String escapeString(final String text) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            Character character = text.charAt(i);
+
+            switch (character) {
+                case '.':
+                case '[':
+                case ']':
+                case '{':
+                case '}':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '?':
+                case '^':
+                case '$':
+                case '|':
+                    builder.append("\\").append(character);
+                    break;
+                default:
+                    builder.append(character);
+                    break;
+            }
         }
 
         return builder.toString();

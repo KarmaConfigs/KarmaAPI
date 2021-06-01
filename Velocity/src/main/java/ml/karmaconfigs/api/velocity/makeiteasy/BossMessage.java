@@ -170,25 +170,31 @@ public final class BossMessage {
                         case UP:
                             life_value = lived_time / live_time;
 
-                            bar.progress((float) life_value);
+                            if (life_value <= 1.0 && life_value >= 0.0) {
+                                bar.progress((float) life_value);
 
-                            lived_time++;
+                                lived_time++;
+                            } else {
+                                cancel();
+                            }
                             break;
                         case DOWN:
                             life_value = lived_time / live_time;
 
-                            bar.progress((float) life_value);
+                            if (life_value <= 1.0 && life_value >= 0.0) {
+                                bar.progress((float) life_value);
 
-                            lived_time--;
+                                lived_time--;
+                            } else {
+                                cancel();
+                            }
                             break;
                         default:
                         case NONE:
                             break;
                     }
                 } catch (Throwable ex) {
-                    ex.printStackTrace();
-                    bar_timer.setCancelled();
-                    hp_timer.setCancelled();
+                    cancel();
                 }
             } else {
                 bar_timer.setCancelled();

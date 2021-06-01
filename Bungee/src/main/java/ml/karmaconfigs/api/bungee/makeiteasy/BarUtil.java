@@ -173,7 +173,7 @@ class BarUtil {
         if (player.isConnected() && visible) {
             sendPacket(player, removePacket());
         }
-        players.remove(player.getUniqueId());
+        players.remove(player);
     }
 
     /**

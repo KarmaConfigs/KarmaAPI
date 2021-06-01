@@ -59,7 +59,7 @@ public final class YamlReloader {
      * Read the file and copy
      * it
      *
-     * @return if the file could be reloaded and coppied
+     * @return if the file could be reloaded and copied
      */
     public final boolean reloadAndCopy() {
         FileConfiguration fileConfiguration = YamlConfiguration.loadConfiguration(file);

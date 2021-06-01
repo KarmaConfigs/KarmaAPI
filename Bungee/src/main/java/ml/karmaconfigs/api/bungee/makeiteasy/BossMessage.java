@@ -140,15 +140,15 @@ public final class BossMessage {
 
         bar_timer = new AdvancedPluginTimer(plugin, (int) live_time, false);
         bar_timer.addActionOnEnd(() -> {
-            bar.removeAllPlayers();
             bar.setVisible(false);
+            bar.removeAllPlayers();
 
             boss_bars.remove(id);
             bar_objects.remove(id);
             bars--;
         }).addActionOnCancel(() -> {
-            bar.removeAllPlayers();
             bar.setVisible(false);
+            bar.removeAllPlayers();
 
             boss_bars.remove(id);
             bar_objects.remove(id);
@@ -167,25 +167,31 @@ public final class BossMessage {
                         case UP:
                             life_value = lived_time / live_time;
 
-                            bar.setHealth((float) life_value);
+                            if (life_value <= 1.0 && life_value >= 0.0) {
+                                bar.setHealth((float) life_value);
 
-                            lived_time++;
+                                lived_time++;
+                            } else {
+                                cancel();
+                            }
                             break;
                         case DOWN:
                             life_value = lived_time / live_time;
 
-                            bar.setHealth((float) life_value);
+                            if (life_value <= 1.0 && life_value >= 0.0) {
+                                bar.setHealth((float) life_value);
 
-                            lived_time--;
+                                lived_time--;
+                            } else {
+                                cancel();
+                            }
                             break;
                         default:
                         case NONE:
                             break;
                     }
                 } catch (Throwable ex) {
-                    ex.printStackTrace();
-                    bar_timer.setCancelled();
-                    hp_timer.setCancelled();
+                    cancel();
                 }
             } else {
                 bar_timer.setCancelled();

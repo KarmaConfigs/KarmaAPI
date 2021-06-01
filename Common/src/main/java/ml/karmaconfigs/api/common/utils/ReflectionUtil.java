@@ -260,7 +260,7 @@ public interface ReflectionUtil {
 
             Object pluginDescription = getDescription.invoke(plugin);
 
-            Method getVersion = pluginDescription.getClass().getMethod("getVersion");
+            Method getVersion = pluginDescription.getClass().getMethod("getName");
             getVersion.setAccessible(true);
 
             return (String) getVersion.invoke(pluginDescription);
