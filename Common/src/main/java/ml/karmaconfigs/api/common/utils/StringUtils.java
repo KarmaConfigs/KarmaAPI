@@ -647,7 +647,107 @@ public interface StringUtils {
      * @return if the object is null or empty
      */
     static boolean isNullOrEmpty(final Object check) {
-        return check == null || check.toString().isEmpty();
+        return check == null || check.toString().replaceAll("\\s", "").isEmpty();
+    }
+
+    /**
+     * Get the version level of the two versions
+     *
+     * @param v1 the version 1
+     * @param v2 the version 2
+     * @return 1 if v1 is over v2, -1 if v1 is under v2, 0 if v1 equals v2
+     */
+    static int compareTo(final String v1, final String v2) {
+        String[] v1parts = v1.split("\\.");
+        String[] v2parts = v2.split("\\.");
+        int length = Math.max(v1parts.length, v2parts.length);
+        for(int i = 0; i < length; i++) {
+            int thisPart = i < v1parts.length ?
+                    Integer.parseInt(v1parts[i]) : 0;
+            int thatPart = i < v2parts.length ?
+                    Integer.parseInt(v2parts[i]) : 0;
+            if(thisPart < thatPart)
+                return -1;
+            if(thisPart > thatPart)
+                return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Remove the numbers from the specified string
+     *
+     * @param original the original string
+     * @return the string without numbers
+     */
+    static String removeNumbers(final String original) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < original.length(); i++) {
+            char character = original.charAt(i);
+            if (!Character.isDigit(character))
+                builder.append(character);
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Remove the letters from the specified string
+     *
+     * @param original the original string
+     * @return the string without letters
+     */
+    static String removeLetters(final String original) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < original.length(); i++) {
+            char character = original.charAt(i);
+            if (!Character.isLetter(character)) {
+                builder.append(character);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Get only the numbers of the string
+     *
+     * @param original the original string
+     * @param keep the characters to keep
+     * @return the string with only numbers
+     */
+    static String parseNumbers(final String original, final Character... keep) {
+        StringBuilder builder = new StringBuilder();
+        Set<Character> chars = arrayToSet(keep);
+        for (int i = 0; i < original.length(); i++) {
+            char character = original.charAt(i);
+            if (Character.isDigit(character) || chars.contains(character)) {
+                builder.append(character);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Get only the text of the string
+     *
+     * @param original the original string
+     * @param keep the characters to keep
+     * @return the string with only letters
+     */
+    static String parseLetters(final String original, final Character... keep) {
+        StringBuilder builder = new StringBuilder();
+        Set<Character> chars = arrayToSet(keep);
+        for (int i = 0; i < original.length(); i++) {
+            char character = original.charAt(i);
+            if (Character.isLetter(character) || chars.contains(character)) {
+                builder.append(character);
+            }
+        }
+
+        return builder.toString();
     }
 
     /**
@@ -666,5 +766,16 @@ public interface StringUtils {
         /** Generate string with all upper */ ALL_UPPER,
         /** Generate string with all lower */ ALL_LOWER,
         /** Generate string randomly upper and lower */ RANDOM_SIZE
+    }
+
+    /**
+     * Converse the array into a set
+     *
+     * @param array the array
+     * @param <T> the array type
+     * @return the array as set
+     */
+    static <T> Set<T> arrayToSet(final T[] array) {
+        return new HashSet<>(Arrays.asList(array));
     }
 }

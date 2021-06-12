@@ -1,7 +1,7 @@
 package ml.karmaconfigs.api.common.utils;
 
 import ml.karmaconfigs.api.common.Console;
-import ml.karmaconfigs.api.common.Level;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;

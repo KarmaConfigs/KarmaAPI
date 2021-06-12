@@ -2,6 +2,7 @@ package ml.karmaconfigs.api.common.rgb;
 
 import ml.karmaconfigs.api.common.utils.StringUtils;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
  * terms of use determined
  * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
  */
-public final class RGBTextComponent {
+public final class RGBTextComponent implements Serializable {
 
     private final boolean parseSimple;
     private final boolean parseHEX;

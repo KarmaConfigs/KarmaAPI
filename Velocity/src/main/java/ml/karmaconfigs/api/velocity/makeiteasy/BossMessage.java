@@ -6,8 +6,8 @@ import ml.karmaconfigs.api.common.boss.BossColor;
 import ml.karmaconfigs.api.common.boss.BossNotFoundException;
 import ml.karmaconfigs.api.common.boss.BossType;
 import ml.karmaconfigs.api.common.boss.ProgressiveBar;
+import ml.karmaconfigs.api.common.timer.AdvancedPluginTimer;
 import ml.karmaconfigs.api.common.utils.StringUtils;
-import ml.karmaconfigs.api.velocity.timer.AdvancedPluginTimer;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -141,7 +141,7 @@ public final class BossMessage {
         for (Player player : players)
             player.showBossBar(bar);
 
-        bar_timer = new AdvancedPluginTimer(plugin, (int) live_time, false);
+        bar_timer = new AdvancedPluginTimer((int) live_time, false);
         bar_timer.addActionOnEnd(() -> {
             for (Player player : players)
                 player.hideBossBar(bar);
@@ -158,7 +158,7 @@ public final class BossMessage {
             bars--;
         }).start();
 
-        AdvancedPluginTimer hp_timer = new AdvancedPluginTimer(plugin, 1, true);
+        AdvancedPluginTimer hp_timer = new AdvancedPluginTimer(1, true);
         hp_timer.addAction(() -> {
             if (!cancelled) {
                 try {
@@ -211,7 +211,7 @@ public final class BossMessage {
     public final void scheduleBar(Collection<Player> players) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        AdvancedPluginTimer timer = new AdvancedPluginTimer(plugin, 20);
+        AdvancedPluginTimer timer = new AdvancedPluginTimer(20);
         timer.addAction(() -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -229,7 +229,7 @@ public final class BossMessage {
     public final void scheduleBar(final Player player) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        AdvancedPluginTimer timer = new AdvancedPluginTimer(plugin, 20);
+        AdvancedPluginTimer timer = new AdvancedPluginTimer(20);
         timer.addAction(() -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);

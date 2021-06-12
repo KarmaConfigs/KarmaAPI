@@ -1,12 +1,14 @@
 package ml.karmaconfigs.api.common.karmafile;
 
+import java.io.Serializable;
+
 /**
  * KarmaFile key object
  *
  * This object contains the value, in case
  * of no value, the key will be used as value
  */
-public final class Key {
+public final class Key implements Serializable {
 
     private final String path;
     private final Object value;

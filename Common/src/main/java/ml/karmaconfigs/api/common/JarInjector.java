@@ -3,6 +3,7 @@ package ml.karmaconfigs.api.common;
 import ml.karmaconfigs.api.common.exception.NoJarException;
 import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.ReflectionUtil;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.*;
@@ -15,7 +16,6 @@ import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -27,7 +27,11 @@ import java.util.*;
  * will be a violation of
  * terms of use determined
  * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
+ *
+ * @deprecated This has been deprecated as on java 16 is not longer working,
+ * a new method will be implemented in a future, removing this one
  */
+@Deprecated
 public final class JarInjector {
 
     private final static Map<Object, Set<File>> injected = new HashMap<>();

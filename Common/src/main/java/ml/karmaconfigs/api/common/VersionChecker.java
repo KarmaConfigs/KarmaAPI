@@ -4,6 +4,7 @@ import ml.karmaconfigs.api.common.utils.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +19,10 @@ import java.util.List;
  * in <a href="https://karmaconfigs.ml/license/"> here </a>
  *
  * @since 2.8 uses LockLogin like version checker system
+ * @deprecated This is being re-worked
  */
-public final class VersionChecker {
+@Deprecated
+public final class VersionChecker implements Serializable {
 
     private final List<String> replaced = new ArrayList<>();
     private int latest;

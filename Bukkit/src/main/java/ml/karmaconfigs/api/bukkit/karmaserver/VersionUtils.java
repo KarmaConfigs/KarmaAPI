@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.bukkit.karmaserver;
 
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * version utils. Check versions
  * and more...
  */
-public class VersionUtils {
+public abstract class VersionUtils {
 
     private final Server server;
 
@@ -22,7 +22,7 @@ public class VersionUtils {
      * @param plugin the plugin to get the server
      *               from
      */
-    private VersionUtils(final JavaPlugin plugin) {
+    VersionUtils(final JavaPlugin plugin) {
         server = plugin.getServer();
     }
 
@@ -118,10 +118,7 @@ public class VersionUtils {
             String current_version = getV().name().replace("v", "").replace("_", ".");
             String check_version = v.name().replace("v", "").replace("_", ".");
 
-            DefaultArtifactVersion version = new DefaultArtifactVersion(current_version);
-            DefaultArtifactVersion from_version = new DefaultArtifactVersion(check_version);
-
-            return version.compareTo(from_version) > 0;
+            return StringUtils.compareTo(current_version, check_version) > 0;
         }
 
         return false;
@@ -140,10 +137,7 @@ public class VersionUtils {
             String current_version = getV().name().replace("v", "").replace("_", ".");
             String check_version = v.name().replace("v", "").replace("_", ".");
 
-            DefaultArtifactVersion version = new DefaultArtifactVersion(current_version);
-            DefaultArtifactVersion from_version = new DefaultArtifactVersion(check_version);
-
-            return version.compareTo(from_version) < 0;
+            return StringUtils.compareTo(current_version, check_version) < 0;
         }
 
         return false;

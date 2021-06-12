@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 
 /**
@@ -111,6 +112,53 @@ public interface FileUtilities {
     }
 
     /**
+     * Get if the specified file is valid
+     *
+     * @param file the file
+     * @return if the file is valid
+     */
+    static boolean isValidFile(final File file) {
+        try {
+            file.getCanonicalPath();
+            return true;
+        } catch (Throwable ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Get if the specified path is valid
+     *
+     * @param path the path
+     * @return if the path is valid
+     */
+    static boolean isValidFile(final Path path) {
+        try {
+            path.toFile().getCanonicalPath();
+            return true;
+        } catch (Throwable ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Get if the specified file name/path is
+     * valid
+     *
+     * @param path the file name/path
+     * @return if the specified name/path is valid
+     */
+    static boolean isValidFile(final String path) {
+        File file = new File(path);
+        try {
+            file.getCanonicalPath();
+            return true;
+        } catch (Throwable ex) {
+            return false;
+        }
+    }
+
+    /**
      * Get the file complete path
      *
      * @param file the file to get path
@@ -194,6 +242,22 @@ public interface FileUtilities {
             return nameData[nameData.length - 1];
         } else {
             return "dir";
+        }
+    }
+
+    /**
+     * Get the file extension
+     *
+     * @param name the file name
+     * @return the file extension
+     */
+    static String getExtension(@NotNull final String name) {
+        if (name.contains(".")) {
+            String[] nameData = name.split("\\.");
+
+            return nameData[nameData.length - 1];
+        } else {
+            return "";
         }
     }
 
