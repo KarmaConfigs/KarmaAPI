@@ -7,33 +7,50 @@ import ml.karmaconfigs.api.common.boss.BossColor;
 import ml.karmaconfigs.api.common.boss.BossNotFoundException;
 import ml.karmaconfigs.api.common.boss.BossType;
 import ml.karmaconfigs.api.common.boss.ProgressiveBar;
-import ml.karmaconfigs.api.common.timer.AdvancedPluginTimer;
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.timer.AdvancedSimpleTimer;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 
-/**
- * Private GSA code
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
  *
- * The use of this code
- * without GSA team authorization
- * will be a violation of
- * terms of use determined
- * in <a href="http://karmaconfigs.cf/license/"> here </a>
- * or (fallback domain) <a href="https://karmaconfigs.github.io/page/license"> here </a>
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
+/**
+ * Intelligent boss bar message
  */
 public final class BossMessage {
 
-    private final Plugin plugin;
+    private final KarmaSource plugin;
 
     private String message;
     private final double live_time;
@@ -62,7 +79,7 @@ public final class BossMessage {
 
     private final int id;
 
-    private AdvancedPluginTimer bar_timer = null;
+    private AdvancedSimpleTimer bar_timer = null;
 
     /**
      * Initialize the BossBar with its message
@@ -71,17 +88,14 @@ public final class BossMessage {
      * @param _message the message
      * @param duration the message duration
      */
-    public BossMessage(final JavaPlugin owner, final String _message, final double duration) {
+    public BossMessage(final KarmaSource owner, final String _message, final double duration) {
         plugin = owner;
 
         message = _message;
         live_time = duration;
 
-        ServerVersion server = new ServerVersion(owner);
-        utils = server.utils();
-
-        if (utils != null)
-            isLegacy = utils.isUnder(Version.v1_13);
+        utils = new ServerVersion();
+        isLegacy = utils.isUnder(Version.v1_13);
         
         if (isLegacy)
             doReflectionStuff();
@@ -190,7 +204,7 @@ public final class BossMessage {
 
                     wither_objects.put(id, wither);
 
-                    bar_timer = new AdvancedPluginTimer((int) live_time, false);
+                    bar_timer = new AdvancedSimpleTimer(plugin, (int) live_time, false);
                     bar_timer.addAction(TimeCondition.OVER_OF, 2, () -> {
                         try {
                             Location newLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(20).add(new Vector(0, 5, 0)));
@@ -260,7 +274,7 @@ public final class BossMessage {
                         }
                     }).start();
 
-                    AdvancedPluginTimer hp_timer = new AdvancedPluginTimer(1, true);
+                    AdvancedSimpleTimer hp_timer = new AdvancedSimpleTimer(plugin, 1, true);
                     hp_timer.addAction(() -> {
                         if (!cancelled) {
                             try {
@@ -305,7 +319,7 @@ public final class BossMessage {
 
             wither_objects.put(id, wither);
 
-            bar_timer = new AdvancedPluginTimer((int) live_time, false);
+            bar_timer = new AdvancedSimpleTimer(plugin, (int) live_time, false);
             bar_timer.addActionOnEnd(() -> {
                 wither.setVisible(false);
                 wither.removeAll();
@@ -322,7 +336,7 @@ public final class BossMessage {
                 bars--;
             }).start();
 
-            AdvancedPluginTimer hp_timer = new AdvancedPluginTimer(1, true);
+            AdvancedSimpleTimer hp_timer = new AdvancedSimpleTimer(plugin, 1, true);
             hp_timer.addAction(() -> {
                 if (!cancelled) {
                     try {
@@ -368,7 +382,7 @@ public final class BossMessage {
     public final void scheduleBar(Collection<Player> players) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        AdvancedPluginTimer timer = new AdvancedPluginTimer(20);
+        AdvancedSimpleTimer timer = new AdvancedSimpleTimer(plugin, 20);
         timer.addAction(() -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -386,8 +400,9 @@ public final class BossMessage {
     public final void scheduleBar(final Player player) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        AdvancedPluginTimer timer = new AdvancedPluginTimer(20);
+        AdvancedSimpleTimer timer = new AdvancedSimpleTimer(plugin, 20);
         timer.addAction(() -> {
+
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
                 boss.displayBar(Collections.singleton(player));

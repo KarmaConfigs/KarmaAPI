@@ -11,18 +11,38 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 /**
- * Private GSA code
- * <p>
- * The use of this code
- * without GSA team authorization
- * will be a violation of
- * terms of use determined
- * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
+ * Deserialize a previously serialized
+ * array of stacks
  */
 public final class ItemStackDeserializer {
 
-    private final JavaPlugin main;
+    private final File cacheDir;
 
     /**
      * Initialize the inventory deserializer
@@ -31,7 +51,11 @@ public final class ItemStackDeserializer {
      *                     the inventory between plugins
      */
     public ItemStackDeserializer(final JavaPlugin owningPlugin) {
-        main = owningPlugin;
+        cacheDir = new File(FileUtilities.getServerFolder() + File.separator + "cache" + File.separator + "KarmaAPI" + File.separator + "inventories-" + owningPlugin.getDescription().getName());
+    }
+
+    public ItemStackDeserializer() {
+        cacheDir = new File(FileUtilities.getServerFolder() + File.separator + "cache" + File.separator + "KarmaAPI" + File.separator + "inventories-KarmaAPI");
     }
 
     /**
@@ -41,7 +65,6 @@ public final class ItemStackDeserializer {
      * @return an array of item stacks
      */
     public ItemStack[] getItems(final UUID uuid) {
-        File cacheDir = new File(FileUtilities.getServerFolder() + "/cache/KarmaAPI/inventories-" + main.getDescription().getName());
         File cache = new File(cacheDir, uuid.toString() + "_item.yml");
 
         if (cache.exists()) {
@@ -88,7 +111,6 @@ public final class ItemStackDeserializer {
      * @return an array of item stacks
      */
     public ItemStack[] getItems(final String name) {
-        File cacheDir = new File(FileUtilities.getServerFolder() + "/cache/KarmaAPI/inventories-" + main.getDescription().getName());
         File cache = new File(cacheDir, name + "_item.yml");
 
         if (cache.exists()) {
@@ -135,7 +157,6 @@ public final class ItemStackDeserializer {
      * @return if the inventory file exists
      */
     public final boolean exists(final UUID owner) {
-        File cacheDir = new File(FileUtilities.getServerFolder() + "/cache/KarmaAPI/inventories-" + main.getDescription().getName());
         File cache = new File(cacheDir, owner.toString() + ".yml");
 
         return cache.exists();
@@ -149,7 +170,6 @@ public final class ItemStackDeserializer {
      * @return if the inventory file exists
      */
     public final boolean exists(final String name) {
-        File cacheDir = new File(FileUtilities.getServerFolder() + "/cache/KarmaAPI/inventories-" + main.getDescription().getName());
         File cache = new File(cacheDir, name + ".yml");
 
         return cache.exists();

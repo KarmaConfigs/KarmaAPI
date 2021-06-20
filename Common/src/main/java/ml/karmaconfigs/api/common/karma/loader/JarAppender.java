@@ -1,6 +1,10 @@
-package ml.karmaconfigs.api.common.karmafile;
+package ml.karmaconfigs.api.common.karma.loader;
 
-import java.io.Serializable;
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -28,42 +32,48 @@ import java.io.Serializable;
  */
 
 /**
- * KarmaFile key object
- *
- * This object contains the value, in case
- * of no value, the key will be used as value
+ * KarmaAPI jar appender
  */
-public final class Key implements Serializable {
-
-    private final String path;
-    private final Object value;
+public interface JarAppender extends AutoCloseable {
 
     /**
-     * Initialize the file value
+     * Add a new jar file to the class path
      *
-     * @param keyPath   the key path
-     * @param keyValue  the key value
+     * @param url the jar location
      */
-    public Key(final String keyPath, final Object keyValue) {
-        path = keyPath;
-        value = keyValue;
-    }
+    void addJarToClasspath(URL url);
 
     /**
-     * Get the key
+     * Add a new jar file to the class path
      *
-     * @return the key
+     * @param uri the jar location
      */
-    public final String getPath() {
-        return path;
-    }
+    void addJarToClasspath(URI uri);
 
     /**
-     * Get the value
+     * Add a new jar file to the class path
      *
-     * @return the value
+     * @param file the jar file
      */
-    public final Object getValue() {
-        return value;
-    }
+    void addJarToClasspath(File file);
+
+    /**
+     * Add a new jar file to the class path
+     *
+     * @param path the jar file
+     */
+    void addJarToClasspath(Path path);
+
+    /**
+     * Close the loader
+     */
+    @Override
+    void close();
+
+    /**
+     * Get the appender URL class loader
+     *
+     * @return the appender URL class loader
+     */
+    URLClassLoader getLoader();
 }

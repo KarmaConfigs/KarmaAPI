@@ -7,17 +7,39 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 /**
- * Private GSA code
- * <p>
- * The use of this code
- * without GSA team authorization
- * will be a violation of
- * terms of use determined
- * in <a href="https://karmaconfigs.github.io/page/license"> here </a>
+ * Create a new KarmaPlugin
+ *
+ * @deprecated Please use {@link KarmaSource}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@Deprecated
 public @interface KarmaPlugin {
 
     /**
@@ -25,21 +47,21 @@ public @interface KarmaPlugin {
      *
      * @return the set plugin name
      */
-    String plugin_name() default "";
+    String source_name() default "";
 
     /**
      * Get the plugin version
      *
      * @return the set plugin version
      */
-    String plugin_version() default "";
+    String source_version() default "";
 
     /**
      * Get the plugin update url
      *
      * @return the set plugin update url
      */
-    String plugin_update_url() default "";
+    String source_update_url() default "";
 
     /**
      * Private GSA code
@@ -64,14 +86,10 @@ public @interface KarmaPlugin {
             if (plugin.getClass().isAnnotationPresent(KarmaPlugin.class)) {
                 KarmaPlugin karma_plugin = plugin.getClass().getAnnotation(KarmaPlugin.class);
 
-                if (!karma_plugin.plugin_name().isEmpty()) {
-                    return karma_plugin.plugin_name();
-                } else {
-                    return ReflectionUtil.getName(plugin);
-                }
+                return karma_plugin.source_name();
             }
 
-            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for plugin name", plugin.getClass());
+            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for source name", plugin.getClass());
             return "";
         }
 
@@ -87,14 +105,10 @@ public @interface KarmaPlugin {
             if (plugin.getClass().isAnnotationPresent(KarmaPlugin.class)) {
                 KarmaPlugin karma_plugin = plugin.getClass().getAnnotation(KarmaPlugin.class);
 
-                if (!karma_plugin.plugin_version().isEmpty()) {
-                    return karma_plugin.plugin_version();
-                } else {
-                    return ReflectionUtil.getVersion(plugin);
-                }
+                return karma_plugin.source_version();
             }
 
-            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for plugin version", plugin.getClass());
+            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for source version", plugin.getClass());
             return "";
         }
 
@@ -110,15 +124,10 @@ public @interface KarmaPlugin {
             if (clazz.isAnnotationPresent(KarmaPlugin.class)) {
                 KarmaPlugin karma_plugin = clazz.getAnnotation(KarmaPlugin.class);
 
-                if (!karma_plugin.plugin_update_url().isEmpty()) {
-                    return karma_plugin.plugin_update_url();
-                } else {
-                    ReflectionUtil.tryBroadcast("&cNo plugin_update_url value in @KarmaPlugin annotation found in &f{0}", clazz);
-                    return "";
-                }
+                return karma_plugin.source_update_url();
             }
 
-            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for update URL", clazz);
+            ReflectionUtil.tryBroadcast("&cNo @KarmaPlugin annotation found in &f{0}&c for source URL", clazz);
             return "";
         }
     }

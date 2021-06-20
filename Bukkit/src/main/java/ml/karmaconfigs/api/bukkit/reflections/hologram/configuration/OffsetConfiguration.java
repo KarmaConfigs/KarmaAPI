@@ -1,6 +1,4 @@
-package ml.karmaconfigs.api.common.karmafile;
-
-import java.io.Serializable;
+package ml.karmaconfigs.api.bukkit.reflections.hologram.configuration;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -28,42 +26,47 @@ import java.io.Serializable;
  */
 
 /**
- * KarmaFile key object
- *
- * This object contains the value, in case
- * of no value, the key will be used as value
+ * Offset configuration
  */
-public final class Key implements Serializable {
+public final class OffsetConfiguration {
 
-    private final String path;
-    private final Object value;
+    private final double x,y,z;
 
     /**
-     * Initialize the file value
+     * Initialize the offset configuration
      *
-     * @param keyPath   the key path
-     * @param keyValue  the key value
+     * @param configuration the hologram configuration
      */
-    public Key(final String keyPath, final Object keyValue) {
-        path = keyPath;
-        value = keyValue;
+    OffsetConfiguration(final HologramConfiguration configuration) {
+        x = configuration.offsetX;
+        y = configuration.offsetY;
+        z = configuration.offsetZ;
     }
 
     /**
-     * Get the key
+     * Get the Z offset axis
      *
-     * @return the key
+     * @return the Z offset axis
      */
-    public final String getPath() {
-        return path;
+    public final double getX() {
+        return x;
     }
 
     /**
-     * Get the value
+     * Get the Z offset axis
      *
-     * @return the value
+     * @return the Z offset axis
      */
-    public final Object getValue() {
-        return value;
+    public final double getY() {
+        return y;
+    }
+
+    /**
+     * Get the Z offset axis
+     *
+     * @return the Z offset axis
+     */
+    public final double getZ() {
+        return z;
     }
 }

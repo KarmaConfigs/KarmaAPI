@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.common.karma;
 
+import ml.karmaconfigs.api.common.timer.AdvancedSimpleTimer;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 
 import java.io.File;
@@ -37,6 +38,14 @@ public interface KarmaSource extends Serializable {
     String[] authors();
 
     /**
+     * Get the KarmaSource update
+     * url, used by version checker
+     *
+     * @return the source update url
+     */
+    String updateURL();
+
+    /**
      * Get the KarmaSource resource data folder
      *
      * @return the KarmaSource data folder
@@ -53,5 +62,12 @@ public interface KarmaSource extends Serializable {
         }
 
         return dataFolder.toPath();
+    }
+
+    /**
+     * DO NOT OVERRIDE PLEASE
+     */
+    default void stopTasks() {
+        AdvancedSimpleTimer.getManager.cancelAllTimers(this);
     }
 }
