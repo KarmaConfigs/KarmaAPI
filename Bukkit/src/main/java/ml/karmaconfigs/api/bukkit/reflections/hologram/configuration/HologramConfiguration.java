@@ -3,6 +3,8 @@ package ml.karmaconfigs.api.bukkit.reflections.hologram.configuration;
 import org.bukkit.Axis;
 import org.bukkit.util.Vector;
 
+import java.io.Serializable;
+
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -31,12 +33,14 @@ import org.bukkit.util.Vector;
 /**
  * KarmaHologram configuration
  */
-public final class HologramConfiguration {
+public final class HologramConfiguration implements Serializable {
 
     double offsetX = 0D;
     double offsetY = 2D;
     double offsetZ = 0D;
-    double separation = 0.25f;
+
+    double lineSeparation = 0.25d;
+    double itemSeparation = 0.75d;
 
     boolean autoCenter = true;
     boolean changeVelocity = true;
@@ -57,15 +61,18 @@ public final class HologramConfiguration {
      * @param offX the hologram offset x
      * @param offY the hologram offset y
      * @param offZ the hologram offset z
-     * @param sep the hologram separation size
+     * @param lSep the hologram text separation size
+     * @param iSep the hologram item separation size
      * @param autoCent the hologram auto center status
+     * @param cVelocity the hologram item velocity changer status
      * @param itemVel the hologram item velocity
      */
-    public HologramConfiguration(final double offX, final double offY, final double offZ, final double sep, final boolean autoCent, final boolean cVelocity, final Vector itemVel) {
+    public HologramConfiguration(final double offX, final double offY, final double offZ, final double lSep, final double iSep, final boolean autoCent, final boolean cVelocity, final Vector itemVel) {
         offsetX = offX;
         offsetY = offY;
         offsetZ = offZ;
-        separation = sep;
+        lineSeparation = lSep;
+        itemSeparation = iSep;
         autoCenter = autoCent;
         changeVelocity = cVelocity;
         itemVelocityX = itemVel.getX();
@@ -114,8 +121,17 @@ public final class HologramConfiguration {
      *
      * @param separationSize the new separation size
      */
-    public final void separation(final double separationSize) {
-        separation = separationSize;
+    public final void lineSeparation(final double separationSize) {
+        lineSeparation = separationSize;
+    }
+
+    /**
+     * Set the new separation size between text and item lines
+     *
+     * @param separationSize the new separation size
+     */
+    public final void itemSeparation(final double separationSize) {
+        itemSeparation = separationSize;
     }
 
     /**
@@ -197,8 +213,17 @@ public final class HologramConfiguration {
      *
      * @return the hologram separation between lines
      */
-    public final double getSeparation() {
-        return separation;
+    public final double getLineSeparation() {
+        return lineSeparation;
+    }
+
+    /**
+     * Get the hologram separation between items
+     *
+     * @return the hologram separation between items
+     */
+    public final double getItemSeparation() {
+        return itemSeparation;
     }
 
     /**

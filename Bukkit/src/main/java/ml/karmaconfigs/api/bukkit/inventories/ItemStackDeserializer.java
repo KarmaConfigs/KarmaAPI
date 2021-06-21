@@ -174,4 +174,28 @@ public final class ItemStackDeserializer {
 
         return cache.exists();
     }
+
+    /**
+     * Tries to remove the cache file
+     *
+     * @param owner the inventory owner
+     * @return if the file could be removed
+     */
+    public final boolean remove(final UUID owner) {
+        File cache = new File(cacheDir, owner.toString() + ".yml");
+
+        return cache.delete();
+    }
+
+    /**
+     * Tries to remove the cache file
+     *
+     * @param name the inventory name
+     * @return if the inventory file could be removed
+     */
+    public final boolean remove(final String name) {
+        File cache = new File(cacheDir, name + ".yml");
+
+        return cache.delete();
+    }
 }

@@ -617,6 +617,49 @@ public abstract class VersionUtils {
     }
 
     /**
+     * Get all the methods of a class
+     *
+     * @param clazz the class to search on
+     * @param declared include declared methods
+     * @return all the methods from a class
+     */
+    public final Set<String> fetchMethods(final Class<?> clazz, final boolean declared) {
+        Set<String> methods = new LinkedHashSet<>();
+        Method[] clazzMethods = clazz.getMethods();
+        for (Method method : clazzMethods) {
+            StringBuilder methodStringBuilder = new StringBuilder();
+            methodStringBuilder.append(method.getReturnType().getSimpleName()).append(" ");
+
+            StringBuilder argTypeBuilder = new StringBuilder();
+            if (method.getParameterCount() > 0) {
+                for (Class<?> type : method.getParameterTypes())
+                    argTypeBuilder.append(type.getSimpleName()).append(", ");
+            }
+
+            methodStringBuilder.append(method.getName()).append("(").append(StringUtils.replaceLast(argTypeBuilder.toString(), ", ", "")).append(")");
+            methods.add(methodStringBuilder.toString());
+        }
+        if (declared) {
+            clazzMethods = clazz.getDeclaredMethods();
+            for (Method method : clazzMethods) {
+                StringBuilder methodStringBuilder = new StringBuilder();
+                methodStringBuilder.append(method.getReturnType().getSimpleName()).append(" ");
+
+                StringBuilder argTypeBuilder = new StringBuilder();
+                if (method.getParameterCount() > 0) {
+                    for (Class<?> type : method.getParameterTypes())
+                        argTypeBuilder.append(type.getSimpleName()).append(", ");
+                }
+
+                methodStringBuilder.append(method.getName()).append("(").append(StringUtils.replaceLast(argTypeBuilder.toString(), ", ", "")).append(")");
+                methods.add(methodStringBuilder.toString());
+            }
+        }
+
+        return methods;
+    }
+
+    /**
      * Change a field value on the specified object
      *
      * @param object the object
@@ -657,47 +700,5 @@ public abstract class VersionUtils {
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
-    }
-
-    /**
-     * Get all the methods of a class
-     *
-     * @param declared include declared methods
-     * @return all the methods from a class
-     */
-    public final Set<String> fetchMethods(final Class<?> clazz, final boolean declared) {
-        Set<String> methods = new LinkedHashSet<>();
-        Method[] clazzMethods = clazz.getMethods();
-        for (Method method : clazzMethods) {
-            StringBuilder methodStringBuilder = new StringBuilder();
-            methodStringBuilder.append(method.getReturnType().getSimpleName()).append(" ");
-
-            StringBuilder argTypeBuilder = new StringBuilder();
-            if (method.getParameterCount() > 0) {
-                for (Class<?> type : method.getParameterTypes())
-                    argTypeBuilder.append(type.getSimpleName()).append(", ");
-            }
-
-            methodStringBuilder.append(method.getName()).append("(").append(StringUtils.replaceLast(argTypeBuilder.toString(), ", ", "")).append(")");
-            methods.add(methodStringBuilder.toString());
-        }
-        if (declared) {
-            clazzMethods = clazz.getDeclaredMethods();
-            for (Method method : clazzMethods) {
-                StringBuilder methodStringBuilder = new StringBuilder();
-                methodStringBuilder.append(method.getReturnType().getSimpleName()).append(" ");
-
-                StringBuilder argTypeBuilder = new StringBuilder();
-                if (method.getParameterCount() > 0) {
-                    for (Class<?> type : method.getParameterTypes())
-                        argTypeBuilder.append(type.getSimpleName()).append(", ");
-                }
-
-                methodStringBuilder.append(method.getName()).append("(").append(StringUtils.replaceLast(argTypeBuilder.toString(), ", ", "")).append(")");
-                methods.add(methodStringBuilder.toString());
-            }
-        }
-
-        return methods;
     }
 }

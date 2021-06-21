@@ -25,10 +25,12 @@ package ml.karmaconfigs.api.bukkit.reflections.hologram.configuration;
  *  SOFTWARE.
  */
 
+import java.io.Serializable;
+
 /**
  * Offset configuration
  */
-public final class OffsetConfiguration {
+public final class OffsetConfiguration implements Serializable {
 
     private final double x,y,z;
 

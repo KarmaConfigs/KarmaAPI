@@ -1,14 +1,18 @@
 package ml.karmaconfigs.api.bukkit.reflections.hologram;
 
 import ml.karmaconfigs.api.bukkit.SerializableLocation;
+import ml.karmaconfigs.api.bukkit.reflections.hologram.configuration.HologramConfiguration;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
 
+import java.io.File;
+import java.io.Serializable;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +44,15 @@ import java.util.Set;
 /**
  * Generic karma hologram functions
  */
-public abstract class KarmaHologram {
+public abstract class KarmaHologram implements Serializable {
+
+    /**
+     * Create the hologram file
+     *
+     * In temporal hologram, this does
+     * literally nothing
+     */
+    public abstract void create();
 
     /**
      * Spawn the hologram
@@ -53,6 +65,14 @@ public abstract class KarmaHologram {
      * @param location the spawn location
      */
     public abstract void spawn(final Location location);
+
+    /**
+     * Teleport the hologram to the specified location,
+     * instead of having to spawn it again
+     *
+     * @param newLocation the new hologram location
+     */
+    public abstract void teleport(final Location newLocation);
 
     /**
      * Hide the armor stand for the specified players
@@ -102,6 +122,14 @@ public abstract class KarmaHologram {
     public abstract void add(final ItemStack item);
 
     /**
+     * Insert a line or image read from the specified
+     * file
+     *
+     * @param file the file to read from
+     */
+    public abstract void add(final File file);
+
+    /**
      * Remove an hologram line
      *
      * @param index the line number to remove
@@ -112,6 +140,14 @@ public abstract class KarmaHologram {
      * Destroy the hologram, completely
      */
     public abstract void destroy();
+
+    /**
+     * Get this persistent hologram with the specified configuration
+     *
+     * @param config the hologram configuration
+     * @return this instance with the new configuration
+     */
+    public abstract KarmaHologram withConfiguration(final HologramConfiguration config);
 
     /**
      * Get the line from an index
@@ -160,6 +196,17 @@ public abstract class KarmaHologram {
     public abstract boolean canSee(final Player player);
 
     /**
+     * Get if the hologram exists
+     *
+     * @return if the hologram exists
+     *
+     * For temporal hologram this will be
+     * always false, as the hologram itself
+     * doesn't exist in data
+     */
+    public abstract boolean exists();
+
+    /**
      * Get a set of players who the hologram is
      * hidden
      *
@@ -189,8 +236,7 @@ public abstract class KarmaHologram {
      */
     public static KarmaHologram createHologram(final KarmaSource source, final String name, final Location location) {
         PersistentHologram hologram = (PersistentHologram) createHologram(source, name);
-        SerializableLocation serializable = new SerializableLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch(), location.getWorld());
-        hologram.data.set("LOCATION", StringUtils.serialize(serializable));
+        hologram.spawn(location);
 
         return hologram;
     }
@@ -207,7 +253,7 @@ public abstract class KarmaHologram {
     public static KarmaHologram createHologram(final KarmaSource source, final String name, final Location location, final String... lines) {
         PersistentHologram hologram = (PersistentHologram) createHologram(source, name);
         SerializableLocation serializable = new SerializableLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch(), location.getWorld());
-        hologram.data.set("LOCATION", StringUtils.serialize(serializable));
+        hologram.spawn(location);
 
         for (String line : lines)
             hologram.add(line);
@@ -224,5 +270,32 @@ public abstract class KarmaHologram {
      */
     public static KarmaHologram createHologram(final Location location, final String... lines) {
         return new TempHologram(location, lines);
+    }
+
+    /**
+     * Load all the persistent holograms
+     *
+     * @param source the hologram source
+     * @return the source holograms
+     */
+    public static KarmaHologram[] loadAllPersistent(final KarmaSource source) {
+        Set<KarmaHologram> loaded = new LinkedHashSet<>();
+        File holograms = new File(source.getDataPath().toFile() + File.separator + "holograms");
+        if (holograms.exists()) {
+            File[] files = holograms.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    String name = file.getName();
+                    name = StringUtils.replaceLast(name, "." + FileUtilities.getExtension(file), "");
+
+                    PersistentHologram persistent = new PersistentHologram(source, name);
+                    persistent.spawn();
+
+                    loaded.add(persistent);
+                }
+            }
+        }
+
+        return loaded.toArray(new KarmaHologram[0]);
     }
 }

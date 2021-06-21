@@ -5,6 +5,7 @@ import ml.karmaconfigs.api.bukkit.karmaserver.ServerVersion;
 import ml.karmaconfigs.api.bukkit.karmaserver.VersionUtils;
 import ml.karmaconfigs.api.bukkit.reflections.hologram.configuration.HologramConfiguration;
 import ml.karmaconfigs.api.common.Console;
+import ml.karmaconfigs.api.common.utils.FileUtilities;
 import ml.karmaconfigs.api.common.utils.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -13,6 +14,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.File;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,14 +49,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * file to be stored, once you remove this, you
  * must create it again
  */
-public final class TempHologram extends KarmaHologram {
+public final class TempHologram extends KarmaHologram implements Serializable {
 
     private SerializableLocation location;
 
     private final List<String> lines = Collections.synchronizedList(new ArrayList<>());
     private final Map<Integer, ItemStack> items = new ConcurrentHashMap<>();
 
-    private final Set<Integer> entities = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Integer> entities = Collections.synchronizedSet(new LinkedHashSet<>());
     private final Set<UUID> hidden = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<UUID> shown = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -78,21 +81,18 @@ public final class TempHologram extends KarmaHologram {
     }
 
     /**
-     * Get this persistent hologram with the specified configuration
-     *
-     * @param config the hologram configuration
-     * @return this instance with the new configuration
+     * Create the hologram file
+     * <p>
+     * In temporal hologram, this does
+     * literally nothing
      */
-    public KarmaHologram withConfiguration(final HologramConfiguration config) {
-        configuration = config;
-
-        return this;
-    }
+    @Override
+    public void create() {}
 
     /**
      * Spawn the hologram
      */
-    public final synchronized void spawn() {
+    public final void spawn() {
         Location location = applyLocationChanges(this.location.toLocation());
 
         World world = location.getWorld();
@@ -106,7 +106,7 @@ public final class TempHologram extends KarmaHologram {
                         summonItem(item, location, Bukkit.getOnlinePlayers().toArray(new Player[0]));
                     }
                 } else {
-                    summonTextStand(line, location, Bukkit.getOnlinePlayers().toArray(new Player[0]));
+                    summonTextStand(index - 1, line, location, Bukkit.getOnlinePlayers().toArray(new Player[0]));
                 }
 
                 index++;
@@ -124,10 +124,22 @@ public final class TempHologram extends KarmaHologram {
      * @param loc the spawn location
      */
     @Override
-    public final synchronized void spawn(Location loc) {
+    public final void spawn(Location loc) {
         location = new SerializableLocation(loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch(), loc.getWorld());
         destroy();
         spawn();
+    }
+
+    /**
+     * Teleport the hologram to the specified location,
+     * instead of having to spawn it again
+     *
+     * @param newLocation the new hologram location
+     */
+    @Override
+    public void teleport(Location newLocation) {
+        location = new SerializableLocation(newLocation.getX(), newLocation.getY(), newLocation.getZ(), newLocation.getYaw(), newLocation.getPitch(), newLocation.getWorld());
+        updateLines();
     }
 
     /**
@@ -136,7 +148,7 @@ public final class TempHologram extends KarmaHologram {
      * @param players the player to hide the armor
      *                stand to
      */
-    public final synchronized void hide(final Player... players) {
+    public final void hide(final Player... players) {
         VersionUtils utils = new ServerVersion();
         for (int id : entities) {
             Object packetPlayOutEntityDestroy = utils.createPacket("PacketPlayOutEntityDestroy", int[].class, new int[]{id});
@@ -155,7 +167,7 @@ public final class TempHologram extends KarmaHologram {
      * @param players the player to hide the armor
      *                stand to
      */
-    public final synchronized void show(final Player... players) {
+    public final void show(final Player... players) {
         if (this.location != null) {
             Location location = applyLocationChanges(this.location.toLocation());
             World world = location.getWorld();
@@ -168,7 +180,7 @@ public final class TempHologram extends KarmaHologram {
                             summonItem(item, location, players);
                         }
                     } else {
-                        summonTextStand(line, location, players);
+                        summonTextStand(index - 1, line, location, players);
                     }
 
                     index++;
@@ -182,7 +194,7 @@ public final class TempHologram extends KarmaHologram {
      *
      * @param status the hologram visibility
      */
-    public final synchronized void setVisible(final boolean status) {
+    public final void setVisible(final boolean status) {
         if (status) {
             show(Bukkit.getOnlinePlayers().toArray(new Player[0]));
         } else {
@@ -195,7 +207,7 @@ public final class TempHologram extends KarmaHologram {
      * Clear all the hologram lines
      */
     @Override
-    public final synchronized void clearLines() {
+    public final void clearLines() {
         lines.clear();
         setVisible(false);
         setVisible(true);
@@ -205,9 +217,9 @@ public final class TempHologram extends KarmaHologram {
      * Update the lines text
      */
     @Override
-    public final synchronized void updateLines() {
-        setVisible(false);
-        setVisible(true);
+    public final void updateLines() {
+        destroy();
+        spawn();
     }
 
     /**
@@ -231,6 +243,23 @@ public final class TempHologram extends KarmaHologram {
     }
 
     /**
+     * Insert a line or image read from the specified
+     * file
+     *
+     * @param file the file to read from
+     */
+    @Override
+    public void add(File file) {
+        if (FileUtilities.getFileType(file).toLowerCase().startsWith("image")) {
+            String result = StringUtils.readImage(file);
+            lines.add(result);
+        } else {
+            List<String> readLines = FileUtilities.readAllLines(file);
+            lines.addAll(StringUtils.toColor(readLines));
+        }
+    }
+
+    /**
      * Remove an hologram line
      *
      * @param line the line number to remove
@@ -249,7 +278,7 @@ public final class TempHologram extends KarmaHologram {
     /**
      * Destroy the hologram, completely
      */
-    public final synchronized void destroy() {
+    public final void destroy() {
         VersionUtils utils = new ServerVersion();
         for (int id : entities) {
             Object packetPlayOutEntityDestroy = utils.createPacket("PacketPlayOutEntityDestroy", int[].class, new int[]{id});
@@ -262,6 +291,19 @@ public final class TempHologram extends KarmaHologram {
         shown.clear();
         hidden.clear();
         entities.clear();
+    }
+
+    /**
+     * Get this persistent hologram with the specified configuration
+     *
+     * @param config the hologram configuration
+     * @return this instance with the new configuration
+     */
+    @Override
+    public KarmaHologram withConfiguration(final HologramConfiguration config) {
+        configuration = config;
+
+        return this;
     }
 
     /**
@@ -342,6 +384,20 @@ public final class TempHologram extends KarmaHologram {
     }
 
     /**
+     * Get if the hologram exists
+     *
+     * @return if the hologram exists
+     * <p>
+     * For temporal hologram this will be
+     * always false, as the hologram itself
+     * doesn't exist in data
+     */
+    @Override
+    public boolean exists() {
+        return false;
+    }
+
+    /**
      * Get a set of players who the hologram is
      * hidden
      *
@@ -410,7 +466,7 @@ public final class TempHologram extends KarmaHologram {
                         utils.invokePacket(player, packetPlayOutEntityVelocity);
                 }
 
-                location.setY(location.getY() - configuration.getSeparation());
+                location.setY(location.getY() - configuration.getItemSeparation());
             }
         }
     }
@@ -422,7 +478,7 @@ public final class TempHologram extends KarmaHologram {
      * @param location the armor stand location
      * @param players the player to show to
      */
-    private void summonTextStand(final String line, final Location location, final Player... players) {
+    private void summonTextStand(final int previousIndex, final String line, final Location location, final Player... players) {
         VersionUtils utils = new ServerVersion();
 
         Object stand = utils.createEntity(armorStand, location);
@@ -457,7 +513,10 @@ public final class TempHologram extends KarmaHologram {
                     utils.invokePacket(player, packetPlayOutEntityMetadata);
                 }
 
-                location.setY(location.getY() - configuration.getSeparation());
+                if (getItem(previousIndex) == null)
+                    location.setY(location.getY() - configuration.getLineSeparation());
+                else
+                    location.setY(location.getY() - configuration.getItemSeparation());
             }
         }
     }

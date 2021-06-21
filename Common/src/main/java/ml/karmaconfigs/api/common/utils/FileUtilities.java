@@ -10,6 +10,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
+import java.util.Collections;
+import java.util.List;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -292,6 +294,64 @@ public interface FileUtilities {
             return file.getName();
         } else {
             return StringUtils.replaceLast(file.getName(), "." + getExtension(file), "");
+        }
+    }
+
+    /**
+     * Get the file type
+     *
+     * @param file the file
+     * @return the file type
+     */
+    static String getFileType(final File file) {
+        try {
+            String mimetype = Files.probeContentType(file.toPath());
+
+            if (mimetype != null) {
+                if (mimetype.contains("/")) {
+                    return mimetype.split("/")[0];
+                } else {
+                    return mimetype;
+                }
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return "";
+    }
+
+    /**
+     * Get the file type
+     *
+     * @param file the file
+     * @return the file type
+     */
+    static String getFileCompleteType(final File file) {
+        try {
+            String mimetype = Files.probeContentType(file.toPath());
+
+            if (mimetype != null) {
+                return mimetype;
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return "";
+    }
+
+    /**
+     * Read all the file lines
+     *
+     * @param file the file
+     * @return all the file lines
+     */
+    static List<String> readAllLines(final File file) {
+        try {
+             return Files.readAllLines(getFixedFile(file).toPath());
+        } catch (Throwable ex) {
+            return Collections.emptyList();
         }
     }
 

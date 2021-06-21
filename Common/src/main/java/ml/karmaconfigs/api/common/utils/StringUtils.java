@@ -3,10 +3,15 @@ package ml.karmaconfigs.api.common.utils;
 import ml.karmaconfigs.api.common.Console;
 import org.jetbrains.annotations.Nullable;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.List;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -37,6 +42,138 @@ import java.util.*;
  * Utilities for strings
  */
 public interface StringUtils {
+
+    /**
+     * Read the image from the specified resource
+     *
+     * @param image the image resource path
+     * @return the image as string
+     */
+    static String readImage(final InputStream image) {
+        StringBuilder builder = new StringBuilder();
+        try {
+            BufferedImage img = ImageIO.read(image);
+            for (int i = 0; i < img.getHeight(); i++) {
+                for (int j = 0; j < img.getWidth(); j++) {
+                    Color pixel = new Color(img.getRGB(j, i));
+                    double pixelValue = (((pixel.getRed() * 0.30) + (pixel.getBlue() * 0.59) + (pixel
+                            .getGreen() * 0.11)));
+                    builder.append(strChar(pixelValue));
+                }
+            }
+            image.close();
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Read the image from the specified resource
+     *
+     * @param image the image resource path
+     * @return the image as string
+     */
+    static String readImage(final File image) {
+        StringBuilder builder = new StringBuilder();
+        try {
+            BufferedImage img = ImageIO.read(image);
+            for (int i = 0; i < img.getHeight(); i++) {
+                for (int j = 0; j < img.getWidth(); j++) {
+                    Color pixel = new Color(img.getRGB(j, i));
+                    double pixelValue = (((pixel.getRed() * 0.30) + (pixel.getBlue() * 0.59) + (pixel
+                            .getGreen() * 0.11)));
+                    builder.append(strChar(pixelValue));
+                }
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Read the image from the specified resource
+     *
+     * @param image the image resource path
+     * @return the image as string
+     */
+    static String readImage(final Path image) {
+        StringBuilder builder = new StringBuilder();
+        try {
+            BufferedImage img = ImageIO.read(image.toFile());
+            for (int i = 0; i < img.getHeight(); i++) {
+                for (int j = 0; j < img.getWidth(); j++) {
+                    Color pixel = new Color(img.getRGB(j, i));
+                    double pixelValue = (((pixel.getRed() * 0.30) + (pixel.getBlue() * 0.59) + (pixel
+                            .getGreen() * 0.11)));
+                    builder.append(strChar(pixelValue));
+                }
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Read the image from the specified resource
+     *
+     * @param imagePath the image resource path
+     * @return the image as string
+     */
+    static String readImage(final String imagePath) {
+        StringBuilder builder = new StringBuilder();
+        try {
+            BufferedImage img = ImageIO.read(FileUtilities.getFixedFile(new File(imagePath)));
+            for (int i = 0; i < img.getHeight(); i++) {
+                for (int j = 0; j < img.getWidth(); j++) {
+                    Color pixel = new Color(img.getRGB(j, i));
+                    double pixelValue = (((pixel.getRed() * 0.30) + (pixel.getBlue() * 0.59) + (pixel
+                            .getGreen() * 0.11)));
+                    builder.append(strChar(pixelValue));
+                }
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Parse a char value to string
+     *
+     * @param g the char value
+     * @return the char string value
+     */
+    static String strChar(double g) {
+        String str;
+        if (g >= 240) {
+            str = " ";
+        } else if (g >= 210) {
+            str = ".";
+        } else if (g >= 190) {
+            str = "*";
+        } else if (g >= 170) {
+            str = "+";
+        } else if (g >= 120) {
+            str = "^";
+        } else if (g >= 110) {
+            str = "&";
+        } else if (g >= 80) {
+            str = "8";
+        } else if (g >= 60) {
+            str = "#";
+        } else {
+            str = "@";
+        }
+
+        return str;
+    }
 
     /**
      * Replace the last string of the specified text
