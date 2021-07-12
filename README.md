@@ -36,15 +36,10 @@
     </plugins>
 </build>
 
-<repository>
-    <id>Repos-KarmaAPI</id>
-    <url>https://github.com/KarmaConfigs/Repos/raw/KarmaAPI/</url>
- </repository>
-
 <dependency>
     <groupId>ml.karmaconfigs</groupId>
     <artifactId>KarmaAPI-{Bukkit/Bungee/Common/Bundle/Velocity}</artifactId>
-    <version>1.2.7</version>
+    <version>1.2.8-SNAPSHOT</version>
     <scope>compile</scope>
 </dependency>
 ```
