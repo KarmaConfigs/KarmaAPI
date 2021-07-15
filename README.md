@@ -39,7 +39,7 @@
 <dependency>
     <groupId>ml.karmaconfigs</groupId>
     <artifactId>KarmaAPI-{Bukkit/Bungee/Common/Bundle/Velocity}</artifactId>
-    <version>1.2.9-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <scope>compile</scope>
 </dependency>
 ```
