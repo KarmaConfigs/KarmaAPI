@@ -19,22 +19,6 @@
  **/
 package ml.karmaconfigs.api.bungee.makeiteasy;
 
-import com.google.common.base.Preconditions;
-import ml.karmaconfigs.api.common.boss.BossColor;
-import ml.karmaconfigs.api.common.boss.BossFlag;
-import ml.karmaconfigs.api.common.boss.BossType;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.chat.ComponentSerializer;
-import net.md_5.bungee.protocol.DefinedPacket;
-import net.md_5.bungee.protocol.ProtocolConstants;
-import net.md_5.bungee.protocol.packet.BossBar;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.*;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -59,6 +43,22 @@ import java.util.*;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import com.google.common.base.Preconditions;
+import ml.karmaconfigs.api.common.boss.BossColor;
+import ml.karmaconfigs.api.common.boss.BossFlag;
+import ml.karmaconfigs.api.common.boss.BossType;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.chat.ComponentSerializer;
+import net.md_5.bungee.protocol.DefinedPacket;
+import net.md_5.bungee.protocol.ProtocolConstants;
+import net.md_5.bungee.protocol.packet.BossBar;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
 
 /**
  * Represents a boss bar
@@ -382,7 +382,7 @@ class BarUtil {
             titleBuilder.append(component.toString()).append(", ");
         }
         return "BossBar(" +
-                "title=" + titleBuilder.toString() +
+                "title=" + titleBuilder +
                 ", color=" + color +
                 ", style=" + style +
                 ", flags=" + flags +

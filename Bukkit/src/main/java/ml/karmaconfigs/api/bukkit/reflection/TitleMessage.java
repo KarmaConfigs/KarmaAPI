@@ -1,14 +1,5 @@
 package ml.karmaconfigs.api.bukkit.reflection;
 
-import ml.karmaconfigs.api.bukkit.server.VersionUtils;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Constructor;
-import java.util.Objects;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -33,6 +24,15 @@ import java.util.Objects;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import ml.karmaconfigs.api.bukkit.server.VersionUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Constructor;
+import java.util.Objects;
 
 /**
  * Title message

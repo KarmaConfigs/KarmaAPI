@@ -1,19 +1,5 @@
 package ml.karmaconfigs.api.bukkit.reflection;
 
-import ml.karmaconfigs.api.bukkit.server.VersionUtils;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Constructor;
-import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -38,6 +24,20 @@ import java.util.concurrent.TimeUnit;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import ml.karmaconfigs.api.bukkit.server.VersionUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Constructor;
+import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Action bar message

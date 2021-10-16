@@ -1,15 +1,5 @@
 package ml.karmaconfigs.api.velocity.makeiteasy;
 
-import com.velocitypowered.api.proxy.Player;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.title.Title;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.time.Duration;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -34,6 +24,16 @@ import java.time.Duration;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import com.velocitypowered.api.proxy.Player;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.title.Title;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.time.Duration;
 
 /**
  * Title message

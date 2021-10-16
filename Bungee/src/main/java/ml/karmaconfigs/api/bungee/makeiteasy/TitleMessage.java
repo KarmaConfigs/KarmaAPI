@@ -1,13 +1,5 @@
 package ml.karmaconfigs.api.bungee.makeiteasy;
 
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.Title;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -32,6 +24,14 @@ import org.jetbrains.annotations.Nullable;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.Title;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Title message

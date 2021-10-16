@@ -1,14 +1,5 @@
 package ml.karmaconfigs.api.bukkit.server;
 
-import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import ml.karmaconfigs.api.common.utils.string.VersionComparator;
-import ml.karmaconfigs.api.common.utils.string.util.VersionDiff;
-import org.bukkit.Bukkit;
-import org.bukkit.Server;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -33,6 +24,15 @@ import org.jetbrains.annotations.Nullable;
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
+
+import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.VersionComparator;
+import ml.karmaconfigs.api.common.utils.string.util.VersionDiff;
+import org.bukkit.Bukkit;
+import org.bukkit.Server;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Minecraft bukkit server
