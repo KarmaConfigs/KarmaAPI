@@ -26,12 +26,27 @@ package ml.karmaconfigs.api.common.boss;
  */
 
 /**
- * Available boss bar style enum
+ * Valid boss bar type
  */
 public enum BossType {
-    /** Minecraft bar style in a compatible enumeration */ SOLID,
-    /** Minecraft bar style in a compatible enumeration */ SEGMENTED_6,
-    /** Minecraft bar style in a compatible enumeration */ SEGMENTED_10,
-    /** Minecraft bar style in a compatible enumeration */ SEGMENTED_12,
-    /** Minecraft bar style in a compatible enumeration */ SEGMENTED_20;
+    /**
+     * Solid boss bar HP display
+     */
+    SOLID,
+    /**
+     * Divided in 6 blocks boss bar HP display
+     */
+    SEGMENTED_6,
+    /**
+     * Divided in 10 blocks boss bar HP display
+     */
+    SEGMENTED_10,
+    /**
+     * Divided in 12 blocks boss bar HP display
+     */
+    SEGMENTED_12,
+    /**
+     * Divided in 20 blocks boss bar HP display
+     */
+    SEGMENTED_20;
 }

@@ -1,13 +1,5 @@
 package ml.karmaconfigs.api.common.karmafile.karmayaml;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
-import java.nio.file.Path;
-import java.util.Map;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -33,79 +25,90 @@ import java.util.Map;
  *  SOFTWARE.
  */
 
+import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.Reader;
+import java.nio.file.Path;
+import java.util.Map;
+
 /**
  * Karma yaml manager source
  */
 public final class KYMSource {
 
+    /**
+     * The yaml source
+     */
     private final Object source;
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KYMSource(final Reader configuration) {
-        source = configuration;
+        this.source = configuration;
     }
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KYMSource(final InputStream configuration) {
-        source = configuration;
+        this.source = configuration;
     }
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param configuration the configuration
-     * @param isPath if the
+     * @param configuration the yaml configuration/path
+     * @param isPath if the yaml configuration string is a path
      */
     public KYMSource(final String configuration, final boolean isPath) {
         if (isPath) {
-            source = new File(configuration);
+            this.source = new File(configuration);
         } else {
-            source = configuration;
+            this.source = configuration;
         }
     }
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KYMSource(final File configuration) {
-        source = configuration;
+        this.source = configuration;
     }
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KYMSource(final Path configuration) {
-        source = configuration;
+        this.source = configuration;
     }
 
     /**
-     * Initialize the KarmaConfigurationSource
+     * Initialize the yaml source
      *
-     * @param values the values
+     * @param values the yaml key/value
      */
     public KYMSource(final Map<?, ?> values) {
-        source = values;
+        this.source = values;
     }
 
     /**
-     * Get KarmaConfigurationSource source
+     * Get the yaml source
      *
-     * @return the KarmaYamlManager file source
+     * @return the yaml source
      */
     @NotNull
-    public final Object getSource() {
-        return source;
+    public Object getSource() {
+        return this.source;
     }
 }

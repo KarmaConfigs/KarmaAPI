@@ -26,9 +26,26 @@ package ml.karmaconfigs.api.common.utils.enums;
  */
 
 /**
- * KarmaLogger logs extension
+ * Karma logs known file extensions
  */
 public enum LogExtension {
-    /** Classic log file extension */LOG,
-    /** New and modern look-like log file */MARKDOWN
+    /**
+     * Classic .log file
+     */
+    LOG,
+    /**
+     * Modern and good-look .md file
+     */
+    MARKDOWN;
+
+    /**
+     * Get the log extension as a file extension
+     *
+     * @return the log extension as file extension
+     */
+    public String fileExtension() {
+        if (this == MARKDOWN)
+            return "md";
+        return "log";
+    }
 }

@@ -25,18 +25,34 @@ package ml.karmaconfigs.api.common.boss;
  *  SOFTWARE.
  */
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
- * An exception when the API tries to load a boss bar from an ID but it doesn't
- * exist
+ * This exception is thrown when a boss bar is tried to fetch
+ * with an invalid ID
  */
-public class BossNotFoundException extends Exception {
+public final class BossNotFoundException extends Exception {
+
+    private final Set<Integer> barIds = new LinkedHashSet<>();
 
     /**
      * Initialize the exception
      *
-     * @param bossId the boss message id
+     * @param bossId the boss id
      */
-    public BossNotFoundException(int bossId) {
+    public BossNotFoundException(final int bossId, final Set<Integer> ids) {
         super("BossMessage with id " + bossId + " not found");
+
+        barIds.addAll(ids);
+    }
+
+    /**
+     * Get the valid boss bar ids
+     *
+     * @return the valid boss bar ids
+     */
+    public Integer[] validIds() {
+        return barIds.toArray(new Integer[0]);
     }
 }

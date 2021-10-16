@@ -6,7 +6,7 @@ import ml.karmaconfigs.api.common.boss.BossType;
 import ml.karmaconfigs.api.common.boss.ProgressiveBar;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.AdvancedSimpleTimer;
-import ml.karmaconfigs.api.common.utils.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 

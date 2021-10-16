@@ -6,11 +6,11 @@ import ml.karmaconfigs.api.common.boss.BossNotFoundException;
 import ml.karmaconfigs.api.common.boss.BossType;
 import ml.karmaconfigs.api.common.boss.ProgressiveBar;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.timer.AdvancedSimpleTimer;
-import ml.karmaconfigs.api.common.utils.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.TextColor;
 
 import java.util.*;
 
@@ -79,6 +79,8 @@ public final class BossMessage {
 
         message = _message;
         live_time = duration;
+
+        TextColor.color(0, 0, 0).examinableName();
 
         total_ids++;
 

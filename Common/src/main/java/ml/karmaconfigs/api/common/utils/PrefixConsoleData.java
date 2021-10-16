@@ -1,13 +1,5 @@
 package ml.karmaconfigs.api.common.utils;
 
-import ml.karmaconfigs.api.common.Console;
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.enums.Level;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.util.HashMap;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -33,45 +25,56 @@ import java.util.HashMap;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.Serializable;
+import java.util.HashMap;
+
 /**
- * The prefixes of a karma source when running {@link Console#send(KarmaSource, String, Level)}
- * or {@link Console#send(KarmaSource, String, Level, Object...)}
+ * Karma console prefix data
  */
 public final class PrefixConsoleData implements Serializable {
 
-    private final static HashMap<KarmaSource, String> okPrefix = new HashMap<>();
-    private final static HashMap<KarmaSource, String> infoPrefix = new HashMap<>();
-    private final static HashMap<KarmaSource, String> warnPrefix = new HashMap<>();
-    private final static HashMap<KarmaSource, String> gravPrefix = new HashMap<>();
+    /**
+     * Map containing source => ok prefix
+     */
+    private static final HashMap<KarmaSource, String> okPrefix = new HashMap<>();
+    /**
+     * Map containing source => info prefix
+     */
+    private static final HashMap<KarmaSource, String> infoPrefix = new HashMap<>();
+    /**
+     * Map containing source => warning prefix
+     */
+    private static final HashMap<KarmaSource, String> warnPrefix = new HashMap<>();
+    /**
+     * Map containing source => grave prefix
+     */
+    private static final HashMap<KarmaSource, String> gravPrefix = new HashMap<>();
 
+    /**
+     * The prefix console data source
+     */
     private final KarmaSource Main;
 
     /**
      * Initialize the prefix console data
-     * storager
      *
-     * @param p the plugin
+     * @param p the source owner
      */
-    public PrefixConsoleData(@NotNull final KarmaSource p) {
-        Main = p;
+    public PrefixConsoleData(final @NotNull KarmaSource p) {
+        this.Main = p;
     }
 
     /**
-     * Set the ok prefix
+     * Set the OK prefix
      *
      * @param prefix the prefix
      */
-    public final void setOkPrefix(@NotNull final String prefix) {
-        okPrefix.put(Main, StringUtils.toColor(prefix));
-    }
-
-    /**
-     * Set the info prefix
-     *
-     * @param prefix the prefix
-     */
-    public final void setInfoPrefix(@NotNull final String prefix) {
-        infoPrefix.put(Main, StringUtils.toColor(prefix));
+    public void setOkPrefix(final @NotNull String prefix) {
+        okPrefix.put(this.Main, StringUtils.toConsoleColor(prefix));
     }
 
     /**
@@ -79,52 +82,61 @@ public final class PrefixConsoleData implements Serializable {
      *
      * @param prefix the prefix
      */
-    public final void setWarnPrefix(@NotNull final String prefix) {
-        warnPrefix.put(Main, StringUtils.toColor(prefix));
+    public void setInfoPrefix(final @NotNull String prefix) {
+        infoPrefix.put(this.Main, StringUtils.toConsoleColor(prefix));
     }
 
     /**
-     * Set the info prefix
+     * Set the warning prefix
      *
      * @param prefix the prefix
      */
-    public final void setGravPrefix(@NotNull final String prefix) {
-        gravPrefix.put(Main, StringUtils.toColor(prefix));
+    public void setWarnPrefix(final @NotNull String prefix) {
+        warnPrefix.put(this.Main, StringUtils.toConsoleColor(prefix));
+    }
+
+    /**
+     * Set the grave prefix
+     *
+     * @param prefix the prefix
+     */
+    public void setGravePrefix(final @NotNull String prefix) {
+        gravPrefix.put(this.Main, StringUtils.toConsoleColor(prefix));
+    }
+
+    /**
+     * Get the OK prefix
+     *
+     * @return the prefix
+     */
+    public String getOkPrefix() {
+        return okPrefix.getOrDefault(this.Main, StringUtils.toConsoleColor("&b[ &fSERVER &b] &aOK: &b"));
     }
 
     /**
      * Get the info prefix
      *
-     * @return a String
+     * @return the info prefix
      */
-    public final String getOkPrefix() {
-        return okPrefix.getOrDefault(Main, "&b[ &fSERVER &b] &aOK: &b");
-    }
-
-    /**
-     * Get the info prefix
-     *
-     * @return a String
-     */
-    public final String getInfoPrefix() {
-        return infoPrefix.getOrDefault(Main, "&b[ &fSERVER &b] &7INFO: &b");
+    public String getInfoPrefix() {
+        return infoPrefix.getOrDefault(this.Main, StringUtils.toConsoleColor("&b[ &fSERVER &b] &7INFO: &b"));
     }
 
     /**
      * Get the warning prefix
      *
-     * @return a String
+     * @return the warning prefix
      */
-    public final String getWarningPrefix() {
-        return warnPrefix.getOrDefault(Main, "&b[ &fSERVER &b] &aWARNING&7: &b");
+    public String getWarningPrefix() {
+        return warnPrefix.getOrDefault(this.Main, StringUtils.toConsoleColor("&b[ &fSERVER &b] &aWARNING&7: &b"));
     }
 
     /**
-     * Get the grave prefix
+     * Set the grave prefix
      *
-     * @return a String
+     * @return the grave prefix
      */
-    public final String getGravePrefix() {
-        return gravPrefix.getOrDefault(Main, "&b[ &fSERVER &b] &cGRAVE&7: &b");
+    public String getGravePrefix() {
+        return gravPrefix.getOrDefault(this.Main, StringUtils.toConsoleColor("&b[ &fSERVER &b] &cGRAVE&7: &b"));
     }
 }

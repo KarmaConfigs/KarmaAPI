@@ -1,19 +1,5 @@
 package ml.karmaconfigs.api.common.karmafile.karmayaml;
 
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.FileUtilities;
-import ml.karmaconfigs.api.common.utils.StringUtils;
-import ml.karmaconfigs.api.common.utils.reader.BoundedBufferedReader;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.*;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -39,25 +25,69 @@ import java.util.*;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.reader.BoundedBufferedReader;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.util.*;
+
 /**
- * Karma yaml file manager
+ * Karma yaml manager
  */
 public final class KarmaYamlManager {
 
+    /**
+     * Defaults
+     */
+    @Nullable
+    private final KarmaYamlManager def;
+
+    /**
+     * Yaml keys and values
+     */
+    private final Map<String, Object> map = new LinkedHashMap<>();
+
+    /**
+     * Yaml children ( sections )
+     */
+    private final Set<KarmaYamlManager> children = new HashSet<>();
+
+    /**
+     * The yaml source
+     */
+    private final KYMSource sourceRoot;
+
+    /**
+     * The section spacer (key 'spacer == .' section name => Hello.World )
+     */
     private char spacer = '.';
 
-    private final Map<String, Object> map = new LinkedHashMap<>();
-    private final Set<KarmaYamlManager> children = new HashSet<>();
-    private final KYMSource sourceRoot;
+    /**
+     * The parent yaml ( only valid if a section )
+     */
     private KarmaYamlManager parent = null;
+
+    /**
+     * Root key
+     */
     private String root = "";
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param source the karma source
-     * @param name the file name
-     * @param sub the file sub directories
+     * @param source the yaml source
+     * @param name the yaml file name
+     * @param sub the yaml file folder
      */
     public KarmaYamlManager(final KarmaSource source, String name, final String... sub) {
         if (!name.endsWith(".no_extension")) {
@@ -65,378 +95,497 @@ public final class KarmaYamlManager {
             if (StringUtils.isNullOrEmpty(extension))
                 name = name + ".yml";
         }
-
         try {
             File file;
             String currPath = "";
-
             if (sub.length > 0) {
                 StringBuilder pathBuilder = new StringBuilder();
                 for (String path : sub)
                     pathBuilder.append(File.separator).append(path);
-
                 currPath = pathBuilder.toString();
-
                 file = new File(source.getDataPath().toFile() + currPath, name);
             } else {
                 file = new File(source.getDataPath().toFile(), name);
             }
-
             if (FileUtilities.isValidFile(file)) {
                 try {
-                    Reader reader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                    BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
                     Yaml yaml = new Yaml();
-                    Map<String, Object> values = yaml.load(reader);
+                    Map<String, Object> values = yaml.load(boundedBufferedReader);
                     if (values != null)
-                        map.putAll(values);
+                        this.map.putAll(values);
                 } catch (Throwable ex) {
                     ex.printStackTrace();
                 }
-
-                sourceRoot = new KYMSource(file);
+                this.sourceRoot = new KYMSource(file);
             } else {
                 throw new RuntimeException("Tried to setup KarmaYamlManager for invalid file path/name ( Path: " + currPath + ", File name: " + name + " ) ");
             }
         } catch (Throwable ex) {
             throw new RuntimeException("Tried to setup KarmaYamlManager but something went wrong ( " + ex.fillInStackTrace() + " )");
         }
+        this.def = null;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KarmaYamlManager(final Reader configuration) {
         Yaml yaml = new Yaml();
         Map<String, Object> values = yaml.load(configuration);
         if (values != null)
-            map.putAll(values);
-
-        sourceRoot = new KYMSource(configuration);
+            this.map.putAll(values);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = null;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param configuration the configuration
+     * @param configuration the yaml
      */
     public KarmaYamlManager(final InputStream configuration) {
         Yaml yaml = new Yaml();
         Map<String, Object> values = yaml.load(configuration);
         if (values != null)
-            map.putAll(values);
-
-        sourceRoot = new KYMSource(configuration);
+            this.map.putAll(values);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = null;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param configuration the configuration
-     * @param isPath if the
+     * @param configuration the yaml configuration/path
+     * @param isPath if the yaml configuration string is a path
      */
     public KarmaYamlManager(final String configuration, final boolean isPath) {
         if (isPath) {
             File file = new File(configuration);
             try {
-                Reader reader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
                 Yaml yaml = new Yaml();
-                Map<String, Object> values = yaml.load(reader);
+                Map<String, Object> values = yaml.load(boundedBufferedReader);
                 if (values != null)
-                    map.putAll(values);
+                    this.map.putAll(values);
             } catch (Throwable ex) {
                 ex.printStackTrace();
             }
+            this.sourceRoot = new KYMSource(configuration, true);
+        } else {
+            try {
+                Yaml yaml = new Yaml();
+                Path file = Files.createTempFile("karmayaml", StringUtils.randomString(8, StringUtils.StringGen.NUMBERS_AND_LETTERS, StringUtils.StringType.RANDOM_SIZE), (FileAttribute<?>[]) new FileAttribute[0]);
+                Files.write(file, configuration.getBytes(StandardCharsets.UTF_8));
+                Map<String, Object> values = yaml.load(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8));
+                if (values != null)
+                    this.map.putAll(values);
+                Files.deleteIfExists(file);
+            } catch (Throwable ignored) {
+            }
+            this.sourceRoot = new KYMSource(configuration, false);
+        }
+        this.def = null;
+    }
 
-            sourceRoot = new KYMSource(configuration, true);
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param configuration the yaml
+     */
+    public KarmaYamlManager(final File configuration) {
+        try {
+            BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration), StandardCharsets.UTF_8));
+            Yaml yaml = new Yaml();
+            Map<String, Object> values = yaml.load(boundedBufferedReader);
+            if (values != null)
+                this.map.putAll(values);
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = null;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param configuration the yaml
+     */
+    public KarmaYamlManager(final Path configuration) {
+        try {
+            BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration.toFile()), StandardCharsets.UTF_8));
+            Yaml yaml = new Yaml();
+            Map<String, Object> values = yaml.load(boundedBufferedReader);
+            if (values != null)
+                this.map.putAll(values);
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = null;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param values the yaml key/value
+     */
+    public KarmaYamlManager(final Map<?, ?> values) {
+        for (Object key : values.keySet())
+            this.map.put(key.toString(), values.get(key));
+        this.sourceRoot = new KYMSource(values);
+        this.def = null;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param defaults the yaml defaults
+     * @param source the yaml source
+     * @param name the yaml file name
+     * @param sub the yaml file folder
+     */
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final KarmaSource source, String name, final String... sub) {
+        if (!name.endsWith(".no_extension")) {
+            String extension = FileUtilities.getExtension(name);
+            if (StringUtils.isNullOrEmpty(extension))
+                name = name + ".yml";
+        }
+        try {
+            File file;
+            String currPath = "";
+            if (sub.length > 0) {
+                StringBuilder pathBuilder = new StringBuilder();
+                for (String path : sub)
+                    pathBuilder.append(File.separator).append(path);
+                currPath = pathBuilder.toString();
+                file = new File(source.getDataPath().toFile() + currPath, name);
+            } else {
+                file = new File(source.getDataPath().toFile(), name);
+            }
+            if (FileUtilities.isValidFile(file)) {
+                try {
+                    BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                    Yaml yaml = new Yaml();
+                    Map<String, Object> values = yaml.load(boundedBufferedReader);
+                    if (values != null)
+                        this.map.putAll(values);
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                }
+                this.sourceRoot = new KYMSource(file);
+            } else {
+                throw new RuntimeException("Tried to setup KarmaYamlManager for invalid file path/name ( Path: " + currPath + ", File name: " + name + " ) ");
+            }
+        } catch (Throwable ex) {
+            throw new RuntimeException("Tried to setup KarmaYamlManager but something went wrong ( " + ex.fillInStackTrace() + " )");
+        }
+        this.def = defaults;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param defaults the yaml defaults
+     * @param configuration the yaml
+     */
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final Reader configuration) {
+        Yaml yaml = new Yaml();
+        Map<String, Object> values = yaml.load(configuration);
+        if (values != null)
+            this.map.putAll(values);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = defaults;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param defaults the yaml defaults
+     * @param configuration the yaml
+     */
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final InputStream configuration) {
+        Yaml yaml = new Yaml();
+        Map<String, Object> values = yaml.load(configuration);
+        if (values != null)
+            this.map.putAll(values);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = defaults;
+    }
+
+    /**
+     * Initialize the karma yaml manager
+     *
+     * @param defaults the yaml defaults
+     * @param configuration the yaml configuration/path
+     * @param isPath if the yaml configuration string is a path
+     */
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final String configuration, final boolean isPath) {
+        if (isPath) {
+            File file = new File(configuration);
+            try {
+                BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+                Yaml yaml = new Yaml();
+                Map<String, Object> values = yaml.load(boundedBufferedReader);
+                if (values != null)
+                    this.map.putAll(values);
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+            }
+            this.sourceRoot = new KYMSource(configuration, true);
         } else {
             Yaml yaml = new Yaml();
             Map<String, Object> values = yaml.load(configuration);
             if (values != null)
-                map.putAll(values);
-
-            sourceRoot = new KYMSource(configuration, false);
+                this.map.putAll(values);
+            this.sourceRoot = new KYMSource(configuration, false);
         }
+        this.def = defaults;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param configuration the configuration
+     * @param defaults the yaml defaults
+     * @param configuration the yaml
      */
-    public KarmaYamlManager(final File configuration) {
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final File configuration) {
         try {
-            Reader reader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration), StandardCharsets.UTF_8));
+            BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration), StandardCharsets.UTF_8));
             Yaml yaml = new Yaml();
-            Map<String, Object> values = yaml.load(reader);
+            Map<String, Object> values = yaml.load(boundedBufferedReader);
             if (values != null)
-                map.putAll(values);
+                this.map.putAll(values);
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
-
-        sourceRoot = new KYMSource(configuration);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = defaults;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param configuration the configuration
+     * @param defaults the yaml defaults
+     * @param configuration the yaml
      */
-    public KarmaYamlManager(final Path configuration) {
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final Path configuration) {
         try {
-            Reader reader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration.toFile()), StandardCharsets.UTF_8));
+            BoundedBufferedReader boundedBufferedReader = new BoundedBufferedReader(new InputStreamReader(new FileInputStream(configuration.toFile()), StandardCharsets.UTF_8));
             Yaml yaml = new Yaml();
-            Map<String, Object> values = yaml.load(reader);
+            Map<String, Object> values = yaml.load(boundedBufferedReader);
             if (values != null)
-                map.putAll(values);
+                this.map.putAll(values);
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
-
-        sourceRoot = new KYMSource(configuration);
+        this.sourceRoot = new KYMSource(configuration);
+        this.def = defaults;
     }
 
     /**
-     * Initialize the KarmaConfiguration
+     * Initialize the karma yaml manager
      *
-     * @param values the values
+     * @param defaults the yaml defaults
+     * @param values the yaml key/value
      */
-    public KarmaYamlManager(final Map<?, ?> values) {
-        for (Object key : values.keySet()) map.put(key.toString(), values.get(key));
-
-        sourceRoot = new KYMSource(values);
+    public KarmaYamlManager(final @NotNull KarmaYamlManager defaults, final Map<?, ?> values) {
+        for (Object key : values.keySet())
+            this.map.put(key.toString(), values.get(key));
+        this.sourceRoot = new KYMSource(values);
+        this.def = defaults;
     }
 
     /**
-     * Set this manager spacer character
+     * Set the manager spacer
      *
-     * @param spacerChar the new spacer character ( . by default )
+     * @param spacerChar the manager spacer
      * @return this instance
      */
     public KarmaYamlManager spacer(final char spacerChar) {
-        spacer = spacerChar;
+        this.spacer = spacerChar;
+        return this;
+    }
+
+    /**
+     * Update the current manager
+     *
+     * @param configuration the configuration to update from
+     * @param addNew add non-existent keys
+     * @param ignore ignored keys
+     */
+    public void update(final KarmaYamlManager configuration, final boolean addNew, final String... ignore) {
+        List<String> ignored = Arrays.asList(ignore);
+        if (addNew) {
+            for (String key : getKeySet()) {
+                if (!ignored.contains(key))
+                    set(key, configuration.get(key, get(key)));
+            }
+        } else {
+            for (String key : getKeySet()) {
+                if (!ignored.contains(key))
+                    set(key, configuration.get(key, get(key)));
+            }
+        }
+    }
+
+    /**
+     * Set the yaml value
+     *
+     * @param path the key path
+     * @param value the key value
+     * @return this instance
+     */
+    @NotNull
+    public KarmaYamlManager set(final String path, final Object value) {
+        if (path.contains(String.valueOf(this.spacer))) {
+            String[] data = path.split(StringUtils.escapeString(String.valueOf(this.spacer)));
+            String realPath = data[data.length - 1];
+            data = Arrays.<String>copyOf(data, data.length - 1);
+            KarmaYamlManager last = this;
+            for (String section : data)
+                last = last.getSection(section);
+            last.set(realPath, value);
+            return last;
+        }
+        this.map.put(path, value);
+        return this;
+    }
+
+    /**
+     * Store an object instance
+     *
+     * @param path the instance object path
+     * @param object the object to store
+     * @return this instance
+     */
+    @NotNull
+    public <T> KarmaYamlManager store(final String path, final T object) {
+        set(path, StringUtils.serialize(object));
 
         return this;
     }
 
     /**
-     * Update the current values
+     * Get the yaml source root
      *
-     * @param configuration the other karma configuration
-     * @param addNew add non-added paths
-     * @param ignore the keys to ignore when updating
-     */
-    public final void update(final KarmaYamlManager configuration, final boolean addNew, final String... ignore) {
-        List<String> ignored = Arrays.asList(ignore);
-        if (addNew) {
-            for (String key : getKeySet()) {
-                if (!ignored.contains(key)) {
-                    set(key, configuration.get(key, get(key)));
-                }
-            }
-        } else {
-            for (String key : getKeySet()) {
-                if (!ignored.contains(key)) {
-                    set(key, configuration.get(key, get(key)));
-                }
-            }
-        }
-    }
-
-    /**
-     * Set a path value
-     *
-     * @param path the path
-     * @param value the value
-     *
-     * @return the KarmaConfiguration section where the new
-     * variable has been set or updated, if no section is present, the
-     * current karma configuration will be returned
+     * @return the yaml source root
      */
     @NotNull
-    public final KarmaYamlManager set(final String path, final Object value) {
-        if (path.contains(String.valueOf(spacer))) {
-            String[] data = path.split(StringUtils.escapeString(String.valueOf(spacer)));
-            String realPath = data[data.length - 1];
-            data = Arrays.copyOf(data, data.length - 1);
-
-            KarmaYamlManager last = this;
-            for (String section : data) {
-                last = last.getSection(section);
-            }
-
-            last.set(realPath, value);
-            return last;
-        } else {
-            map.put(path, value);
-            return this;
-        }
+    public KYMSource getSourceRoot() {
+        return this.sourceRoot;
     }
 
     /**
-     * Get from where this configuration
-     * has been obtained
+     * Get the yaml reloader
      *
-     * @return the KarmaConfiguration source
-     */
-    @NotNull
-    public final KYMSource getSourceRoot() {
-        return sourceRoot;
-    }
-
-    /**
-     * Get a new reloader for this KarmaConfiguration
-     *
-     * @return a reloader for this KarmaConfiguration
-     *
-     * RETURNS NULL IF THE SOURCE FOR THIS CONFIGURATION
-     * IS NOT A {@link File} OR {@link Path}
+     * @return the yaml reloader ( only valid for file/path/configuration path yaml
+     * generated sources )
      */
     @Nullable
-    public final YamlReloader getReloader() {
-        if (sourceRoot.getSource() instanceof File || sourceRoot.getSource() instanceof Path)
+    public YamlReloader getReloader() {
+        if (this.sourceRoot.getSource() instanceof File || this.sourceRoot.getSource() instanceof Path)
             return new YamlReloader(this);
 
         return null;
     }
 
     /**
-     * Get the root path
+     * Get the yaml root key
      *
-     * @return the root path
+     * @return the yaml root key
      */
     @NotNull
-    public final String getRoot() {
-        return root;
+    public String getRoot() {
+        return this.root;
     }
 
     /**
-     * Get the KarmaConfiguration parent
+     * Get the yaml parent
      *
-     * @return the KarmaConfiguration parent
+     * @return the yaml parent
      */
     @Nullable
-    public final KarmaYamlManager getParent() {
-        return parent;
+    public KarmaYamlManager getParent() {
+        return this.parent;
     }
 
     /**
-     * Get an array of parents of parents
+     * Get the yaml parents
      *
-     * @return the KarmaConfiguration parent tree
+     * @return all the yaml parents
      */
     @NotNull
-    public final KarmaYamlManager[] getParents() {
+    public KarmaYamlManager[] getParents() {
         KarmaYamlManager parent = getParent();
         List<KarmaYamlManager> list = new ArrayList<>();
-        if (parent != null) {
+        if (parent != null)
             do {
                 parent = parent.getParent();
-                if (parent != null) {
-                    list.add(parent);
-                }
+                if (parent == null)
+                    continue;
+                list.add(parent);
             } while (parent != null);
-        }
-
-        return list.toArray(new KarmaYamlManager[0]);
+        return list.<KarmaYamlManager>toArray(new KarmaYamlManager[0]);
     }
 
     /**
-     * Get an array of the current children for
-     * this configuration
+     * Get the yaml children
      *
-     * @return this KarmaConfiguration children tree
+     * @return all the yaml children
      */
     @NotNull
-    public final KarmaYamlManager[] getChildren() {
+    public KarmaYamlManager[] getChildren() {
         List<KarmaYamlManager> childtree = new ArrayList<>();
-        for (KarmaYamlManager child : children) {
+        for (KarmaYamlManager child : this.children) {
             childtree.add(child);
             childtree.addAll(Arrays.asList(child.getChildren()));
         }
-
-        return childtree.toArray(new KarmaYamlManager[0]);
+        return childtree.<KarmaYamlManager>toArray(new KarmaYamlManager[0]);
     }
 
     /**
-     * Get the KarmaConfiguration tree master
+     * Get the master tree of the yaml parent
      *
-     * @return the KarmaConfiguration main configuration
+     * @return the master tree of the yaml parent
      */
     @NotNull
-    public final KarmaYamlManager getTreeMaster() {
+    public KarmaYamlManager getTreeMaster() {
         KarmaYamlManager parent = getParent();
         if (parent != null) {
-            do {
-                if (parent.getParent() != null) {
-                    parent = parent.getParent();
-                } else {
-                    break;
-                }
-            } while (true);
+            while (parent.getParent() != null)
+                parent = parent.getParent();
         } else {
             parent = this;
         }
-
         return parent;
     }
 
     /**
-     * Save the made changes to the file
+     * Save the current yaml
      *
-     * @param target the target file
-     *
-     * @return the result
+     * @param target the file to save in
+     * @return this instance
      */
     @NotNull
-    public final KarmaYamlManager save(final File target) {
-        if (parent != null) {
+    public KarmaYamlManager save(final File target) {
+        if (this.parent != null)
             return getTreeMaster().save(target);
-        } else {
-            for (KarmaYamlManager yaml : getChildren()) {
-                KarmaYamlManager parentYaml = yaml.getParent();
-                if (parentYaml != null)
-                    parentYaml.set(yaml.getRoot(), yaml.map);
-            }
-
-            DumperOptions options = new DumperOptions();
-            options.setIndent(2);
-            options.setPrettyFlow(true);
-            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-
-            try {
-                Yaml yaml = new Yaml(options);
-                yaml.dump(map, new FileWriter(target));
-
-                return new KarmaYamlManager(target);
-            } catch (Throwable ex) {
-                ex.printStackTrace();
-                return this;
-            }
+        for (KarmaYamlManager yaml : getChildren()) {
+            KarmaYamlManager parentYaml = yaml.getParent();
+            if (parentYaml != null)
+                parentYaml.set(yaml.getRoot(), yaml.map);
         }
-    }
-
-    /**
-     * Save the made changes to the file
-     *
-     * @param target the target file
-     * @param source the source that wants to
-     *                 save the file
-     * @param resource the karma source internal resource
-     *                 name
-     *
-     * @return the result
-     */
-    @NotNull
-    public final KarmaYamlManager save(final File target, final KarmaSource source, final String resource) {
-        save(target);
-
+        DumperOptions options = new DumperOptions();
+        options.setIndent(2);
+        options.setPrettyFlow(true);
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         try {
-            FileCopy copy = new FileCopy(source, resource);
-            copy.copy(target);
-
+            Yaml yaml = new Yaml(options);
+            yaml.dump(this.map, new FileWriter(target));
             return new KarmaYamlManager(target);
         } catch (Throwable ex) {
             ex.printStackTrace();
@@ -445,393 +594,412 @@ public final class KarmaYamlManager {
     }
 
     /**
-     * Get a set of the configuration keys
+     * Save the current yaml
      *
-     * @return a set of available keys
+     * @param target the file to save in
+     * @param source the source to read defaults from
+     * @param resource the internal resource to read defaults from
+     * @return this instance
      */
     @NotNull
-    public final Set<String> getKeySet() {
-        return map.keySet();
-    }
-
-    /**
-     * Get an object
-     *
-     * @param path the object path
-     * @param def the object default
-     * @return the path result or default
-     */
-    public final Object get(final String path, final Object def) {
-        if (path.contains(String.valueOf(spacer))) {
-            String[] data = path.split(StringUtils.escapeString(String.valueOf(spacer)));
-            String realPath = data[data.length - 1];
-            data = Arrays.copyOf(data, data.length - 1);
-
-            KarmaYamlManager last = this;
-            for (String section : data) {
-                last = last.getSection(section);
-            }
-
-            return last.map.getOrDefault(realPath, def);
-        } else {
-            return map.getOrDefault(path, def);
+    public KarmaYamlManager save(final File target, final KarmaSource source, final String resource) {
+        save(target);
+        try {
+            FileCopy copy = new FileCopy(source, resource);
+            copy.copy(target);
+            return new KarmaYamlManager(target);
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            return this;
         }
     }
 
     /**
-     * Get an object
+     * Get the yaml keys
      *
-     * @param path the object path
-     * @return the path result or default
+     * @return the yaml key set
+     */
+    @NotNull
+    public Set<String> getKeySet() {
+        return this.map.keySet();
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
+     */
+    public Object get(final String path, final Object def) {
+        if (path.contains(String.valueOf(this.spacer))) {
+            String[] data = path.split(StringUtils.escapeString(String.valueOf(this.spacer)));
+            String realPath = data[data.length - 1];
+            data = Arrays.<String>copyOf(data, data.length - 1);
+            KarmaYamlManager last = this;
+            for (String section : data)
+                last = last.getSection(section);
+            return last.map.getOrDefault(realPath, def);
+        }
+        return this.map.getOrDefault(path, def);
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the key path
+     * @return the yaml value
      */
     @Nullable
-    public final Object get(final String path) {
-        if (path.contains(String.valueOf(spacer))) {
-            String[] data = path.split(StringUtils.escapeString(String.valueOf(spacer)));
+    public Object get(final String path) {
+        if (path.contains(String.valueOf(this.spacer))) {
+            String[] data = path.split(StringUtils.escapeString(String.valueOf(this.spacer)));
             String realPath = data[data.length - 1];
-            data = Arrays.copyOf(data, data.length - 1);
-
+            data = Arrays.<String>copyOf(data, data.length - 1);
             KarmaYamlManager last = this;
-            for (String section : data) {
+            for (String section : data)
                 last = last.getSection(section);
-            }
-
+            if (this.def != null)
+                return last.map.getOrDefault(realPath, this.def.get(path));
             return last.map.getOrDefault(realPath, null);
-        } else {
-            return map.getOrDefault(path, null);
         }
+        if (this.def != null)
+            return this.map.getOrDefault(path, this.def.get(path));
+        return this.map.getOrDefault(path, null);
     }
 
     /**
-     * Get a list of objects
+     * Get a value
      *
-     * @param path the objects path
-     * @return the objects
+     * @param path the key path
+     * @return the yaml value
      */
     @NotNull
-    public final List<Object> getList(final String path) {
-        Object value = get(path, null);
+    public List<Object> getList(final String path) {
+        Object value = get(path);
         List<Object> values = new ArrayList<>();
-
         if (value instanceof List) {
             List<?> list = (List<?>) value;
             values.addAll(list);
         }
-
         return values;
     }
 
     /**
-     * Get a list of objects
+     * Get a value
      *
-     * @param path the objects path
-     * @param defaults the default list objects
-     * @return the objects
+     * @param path the key path
+     * @param defaults the key default values
+     * @return the yaml value
      */
     @NotNull
-    public final List<Object> getList(final String path, final Object... defaults) {
+    public List<Object> getList(final String path, final Object... defaults) {
         Object value = get(path, Arrays.asList(defaults));
         List<Object> values = new ArrayList<>();
-
         if (value instanceof List) {
             List<?> list = (List<?>) value;
             values.addAll(list);
         }
-
         return values;
     }
 
     /**
-     * Get a string
+     * Get a value
      *
-     * @param path the string path
-     * @return the string
+     * @param path the key path
+     * @return the yaml value
      */
     @NotNull
-    public final String getString(final String path) {
-        Object value = get(path, null);
+    public String getString(final String path) {
+        Object value = get(path);
         if (value instanceof String)
             return (String) value;
-
         return "";
     }
 
     /**
-     * Get a string
+     * Get a value
      *
-     * @param path the string path
-     * @param def the default value
-     * @return the string
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
      */
-    public final String getString(final String path, final String def) {
+    public String getString(final String path, final String def) {
         Object value = get(path, def);
         if (value instanceof String)
             return (String) value;
-
         return def;
     }
 
     /**
-     * Get an integer
+     * Get a value
      *
-     * @param path the integer path
-     * @return the integer
+     * @param path the key path
+     * @return the yaml value
      */
-    public final int getInt(final String path) {
-        Object value = get(path, null);
+    public int getInt(final String path) {
+        Object value = get(path);
         if (value instanceof Integer)
             return (Integer) value;
-
         return -1;
     }
 
     /**
-     * Get an integer
+     * Get a value
      *
-     * @param path the integer path
-     * @param def the default value
-     * @return the integer
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
      */
-    public final int getInt(final String path, final int def) {
+    public int getInt(final String path, final int def) {
         Object value = get(path, def);
         if (value instanceof Integer)
             return (Integer) value;
-
         return def;
     }
 
     /**
-     * Get a double
+     * Get a value
      *
-     * @param path the double path
-     * @return the double
+     * @param path the key path
+     * @return the yaml value
      */
-    public final double getDouble(final String path) {
-        Object value = get(path, null);
+    public double getDouble(final String path) {
+        Object value = get(path);
         if (value instanceof Double)
             return (Double) value;
-
-        return -1D;
+        return -1.0D;
     }
 
     /**
-     * Get a double
+     * Get a value
      *
-     * @param path the double path
-     * @param def the default value
-     * @return the double
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
      */
-    public final double getDouble(final String path, final double def) {
+    public double getDouble(final String path, final double def) {
         Object value = get(path, def);
         if (value instanceof Double)
             return (Double) value;
-
         return def;
     }
 
     /**
-     * Get a long
+     * Get a value
      *
-     * @param path the long path
-     * @return the long
+     * @param path the key path
+     * @return the yaml value
      */
-    public final long getLong(final String path) {
-        Object value = get(path, null);
+    public long getLong(final String path) {
+        Object value = get(path);
         if (value instanceof Long)
             return (Long) value;
-
         return -1L;
     }
 
     /**
-     * Get a long
+     * Get a value
      *
-     * @param path the long path
-     * @param def the default value
-     * @return the long
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
      */
-    public final long getLong(final String path, final long def) {
+    public long getLong(final String path, final long def) {
         Object value = get(path, def);
         if (value instanceof Long)
             return (Long) value;
-
         return def;
     }
 
     /**
-     * Get a boolean
+     * Get a value
      *
-     * @param path the boolean path
-     * @return the boolean
+     * @param path the key path
+     * @return the yaml value
      */
-    public final boolean getBoolean(final String path) {
-        Object value = get(path, null);
+    public boolean getBoolean(final String path) {
+        Object value = get(path);
         if (value instanceof Boolean)
             return (Boolean) value;
-
         return false;
     }
 
     /**
-     * Get a boolean
+     * Get a value
      *
-     * @param path the boolean path
-     * @param def the default value
-     * @return the boolean
+     * @param path the key path
+     * @param def the key default value
+     * @return the yaml value
      */
-    public final boolean getBoolean(final String path, final boolean def) {
+    public boolean getBoolean(final String path, final boolean def) {
         Object value = get(path, def);
         if (value instanceof Boolean)
             return (Boolean) value;
-
         return def;
     }
 
     /**
-     * Get a list of strings
+     * Get a value
      *
-     * @param path the list path
-     * @return the list
+     * @param path the key path
+     * @return the yaml value
      */
     @NotNull
-    public final List<String> getStringList(final String path) {
+    public List<String> getStringList(final String path) {
         List<Object> list = getList(path);
         List<String> values = new ArrayList<>();
         for (Object object : list)
             values.add(object.toString());
-
         return values;
     }
 
     /**
-     * Get a list of strings
+     * Get a value
      *
-     * @param path the list path
-     * @param defaults the default list objects
-     * @return the list
+     * @param path the key path
+     * @param defaults the key default values
+     * @return the yaml value
      */
     @NotNull
-    public final List<String> getStringList(final String path, final String... defaults) {
+    public List<String> getStringList(final String path, final String... defaults) {
         Object value = get(path, Arrays.asList(defaults));
         List<String> values = new ArrayList<>();
         if (value instanceof List) {
             List<?> list = (List<?>) value;
-
             for (Object object : list)
                 values.add(object.toString());
         }
-
         return values;
     }
 
     /**
-     * Get the section
+     * Get an object instance
+     *
+     * @param path the instance string key
+     * @param <T> the instance type
+     * @return the instance object
+     */
+    @Nullable
+    public <T> T getInstance(final String path) {
+        return StringUtils.loadUnsafe(getString(path));
+    }
+
+    /**
+     * Get a section of the yaml
      *
      * @param path the section path
-     * @return the section karma configuration or a new
-     * configuration section if not exists/found
+     * @return the section
      */
     @NotNull
-    public final KarmaYamlManager getSection(final String path) {
+    public KarmaYamlManager getSection(final String path) {
         Object value = get(path);
         if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
             Map<String, Object> parsed = new LinkedHashMap<>();
             for (Object key : map.keySet())
                 parsed.put(key.toString(), map.get(key));
-
             KarmaYamlManager sub = new KarmaYamlManager(parsed);
             sub.parent = this;
             sub.root = path;
-            children.add(sub);
-
+            this.children.add(sub);
             return sub;
-        } else {
-            KarmaYamlManager configuration = new KarmaYamlManager(Collections.emptyMap());
-            configuration.parent = this;
-            configuration.root = path;
-            children.add(configuration);
-
-            return configuration;
         }
+        KarmaYamlManager configuration = new KarmaYamlManager(Collections.emptyMap());
+        configuration.parent = this;
+        configuration.root = path;
+        this.children.add(configuration);
+        return configuration;
     }
 
     /**
-     * Get the section
+     * Get a section of the yaml
      *
      * @param path the section path
      * @param defaults the section defaults
-     * @return a new configuration sections
+     * @return the section
      */
     @NotNull
-    public final KarmaYamlManager getSection(final String path, final KarmaYamlManager defaults) {
+    public KarmaYamlManager getSection(final String path, final KarmaYamlManager defaults) {
         Object value = get(path);
         if (value instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) value;
             Map<String, Object> parsed = new LinkedHashMap<>();
             for (Object key : map.keySet())
                 parsed.put(key.toString(), map.get(key));
-
             KarmaYamlManager sub = new KarmaYamlManager(parsed);
             sub.parent = this;
             sub.root = path;
-            children.add(sub);
-
+            this.children.add(sub);
             return sub;
-        } else {
-            KarmaYamlManager configuration = new KarmaYamlManager(defaults.map);
-            configuration.parent = this;
-            configuration.root = path;
-            children.add(configuration);
-
-            return configuration;
         }
+        KarmaYamlManager configuration = new KarmaYamlManager(defaults.map);
+        configuration.parent = this;
+        configuration.root = path;
+        this.children.add(configuration);
+        return configuration;
     }
 
     /**
-     * Get if the specified path is a section
+     * Get if the specified key is
+     * a section
      *
-     * @param path the configuration path
-     * @return if the specified path is a section
+     * @param path the key
+     * @return if the path is a section
      */
-    public final boolean isSection(final String path) {
+    public boolean isSection(final String path) {
         return get(path, "") instanceof LinkedHashMap;
     }
 
     /**
-     * Get if the path is set in the file
+     * Get if the specified key is
+     * set in the yaml file
      *
-     * @param path the value path
+     * @param path the key
      * @return if the path is set
      */
-    public final boolean isSet(final String path) {
-        return get(path, null) != null;
+    public boolean isSet(final String path) {
+        return (get(path, null) != null);
     }
 
     /**
-     * Get if the specified path is an instance of
-     * the expected type
+     * Get if the specified value matches with
+     * the expected value
      *
-     * @param path the path
-     * @param expected the expected type
-     * @return if the types match
+     * @param path the key
+     * @param expected the expected value type
+     * @return if the value matches with the expected
+     * value type
      */
-    public final boolean matchesWith(final String path, final Object expected) {
+    public boolean matchesWith(final String path, final Class<?> expected) {
         Object value = get(path);
         if (value != null)
-            return expected.getClass().isAssignableFrom(value.getClass());
-
+            return expected.isAssignableFrom(value.getClass());
         return false;
     }
 
     /**
-     * Get the yaml as string
+     * Yaml to string
      *
      * @return the yaml as string
      */
-    @Override
-    public @NotNull String toString() {
-        Yaml yaml = new Yaml();
-        return yaml.dump(map);
+    @NotNull
+    public String toString() {
+        DumperOptions options = new DumperOptions();
+        options.setIndent(2);
+        options.setPrettyFlow(true);
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        Yaml yaml = new Yaml(options);
+        return yaml.dump(this.map);
+    }
+
+    /**
+     * Get the yaml map of key/values
+     *
+     * @return the yaml key/value
+     */
+    @NotNull
+    Map<String, Object> getMap() {
+        return new LinkedHashMap<>(this.map);
     }
 }

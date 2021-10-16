@@ -26,11 +26,19 @@ package ml.karmaconfigs.api.common.timer;
  */
 
 /**
- * Advanced plugin timer
- * timer schedule condition
+ * Schedulers timers condition
  */
 public enum TimeCondition {
-    /** Execute if the current time is minus or equals to */ MINUS_TO,
-    /** Execute if the current time is over or equals to */ OVER_OF,
-    /** Execute if the current time is equals to */ EQUALS
+    /**
+     * If the time is under X
+     */
+    MINUS_TO,
+    /**
+     * If the time is over X
+     */
+    OVER_OF,
+    /**
+     * If the time is X
+     */
+    EQUALS;
 }

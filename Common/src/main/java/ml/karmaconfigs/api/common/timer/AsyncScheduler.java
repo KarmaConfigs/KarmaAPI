@@ -1,10 +1,5 @@
 package ml.karmaconfigs.api.common.timer;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -30,46 +25,133 @@ import java.util.TimerTask;
  *  SOFTWARE.
  */
 
-/**
- * Run tasks asynchronously
- */
-public final class AsyncScheduler implements Serializable {
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
 
-    private final static HashMap<Integer, Runnable> tasks = new HashMap<>();
-    private static int completed = 0;
-    private static Timer scheduler = null;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+
+/**
+ * Karma async scheduler
+ */
+public final class AsyncScheduler extends Scheduler implements Serializable {
 
     /**
-     * Initialize the AsyncScheduler
+     * A map of source/scheduler to fetch scheduler instead
+     * of creating tons of them
      */
-    public AsyncScheduler() {
-        if (scheduler == null) {
-            scheduler = new Timer();
+    private static final Map<KarmaSource, Scheduler> schedulers = new ConcurrentHashMap<>();
 
-            new Thread(() -> scheduler.schedule(new TimerTask() {
-                @Override
+    /**
+     * The tasks of the scheduler
+     */
+    private final Map<Integer, Runnable> tasks = new HashMap<>();
+
+    /**
+     * The scheduler timer
+     */
+    private final Timer scheduler;
+
+    /**
+     * When a task is started
+     */
+    private Consumer<Integer> start = null;
+    /**
+     * When a task is completed
+     */
+    private Consumer<Integer> complete = null;
+
+    /**
+     * The current task
+     */
+    private int current = 0;
+    /**
+     * Completed tasks
+     */
+    private int completed = 0;
+
+    /**
+     * Initialize the scheduler
+     *
+     * @param source the scheduler owner
+     */
+    public AsyncScheduler(final KarmaSource source) {
+        AsyncScheduler async = (AsyncScheduler) schedulers.getOrDefault(source, null);
+        if (async != null) {
+            this.tasks.putAll(async.tasks);
+            this.scheduler = async.scheduler;
+            this.start = async.start;
+            this.complete = async.complete;
+            this.current = async.current;
+            this.completed = async.completed;
+        } else {
+            this.scheduler = new Timer();
+            this.scheduler.schedule(new TimerTask() {
                 public void run() {
-                    int next = completed + 1;
-
-                    if (tasks.containsKey(next) && tasks.get(next) != null) {
-                        Runnable runnable = tasks.get(next);
-                        runnable.run();
-
-                        completed++;
+                    int next = AsyncScheduler.this.completed + 1;
+                    if (AsyncScheduler.this.tasks.containsKey(next) && AsyncScheduler.this.tasks.get(next) != null) {
+                        AsyncScheduler.this.current = next;
+                        if (AsyncScheduler.this.start != null)
+                            AsyncScheduler.this.start.accept(AsyncScheduler.this.current);
+                        (new Thread(AsyncScheduler.this.tasks.get(next))).start();
+                        AsyncScheduler.this.completed++;
+                        if (AsyncScheduler.this.start != null)
+                            AsyncScheduler.this.complete.accept(AsyncScheduler.this.current);
                     }
                 }
-            }, 0, 1000)).start();
+            }, 0L, 250);
+            schedulers.put(source, this);
         }
     }
 
     /**
-     * Add a task to the task list
+     * Action to perform when a task has been
+     * started
      *
-     * @param task the task
+     * @param taskId the action to perform
      */
-    public final void addTask(Runnable task) {
-        int amount = tasks.size();
+    @Override
+    public void onTaskStart(final Consumer<Integer> taskId) {
+        this.start = taskId;
+    }
+
+    /**
+     * Action to perform when a task has been
+     * completed
+     *
+     * @param taskId the action to perform
+     */
+    @Override
+    public void onTaskComplete(final Consumer<Integer> taskId) {
+        this.complete = taskId;
+    }
+
+    /**
+     * Queue another task to the scheduler
+     *
+     * @param task the task to perform
+     * @return the task id
+     */
+    @Override
+    public int queue(final Runnable task) {
+        int amount = this.tasks.size();
         int index = amount + 1;
-        tasks.put(index, task);
+        this.tasks.put(index, task);
+        return index;
+    }
+
+    /**
+     * Get the current task id
+     *
+     * @return the current task id
+     */
+    @Override
+    public int currentTask() {
+        return this.current;
     }
 }

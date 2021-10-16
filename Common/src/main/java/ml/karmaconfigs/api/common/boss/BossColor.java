@@ -26,14 +26,35 @@ package ml.karmaconfigs.api.common.boss;
  */
 
 /**
- * Available boss bar color enum
+ * Valid boss bar colors
  */
 public enum BossColor {
-    /** Minecraft bar color in a compatible enumeration */ PINK,
-    /** Minecraft bar color in a compatible enumeration */ BLUE,
-    /** Minecraft bar color in a compatible enumeration */ RED,
-    /** Minecraft bar color in a compatible enumeration */ GREEN,
-    /** Minecraft bar color in a compatible enumeration */ YELLOW,
-    /** Minecraft bar color in a compatible enumeration */ PURPLE,
-    /** Minecraft bar color in a compatible enumeration */ WHITE;
+    /**
+     * Pink boss bar
+     */
+    PINK,
+    /**
+     * Blue boss bar
+     */
+    BLUE,
+    /**
+     * Red boss bar
+     */
+    RED,
+    /**
+     * Green boss bar
+     */
+    GREEN,
+    /**
+     * Yellow boss bar
+     */
+    YELLOW,
+    /**
+     * Purple boss bar
+     */
+    PURPLE,
+    /**
+     * White boss bar
+     */
+    WHITE;
 }

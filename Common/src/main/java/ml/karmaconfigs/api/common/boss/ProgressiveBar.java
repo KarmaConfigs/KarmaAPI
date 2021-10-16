@@ -26,19 +26,19 @@ package ml.karmaconfigs.api.common.boss;
  */
 
 /**
- * Available boss bar HP progressive updates
+ * Valid boss bar progress type
  */
 public enum ProgressiveBar {
     /**
-     * Disabled
+     * Do not modify HP
      */
     NONE,
     /**
-     * PROGRESSIVE_UP
+     * Modify bar HP from 0 to MAX
      */
     UP,
     /**
-     * PROGRESSIVE_DOWN
+     * Modify bar HP from MAX to 0
      */
     DOWN;
 }

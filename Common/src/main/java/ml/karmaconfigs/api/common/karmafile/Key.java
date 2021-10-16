@@ -1,7 +1,5 @@
 package ml.karmaconfigs.api.common.karmafile;
 
-import java.io.Serializable;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -27,43 +25,49 @@ import java.io.Serializable;
  *  SOFTWARE.
  */
 
+import java.io.Serializable;
+
 /**
- * KarmaFile key object
- *
- * This object contains the value, in case
- * of no value, the key will be used as value
+ * Karma files key
  */
 public final class Key implements Serializable {
 
+    /**
+     * The key path
+     */
     private final String path;
+
+    /**
+     * The key value
+     */
     private final Object value;
 
     /**
-     * Initialize the file value
+     * Initialize the karma key
      *
-     * @param keyPath   the key path
-     * @param keyValue  the key value
+     * @param keyPath the path
+     * @param keyValue the value
      */
-    public Key(final String keyPath, final Object keyValue) {
-        path = keyPath;
-        value = keyValue;
+    public Key(String keyPath, Object keyValue) {
+        this.path = keyPath;
+        this.value = keyValue;
     }
 
     /**
-     * Get the key
+     * Get the key path
      *
-     * @return the key
+     * @return the key path
      */
-    public final String getPath() {
-        return path;
+    public String getPath() {
+        return this.path;
     }
 
     /**
-     * Get the value
+     * Get the key value
      *
-     * @return the value
+     * @return the key value
      */
-    public final Object getValue() {
-        return value;
+    public Object getValue() {
+        return this.value;
     }
 }

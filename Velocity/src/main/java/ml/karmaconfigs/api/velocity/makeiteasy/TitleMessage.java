@@ -1,7 +1,7 @@
 package ml.karmaconfigs.api.velocity.makeiteasy;
 
 import com.velocitypowered.api.proxy.Player;
-import ml.karmaconfigs.api.common.utils.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.title.Title;

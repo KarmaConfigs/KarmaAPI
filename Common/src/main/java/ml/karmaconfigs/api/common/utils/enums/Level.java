@@ -26,11 +26,23 @@ package ml.karmaconfigs.api.common.utils.enums;
  */
 
 /**
- * KarmaUtil levels
+ * Karma known levels
  */
 public enum Level {
-    /** Ok level */ OK,
-    /** Information level */ INFO,
-    /** Warning level */ WARNING,
-    /** Grave level */ GRAVE
+    /**
+     * Nothing wrong here
+     */
+    OK,
+    /**
+     * Information you should know
+     */
+    INFO,
+    /**
+     * Everything is ok, but could be better
+     */
+    WARNING,
+    /**
+     * Something just went wrong
+     */
+    GRAVE;
 }

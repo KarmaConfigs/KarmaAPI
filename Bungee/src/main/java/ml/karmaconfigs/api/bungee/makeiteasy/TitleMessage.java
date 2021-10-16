@@ -1,6 +1,6 @@
 package ml.karmaconfigs.api.bungee.makeiteasy;
 
-import ml.karmaconfigs.api.common.utils.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;

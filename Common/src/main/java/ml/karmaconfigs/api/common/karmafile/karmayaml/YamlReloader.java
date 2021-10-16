@@ -1,10 +1,5 @@
 package ml.karmaconfigs.api.common.karmafile.karmayaml;
 
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-
-import java.io.File;
-import java.nio.file.Path;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -30,43 +25,44 @@ import java.nio.file.Path;
  *  SOFTWARE.
  */
 
+import java.io.File;
+import java.nio.file.Path;
+
 /**
- * Since version 1.2.5 this does not longer save the file, as it
- * should be saved by calling {@link KarmaYamlManager#save(File)} or
- * {@link KarmaYamlManager#save(File, KarmaSource, String)}
-*/
+ * Karma yaml reloader
+ */
 public final class YamlReloader {
 
+    /**
+     * The yaml manager to reload
+     */
     private final KarmaYamlManager current;
 
     /**
      * Initialize the yaml reloader
      *
-     * @param currentConfiguration the current KarmaConfiguration
+     * @param currentConfiguration the current yaml configuration
      */
     public YamlReloader(final KarmaYamlManager currentConfiguration) {
-        current = currentConfiguration;
+        this.current = currentConfiguration;
     }
 
     /**
-     * Reload the configuration file
+     * Reload the yaml configuration
      *
-     * @param ignored the ignored paths to not
-     *                update
+     * @param ignored the ignored yaml values to update
      */
-    public final void reload(final String... ignored) {
-        Object source = current.getSourceRoot().getSource();
+    public void reload(final String... ignored) {
+        Object source = this.current.getSourceRoot().getSource();
         if (source instanceof File || source instanceof Path) {
             File file;
-
             if (source instanceof File) {
                 file = (File) source;
             } else {
                 file = ((Path) source).toFile();
             }
-
             KarmaYamlManager newConfiguration = new KarmaYamlManager(file);
-            current.update(newConfiguration, true, ignored);
+            this.current.update(newConfiguration, true, ignored);
         } else {
             throw new RuntimeException("Tried to reload karma configuration from a non file/path source karma configuration");
         }

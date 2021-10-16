@@ -1,18 +1,5 @@
 package ml.karmaconfigs.api.common.karmafile;
 
-import ml.karmaconfigs.api.common.Console;
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.FileUtilities;
-import ml.karmaconfigs.api.common.utils.ReflectionUtil;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.util.*;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -38,78 +25,91 @@ import java.util.*;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.APISource;
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
+import java.util.*;
+
 /**
- * Initialize a karma file, which supports any type of
- * extension and has its own syntax
+ * Karma file
  */
 public final class KarmaFile implements Serializable {
 
-    private final File file;
-
+    /**
+     * Broadcast when the file path is created
+     */
     private static boolean broadcast_file_creation = false;
+    /**
+     * Broadcast when the file is created
+     */
     private static boolean broadcast_folder_creation = false;
 
     /**
-     * Initialize the custom
-     * file creator
+     * The karma file
+     */
+    private final File file;
+
+    /**
+     * Initialize the karma file
      *
      * @param source the file source
      * @param name the file name
-     * @param dir the file directory
+     * @param dir the file path
      */
     public KarmaFile(final KarmaSource source, final String name, final String... dir) {
         File dataFolder = source.getDataPath().toFile();
         if (dir.length > 0) {
             StringBuilder builder = new StringBuilder();
-            for (String str : dir) {
+            for (String str : dir)
                 builder.append(File.separator).append(str);
-            }
-
-            file = new File(dataFolder + builder.toString(), name);
+            this.file = new File(dataFolder + builder.toString(), name);
         } else {
-            file = new File(dataFolder, name);
+            this.file = new File(dataFolder, name);
         }
     }
 
     /**
-     * Initialize the custom
-     * file creator
+     * Initialize the karma file
      *
-     * @param target the target file where to read or write
+     * @param target the target karma file
      */
     public KarmaFile(final File target) {
-        file = FileUtilities.getFixedFile(target);
+        this.file = FileUtilities.getFixedFile(target);
     }
 
     /**
-     * Select the karma file broadcast options
+     * Set debug options
      *
-     * @param broadcast_folder broadcast a message on folder creation
-     * @param broadcast_file broadcast a file on file creation
+     * @param broadcast_folder broadcast folder creation
+     * @param broadcast_file broadcast file creation
      */
-    public final void setBroadcastOptions(final boolean broadcast_folder, final boolean broadcast_file) {
+    public void setBroadcastOptions(final boolean broadcast_folder, final boolean broadcast_file) {
         broadcast_file_creation = broadcast_file;
         broadcast_folder_creation = broadcast_folder;
     }
 
     /**
-     * Create and write the file from the specified
-     * resource
+     * Export the karma file from an internal file
      *
-     * @param resource the internal resource
+     * @param resource the internal file
      */
-    public final void exportFromFile(final InputStream resource) {
+    public void exportFromFile(final InputStream resource) {
         if (!exists())
             create();
-
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(resource, StandardCharsets.UTF_8));
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
             String line;
-
-            BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
             while ((line = reader.readLine()) != null)
                 writer.write(line + "\n");
-
             writer.flush();
             writer.close();
             reader.close();
@@ -120,190 +120,145 @@ public final class KarmaFile implements Serializable {
     }
 
     /**
-     * Check if the specified line is a
-     * comment
+     * Get if the line is a comment
      *
-     * @param line the line
-     * @return if the line is a comment line
+     * @param line the text line
+     * @return if the line is a comment
      */
     private boolean isComment(final String line) {
-        return line.startsWith("/// ") || line.startsWith("// ") && line.endsWith(" -->");
+        if (line.startsWith("/*"))
+            return true;
+
+        return (line.startsWith("/// ") || (line.startsWith("// ") && line.endsWith(" -->")));
     }
 
     /**
-     * Check if the line is an open list
-     * iterator
+     * Get if the line is an opening list
      *
-     * @param line the line
-     * @param path the list path
-     * @return a boolean
+     * @param line the text line
+     * @param path the list name
+     * @return if the line is an opening list
      */
-    private boolean isOpenList(String line, String path) {
+    private boolean isOpenList(final String line, final String path) {
         return line.equals("[LIST=" + path.replaceAll("\\s", "_") + "]");
     }
 
     /**
-     * Check if the line is an open list
-     * iterator
+     * Get if the line is an opening list
      *
-     * @param line the line
-     * @return a boolean
+     * @param line the text line
+     * @return if the line is an opening list
      */
-    private boolean isOpenList(String line) {
-        return line.startsWith("[LIST=") && line.endsWith("]");
+    private boolean isOpenList(final String line) {
+        return (line.startsWith("[LIST=") && line.endsWith("]"));
     }
 
     /**
-     * Check if the line is an open list
-     * iterator
+     * Get if the line is a closing list
      *
-     * @param line the line
-     * @param path the list path
-     * @return a boolean
+     * @param line the text line
+     * @param path the list name
+     * @return if the line is a closing list
      */
-    private boolean isCloseList(String line, String path) {
+    private boolean isCloseList(final String line, final String path) {
         return line.equals("[/LIST=" + path.replaceAll("\\s", "_") + "]");
     }
 
     /**
-     * Check if the line is an open list
-     * iterator
+     * Get if the line is a closing list
      *
-     * @param line the line
-     * @return a boolean
+     * @param line the text line
+     * @return if the line is a closing list
      */
-    private boolean isCloseList(String line) {
-        return line.startsWith("[/LIST=") && line.endsWith("]");
+    private boolean isCloseList(final String line) {
+        return (line.startsWith("[/LIST=") && line.endsWith("]"));
     }
 
     /**
-     * Check if the specified line
-     * has a value
+     * Get a key path
      *
-     * @param line the line
-     * @return if has a value
-     */
-    private boolean hasValue(final String line) {
-        if (line.contains(":")) {
-            String path = line.split(":")[0];
-
-            return !line.replaceFirst(path + ":", "").replaceAll("\\s", "").isEmpty();
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the current key path
-     *
-     * @param line the line
+     * @param line the text line
      * @return the line key path
      */
     private String getKeyPath(final String line) {
         if (isOpenList(line) || isCloseList(line)) {
-            String pathN1 = line
-                    .replaceFirst("\\[LIST=", "")
-                    .replaceFirst("\\[/LIST=", "");
-
+            String pathN1 = line.replaceFirst("\\[LIST=", "").replaceFirst("\\[/LIST=", "");
             return pathN1.substring(0, pathN1.length() - 1);
-        } else {
-            if (line.contains(":")) {
-                return line.split(":")[0];
-            } else {
-                return line;
-            }
         }
+        if (line.contains(":"))
+            return line.split(":")[0];
+        return line;
     }
 
-
     /**
-     * Apply KarmaFile filetp attribute to the file
-     * if exists
+     * Apply karma file attribute to the file
      */
-    public final void applyKarmaAttribute() {
-        if (exists()) {
+    public void applyKarmaAttribute() {
+        if (exists())
             try {
-                UserDefinedFileAttributeView view = Files.getFileAttributeView(file.toPath(), UserDefinedFileAttributeView.class);
+                UserDefinedFileAttributeView view = Files.<UserDefinedFileAttributeView>getFileAttributeView(this.file.toPath(), UserDefinedFileAttributeView.class);
                 view.write("filetp", Charset.defaultCharset().encode("KarmaFile"));
-            } catch (Throwable ignored) {}
-        }
+            } catch (Throwable ignored) {
+            }
     }
 
     /**
-     * Create the file and
-     * directories
+     * Create the file
      */
-    public final void create() {
-        if (!file.getParentFile().exists()) {
-            String dir = file.getParentFile().getPath().replaceAll("\\\\", "/");
-            if (file.getParentFile().mkdirs()) {
+    public void create() {
+        if (!this.file.getParentFile().exists()) {
+            String dir = this.file.getParentFile().getPath().replaceAll("\\\\", "/");
+            if (this.file.getParentFile().mkdirs()) {
                 if (broadcast_folder_creation)
-                    ReflectionUtil.tryBroadcast("&aCreated directory {0}", dir);
+                    APISource.getConsole().send("&aCreated directory {0}", dir);
             } else {
-                ReflectionUtil.tryBroadcast("&cAn unknown error occurred while creating directory {0}", dir);
+                APISource.getConsole().send("&cAn unknown error occurred while creating directory {0}", dir);
             }
         }
-
-        if (!file.exists()) {
+        if (!this.file.exists())
             try {
-                String dir = file.getPath().replaceAll("\\\\", "/");
-
-                if (file.createNewFile()) {
+                String dir = this.file.getPath().replaceAll("\\\\", "/");
+                if (this.file.createNewFile()) {
                     if (broadcast_file_creation)
-                        ReflectionUtil.tryBroadcast("&aCreated file {0}", dir);
+                        APISource.getConsole().send("&aCreated file {0}", dir);
                 } else {
-                    ReflectionUtil.tryBroadcast("&cAn unknown error occurred while creating file {0}", dir);
+                    APISource.getConsole().send("&cAn unknown error occurred while creating file {0}", dir);
                 }
-
                 applyKarmaAttribute();
             } catch (Throwable ex) {
                 ex.printStackTrace();
             }
-        }
     }
 
     /**
-     * Write a value, with no path
+     * Set a new value
      *
      * @param value the value
-     * @since 2.0 - SNAPSHOT this have been un-deprecated
-     * since it has an utility, like creating comments or
-     * values that doesn't need a path
      */
-    public final void set(Object value) {
-        if (!exists()) {
+    public void set(final Object value) {
+        if (!exists())
             create();
-        }
-
         byte[] toByte = value.toString().getBytes(StandardCharsets.UTF_8);
         String val = new String(toByte, StandardCharsets.UTF_8);
-
         BufferedReader reader = null;
         try {
-            reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+            reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
             List<Object> sets = new ArrayList<>();
-
             boolean alreadySet = false;
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.equals(value.toString())) {
                     sets.add(line);
-                } else {
-                    alreadySet = true;
-                    sets.add(val);
+                    continue;
                 }
-            }
-
-            if (!alreadySet) {
+                alreadySet = true;
                 sets.add(val);
             }
-
-            BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
-            for (Object str : sets) {
+            if (!alreadySet)
+                sets.add(val);
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
+            for (Object str : sets)
                 writer.write(str + "\n");
-            }
-
             writer.flush();
             writer.close();
         } catch (Throwable e) {
@@ -314,51 +269,41 @@ public final class KarmaFile implements Serializable {
     }
 
     /**
-     * Write a value into the file
+     * Set a new value
      *
-     * @param path  the path
+     * @param path the key path
      * @param value the value
      */
-    public final void set(String path, Object value) {
-        if (!exists()) {
+    public void set(String path, final Object value) {
+        if (!exists())
             create();
-        }
-
         path = path.replaceAll("\\s", "_");
-
+        if (isSet(path) && isList(path))
+            unset(path);
         byte[] toByte = value.toString().getBytes(StandardCharsets.UTF_8);
         String val = new String(toByte, StandardCharsets.UTF_8);
-
         BufferedReader reader = null;
         try {
-            reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
-            List<Object> sets = new ArrayList<>();
-
+            reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+            List<Object> sets = new ArrayList();
             boolean alreadySet = false;
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.split(":")[0] != null) {
                     String currentPath = line.split(":")[0];
-
                     if (!currentPath.equals(path)) {
                         sets.add(line);
-                    } else {
-                        alreadySet = true;
-                        sets.add(path + ": " + val);
+                        continue;
                     }
+                    alreadySet = true;
+                    sets.add(path + ": " + val);
                 }
             }
-
-            if (!alreadySet) {
+            if (!alreadySet)
                 sets.add(path + ": " + val);
-            }
-
-            BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
-            for (Object str : sets) {
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
+            for (Object str : sets)
                 writer.write(str + "\n");
-            }
-
             writer.flush();
             writer.close();
         } catch (Throwable e) {
@@ -369,53 +314,40 @@ public final class KarmaFile implements Serializable {
     }
 
     /**
-     * Write a list into the file
+     * Set a new value
      *
-     * @param path the path
+     * @param path the key path
      * @param list the values
      */
-    public final void set(String path, List<?> list) {
-        if (!exists()) {
+    public void set(String path, final List<?> list) {
+        if (!exists())
             create();
-        }
-
         path = path.replaceAll("\\s", "_");
-
+        if (isSet(path) && !isList(path))
+            unset(path);
         BufferedReader reader = null;
         try {
-            reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+            reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
             List<String> sets = new ArrayList<>();
-
             boolean adding = true;
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.equals("[LIST=" + path + "]")) {
+                if (line.equals("[LIST=" + path + "]"))
                     adding = false;
-                }
-                if (!adding) {
-                    if (line.equals("[/LIST=" + path + "]")) {
-                        adding = true;
-                    }
-                }
-                if (adding) {
-                    if (!line.equals("[LIST=" + path + "]") && !line.equals("[/LIST=" + path + "]")) {
-                        sets.add(line);
-                    }
-                }
+                if (!adding &&
+                        line.equals("[/LIST=" + path + "]"))
+                    adding = true;
+                if (adding &&
+                        !line.equals("[LIST=" + path + "]") && !line.equals("[/LIST=" + path + "]"))
+                    sets.add(line);
             }
-
             sets.add("[LIST=" + path + "]");
-            for (Object val : list) {
+            for (Object val : list)
                 sets.add(val.toString());
-            }
             sets.add("[/LIST=" + path + "]");
-
-            BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
-            for (Object str : sets) {
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
+            for (String str : sets)
                 writer.write(str + "\n");
-            }
-
             writer.flush();
             writer.close();
         } catch (Throwable e) {
@@ -426,39 +358,57 @@ public final class KarmaFile implements Serializable {
     }
 
     /**
-     * Unset the value and the path
+     * Unset a key and its value
+     * if set
      *
-     * @param path the path
+     * @param path the key path
      */
-    public final void unset(String path) {
-        if (!exists()) {
+    public void unset(String path) {
+        if (!exists())
             create();
-        }
-
         path = path.replaceAll("\\s", "_");
-
         BufferedReader reader = null;
         try {
-            reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-            BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
-
+            reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
             String line;
-            boolean list = false;
             while ((line = reader.readLine()) != null) {
-                if (!line.equals(path) || !getKeyPath(line).equals(path)) {
-                    if (!list) {
-                        if (isOpenList(line, path)) {
-                            list = true;
-                        } else {
-                            writer.write(line + "\n");
-                        }
-                    } else {
-                        if (isCloseList(line, path))
-                            list = false;
-                    }
-                }
+                if (!line.equals(path))
+                    writer.write(line + "\n");
             }
+            writer.flush();
+            writer.close();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            closeStreams(reader);
+        }
+    }
 
+    /**
+     * Unset a list
+     *
+     * @param path the list path
+     */
+    public void unsetList(String path) {
+        if (!exists())
+            create();
+        path = path.replaceAll("\\s", "_");
+        BufferedReader reader = null;
+        boolean list = false;
+        try {
+            reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+            BufferedWriter writer = Files.newBufferedWriter(this.file.toPath(), StandardCharsets.UTF_8);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (isOpenList(line) && getKeyPath(line).equals(path)) {
+                    list = true;
+                } else if (isCloseList(line) && getKeyPath(line).equals(path)) {
+                    list = false;
+                }
+                if (!list)
+                    writer.write(line + "\n");
+            }
             writer.flush();
             writer.close();
         } catch (Throwable e) {
@@ -471,39 +421,35 @@ public final class KarmaFile implements Serializable {
     /**
      * Delete the file
      */
-    public final void delete() {
+    public void delete() {
         try {
-            Files.deleteIfExists(FileUtilities.getFixedFile(file).toPath());
+            Files.deleteIfExists(FileUtilities.getFixedFile(this.file).toPath());
         } catch (Throwable ex) {
-            Console.send("&cFile {0} not deleted", FileUtilities.getPrettyPath(file));
+            APISource.getConsole().send("&cFile {0} not deleted", FileUtilities.getPrettyParentFile(this.file));
         }
     }
 
     /**
-     * Get a value from a path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return an object
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
     @NotNull
-    public final Object get(String path, @NotNull Object def) {
+    public Object get(String path, final @NotNull Object def) {
         Object val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = line.replace(actualPath + ": ", "");
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -512,35 +458,30 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Get a String from the path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return a String
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
     @NotNull
-    public final String getString(String path, @NotNull String def) {
+    public String getString(String path, final @NotNull String def) {
         String val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = line.replace(actualPath + ": ", "");
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -549,47 +490,37 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Get a list from the path
+     * Get a value
      *
-     * @param path the path
-     * @param default_contents default list contents in case of null contents
-     * @return a list
+     * @param path the value path
+     * @param default_contents the default values
+     * @return the value
      */
     @NotNull
-    public final List<?> getList(String path, final Object... default_contents) {
+    public List<?> getList(String path, final Object... default_contents) {
         path = path.replaceAll("\\s", "_");
-        List<Object> values = new ArrayList<>();
-
+        List<Object> values = new ArrayList();
         if (isSet(path)) {
             if (exists()) {
                 BufferedReader reader = null;
                 try {
-                    reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                    reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                     boolean adding = false;
                     Object line;
                     while ((line = reader.readLine()) != null) {
-                        if (isOpenList(line.toString(), path)) {
+                        if (isOpenList(line.toString(), path))
                             adding = true;
-                        }
-                        if (isCloseList(line.toString(), path)) {
+                        if (isCloseList(line.toString(), path))
                             adding = false;
-                        }
-                        if (adding) {
-                            if (!isOpenList(line.toString(), path)) {
-                                //Ignore KarmaFile comments
-                                if (!line.toString().startsWith("/// ") && !line.toString().endsWith(" -->")) {
-                                    values.add(line);
-                                }
-                            }
-                        }
+                        if (adding &&
+                                !isOpenList(line.toString(), path))
+                            if (!line.toString().startsWith("/// ") && !line.toString().endsWith(" -->"))
+                                values.add(line);
                     }
-
                     return values;
                 } catch (Throwable ex) {
                     ex.printStackTrace();
@@ -600,77 +531,65 @@ public final class KarmaFile implements Serializable {
         } else {
             values.addAll(Arrays.asList(default_contents));
         }
-
         return values;
     }
 
     /**
-     * Get a list of strings
+     * Get a value
      *
-     * @param path the path
-     * @param default_contents default contents in case of null contents
-     * @return a list of strings
+     * @param path the value path
+     * @param default_contents the default values
+     * @return the value
      */
     @NotNull
-    public final List<String> getStringList(String path, final String... default_contents) {
+    public List<String> getStringList(String path, final String... default_contents) {
         List<String> values = new ArrayList<>();
-
         path = path.replaceAll("\\s", "_");
-
-        Object[] default_objects = Arrays.copyOf(default_contents, default_contents.length);
-
+        Object[] default_objects = Arrays.copyOf((Object[]) default_contents, default_contents.length);
         List<?> originalList = getList(path, default_objects);
-        if (!originalList.isEmpty()) {
+        if (!originalList.isEmpty())
             for (Object value : originalList) {
                 String str = value.toString();
-                //Ignore KarmaFile comments
-                if (!str.startsWith("/// ") && !str.endsWith(" -->")) {
+                if (!str.startsWith("/// ") && !str.endsWith(" -->"))
                     values.add(str);
-                }
             }
-        }
-
         return values;
     }
 
     /**
-     * Read the complete file
+     * Read the file completely
      *
-     * @return the complete file
+     * @return the file lines
      */
     @NotNull
-    public final List<String> readFullFile() {
+    public List<String> readFullFile() {
         try {
-            return Files.readAllLines(file.toPath());
+            return Files.readAllLines(this.file.toPath());
         } catch (Throwable ex) {
             return Collections.emptyList();
         }
     }
 
     /**
-     * Get a Boolean from the path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return a boolean
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
-    public final boolean getBoolean(String path, boolean def) {
+    public boolean getBoolean(String path, final boolean def) {
         boolean val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = Boolean.parseBoolean(line.replace(actualPath + ": ", ""));
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -679,25 +598,51 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Check if the specified key is set
+     * Get if a key is a list
      *
-     * @param path the key path
-     * @return if the key path is set
+     * @param path the key
+     * @return if the path is a list
      */
-    public final boolean isSet(String path) {
+    public boolean isList(String path) {
         path = path.replaceAll("\\s", "_");
+        boolean exist = false;
+        if (isSet(path) &&
+                exists()) {
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+                boolean adding = false;
+                Object line;
+                while ((line = reader.readLine()) != null) {
+                    if (isOpenList(line.toString(), path))
+                        exist = true;
+                }
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+            } finally {
+                closeStreams(reader);
+            }
+        }
+        return exist;
+    }
 
+    /**
+     * Get if a key is set
+     *
+     * @param path the key
+     * @return if the path is set
+     */
+    public boolean isSet(String path) {
+        path = path.replaceAll("\\s", "_");
         boolean set = false;
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
@@ -714,34 +659,29 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return set;
     }
 
     /**
-     * Get an integer from the path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return an integer
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
-    public final int getInt(String path, int def) {
+    public int getInt(String path, final int def) {
         int val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = Integer.parseInt(line.replace(actualPath + ": ", ""));
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -750,34 +690,29 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Get a String from the path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return a String
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
-    public final double getDouble(String path, double def) {
+    public double getDouble(String path, final double def) {
         double val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = Double.parseDouble(line.replace(actualPath + ": ", ""));
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -786,34 +721,29 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Get a String from the path
+     * Get a value
      *
-     * @param path the path
-     * @param def  the default value
-     * @return a String
+     * @param path the value path
+     * @param def the default value
+     * @return the value
      */
-    public final long getLong(String path, long def) {
+    public long getLong(String path, final long def) {
         long val = def;
-
         path = path.replaceAll("\\s", "_");
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path)) {
+                        if (actualPath.equals(path))
                             val = Long.parseLong(line.replace(actualPath + ": ", ""));
-                        }
                     }
                 }
             } catch (Throwable e) {
@@ -822,95 +752,57 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Get the custom file
+     * Get the file
      *
-     * @return a file
+     * @return the file
      */
-    public final File getFile() {
-        return file;
+    public File getFile() {
+        return this.file;
     }
 
     /**
-     * Check if the file exists
+     * Get if the file exists
      *
-     * @return a boolean
+     * @return if the file exists
      */
-    public final boolean exists() {
-        return file.exists();
+    public boolean exists() {
+        return this.file.exists();
     }
 
     /**
-     * Get the key set of the file
+     * Get the karma file key set
      *
-     * @param deep include keys with no values
-     *
-     * @return a map of key and set
+     * @param deep include non-valued keys
+     * @return the karma file keys
      */
-    public final Set<Key> getKeys(final boolean deep) {
+    public Set<Key> getKeys(final boolean deep) {
         Set<Key> keys = new LinkedHashSet<>();
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 String line;
-
-                String pathKey;
-                boolean list = false;
-                Set<String> values = new LinkedHashSet<>();
                 while ((line = reader.readLine()) != null) {
-                    if (!line.replaceAll("\\s", "").isEmpty()) {
-                        if (!isComment(line)) {
-                            pathKey = getKeyPath(line);
-
-                            if (isOpenList(line)) {
-                                list = true;
-                            } else {
-                                if (isCloseList(line)) {
-                                    list = false;
-                                    Key key = new Key(pathKey, new LinkedHashSet<>(values));
-                                    keys.add(key);
-
-                                    values.clear();
-                                } else {
-                                    if (list) {
-                                        if (!line.replaceAll("\\s", "").isEmpty()) {
-                                            values.add(line
-                                                    .replace("[", "{open}")
-                                                    .replace("]", "{close}")
-                                                    .replace(",", "{comma}"));
-                                        }
-                                    } else {
-                                        if (hasValue(line)) {
-                                            Object value = line.replaceFirst(pathKey + ": ", "");
-
-                                            boolean add = true;
-                                            if (value.toString().replaceAll("\\s", "").isEmpty()) {
-                                                add = deep;
-                                                if (add)
-                                                    value = pathKey;
-                                            }
-
-                                            if (add) {
-                                                Key key = new Key(pathKey, value);
-                                                keys.add(key);
-                                            }
-                                        } else {
-                                            if (deep) {
-                                                Key key = new Key(pathKey, pathKey);
-                                                keys.add(key);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    if (!line.replaceAll("\\s", "").isEmpty() &&
+                            !isComment(line)) {
+                        Key key;
+                        String pathKey = getKeyPath(line);
+                        if (isList(pathKey)) {
+                            List<?> list = getList(pathKey);
+                            if (list.isEmpty() && !deep)
+                                continue;
+                            key = new Key(pathKey, list);
+                        } else {
+                            Object value = get(pathKey, "");
+                            if (StringUtils.isNullOrEmpty(value) && !deep)
+                                continue;
+                            key = new Key(pathKey, value);
                         }
+                        keys.add(key);
                     }
                 }
             } catch (Throwable e) {
@@ -919,30 +811,24 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return keys;
     }
 
     /**
-     * Read the file completely
+     * Get the karma file as string
      *
-     * @return the complete file as string
+     * @return the karma file as string
      */
-    @Override
-    public final String toString() {
+    public String toString() {
         String val = "";
-
         if (exists()) {
             BufferedReader reader = null;
             try {
-                reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8);
-
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
                 StringBuilder val_builder = new StringBuilder();
                 String line;
-                while ((line = reader.readLine()) != null) {
+                while ((line = reader.readLine()) != null)
                     val_builder.append(line);
-                }
-
                 val = val_builder.toString();
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -950,17 +836,15 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
-
         return val;
     }
 
     /**
-     * Close all the streams to allow file-managing
-     * out of plugin
+     * Close streams
      *
-     * @param reader the inReader file reader
+     * @param reader the reader
      */
-    private void closeStreams(BufferedReader reader) {
+    private void closeStreams(final BufferedReader reader) {
         try {
             if (reader != null)
                 reader.close();

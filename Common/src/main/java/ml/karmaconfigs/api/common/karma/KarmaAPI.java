@@ -1,9 +1,5 @@
 package ml.karmaconfigs.api.common.karma;
 
-import java.io.InputStream;
-import java.io.Serializable;
-import java.util.Properties;
-
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
  *
@@ -29,56 +25,97 @@ import java.util.Properties;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Properties;
+
 /**
- * KarmaAPI utilities, such a version, compiler and build date
+ * Karma API
  */
 public interface KarmaAPI extends Serializable {
 
+    /**
+     * Get the current API version
+     *
+     * @return the current API version
+     */
     static String getVersion() {
         String version = "-1";
-
         try {
             InputStream in = KarmaAPI.class.getResourceAsStream("/api.properties");
             if (in != null) {
                 Properties properties = new Properties();
                 properties.load(in);
-
                 version = properties.getProperty("version", "-1");
             }
-        } catch (Throwable ignored) {}
-
+        } catch (Throwable ignored) {
+        }
         return version;
     }
 
+    /**
+     * Get the used java version to compile
+     * the API
+     *
+     * @return the java version used to compile the API
+     */
     static String getCompilerVersion() {
-        String version = "15";
-
+        String version = "16";
         try {
             InputStream in = KarmaAPI.class.getResourceAsStream("/api.properties");
             if (in != null) {
                 Properties properties = new Properties();
                 properties.load(in);
-
                 version = properties.getProperty("java_version", "15");
             }
-        } catch (Throwable ignored) {}
-
+        } catch (Throwable ignored) {
+        }
         return version;
     }
 
+    /**
+     * Get the API build date
+     *
+     * @return the API build date
+     */
     static String getBuildDate() {
         String compile_date = "01-01-1999 00:00:00";
-
         try {
             InputStream in = KarmaAPI.class.getResourceAsStream("/api.properties");
             if (in != null) {
                 Properties properties = new Properties();
                 properties.load(in);
-
                 compile_date = properties.getProperty("compile_date", "01-01-1999 00:00:00");
             }
-        } catch (Throwable ignored) {}
-
+        } catch (Throwable ignored) {
+        }
         return compile_date;
+    }
+
+    /**
+     * Get if the specified source jar is loaded
+     *
+     * @param source the source
+     * @return if the source jar is loaded
+     */
+    static boolean isLoaded(final KarmaSource source) {
+        try {
+            File jarFile = FileUtilities.getSourceFile(source);
+            Path randomLocation = Files.createTempFile(StringUtils.randomString(), StringUtils.randomString());
+
+            Files.copy(jarFile.toPath(), randomLocation, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(randomLocation, jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.deleteIfExists(randomLocation);
+            return false;
+        } catch (Throwable ex) {
+            return true;
+        }
     }
 }
