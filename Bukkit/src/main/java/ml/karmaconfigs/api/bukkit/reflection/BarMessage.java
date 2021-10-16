@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.bukkit.reflection;
 
+import ml.karmaconfigs.api.bukkit.server.VersionUtils;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -43,6 +44,8 @@ import java.util.concurrent.TimeUnit;
  */
 public final class BarMessage {
 
+    private final VersionUtils utils = VersionUtils.newInstance();
+    
     private final Player player;
 
     private String message;
@@ -68,14 +71,14 @@ public final class BarMessage {
         if (player != null && player.isOnline()) {
             String msg = StringUtils.toColor(message);
             try {
-                Constructor<?> constructor = Objects.requireNonNull(TitleMessage.getNMSClass("PacketPlayOutChat")).getConstructor(TitleMessage.getNMSClass("IChatBaseComponent"), byte.class);
+                Constructor<?> constructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutChat")).getConstructor(utils.getMinecraftClass("IChatBaseComponent"), byte.class);
 
-                Object icbc = Objects.requireNonNull(TitleMessage.getNMSClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
+                Object icbc = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
                 Object packet = constructor.newInstance(icbc, (byte) 2);
                 Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
                 Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-                playerConnection.getClass().getMethod("sendPacket", TitleMessage.getNMSClass("Packet")).invoke(playerConnection, packet);
+                playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
                 sent = true;
             } catch (Throwable ex) {
                 try {
@@ -95,7 +98,7 @@ public final class BarMessage {
      * @param persistent if the message should be persistent
      *                   until you order to stop
      */
-    public final void send(final boolean persistent) {
+    public void send(final boolean persistent) {
         send = persistent;
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -114,7 +117,7 @@ public final class BarMessage {
      *
      * @param repeats the amount of times to send it
      */
-    public final void send(final int repeats) {
+    public void send(final int repeats) {
         send = true;
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
@@ -138,14 +141,14 @@ public final class BarMessage {
      *
      * @param _message the new message
      */
-    public final void setMessage(final String _message) {
+    public void setMessage(final String _message) {
         message = _message;
     }
 
     /**
      * Stop sending the action bar
      */
-    public final void stop() {
+    public void stop() {
         send = false;
     }
 
@@ -154,7 +157,7 @@ public final class BarMessage {
      *
      * @return if the bar has been sent
      */
-    public final boolean isSent() {
+    public boolean isSent() {
         return sent;
     }
 }

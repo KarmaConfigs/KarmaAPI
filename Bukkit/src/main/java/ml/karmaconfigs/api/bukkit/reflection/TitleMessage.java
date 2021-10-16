@@ -1,10 +1,9 @@
 package ml.karmaconfigs.api.bukkit.reflection;
 
+import ml.karmaconfigs.api.bukkit.server.VersionUtils;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
@@ -40,6 +39,7 @@ import java.util.Objects;
  */
 public final class TitleMessage {
 
+    private final static VersionUtils utils = VersionUtils.newInstance();
     private final Player player;
     private final String title, subtitle;
 
@@ -78,31 +78,31 @@ public final class TitleMessage {
     /**
      * Send the title
      */
-    public final void send() {
+    public void send() {
         try {
-            Object chatTitle = Objects.requireNonNull(getNMSClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + title + "\"}");
-            Constructor<?> titleConstructor = Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0], getNMSClass("IChatBaseComponent"),
+            Constructor<?> titleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object packet = titleConstructor.newInstance(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
                     20 * 2, 20 * 5, 20 * 2);
 
-            Object chatsTitle = Objects.requireNonNull(getNMSClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatsTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + subtitle + "\"}");
-            Constructor<?> timingTitleConstructor = Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0], getNMSClass("IChatBaseComponent"),
+            Constructor<?> timingTitleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object timingPacket = timingTitleConstructor.newInstance(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
                     20 * 2, 20 * 5, 20 * 2);
 
             Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
             Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-            playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, packet);
-            playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, timingPacket);
+            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
         } catch (Throwable ex) {
             player.sendTitle(title, subtitle, 20 * 2, 20 * 5, 20 * 2);
         }
@@ -117,49 +117,33 @@ public final class TitleMessage {
      * @param hideIn the time that will take to
      *               completely hide the title
      */
-    public final void send(final int showIn, final int keepIn, final int hideIn) {
+    public void send(final int showIn, final int keepIn, final int hideIn) {
         try {
-            Object chatTitle = Objects.requireNonNull(getNMSClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + title + "\"}");
-            Constructor<?> titleConstructor = Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0], getNMSClass("IChatBaseComponent"),
+            Constructor<?> titleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object packet = titleConstructor.newInstance(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
                     20 * showIn, 20 * keepIn, 20 * hideIn);
 
-            Object chatsTitle = Objects.requireNonNull(getNMSClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatsTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + subtitle + "\"}");
-            Constructor<?> timingTitleConstructor = Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0], getNMSClass("IChatBaseComponent"),
+            Constructor<?> timingTitleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object timingPacket = timingTitleConstructor.newInstance(
-                    Objects.requireNonNull(getNMSClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
+                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
                     20 * showIn, 20 * keepIn, 20 * hideIn);
 
             Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
             Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-            playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, packet);
-            playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, timingPacket);
+            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
         } catch (Throwable ex) {
             player.sendTitle(title, subtitle, 20 * showIn, 20 * keepIn, 20 * hideIn);
-        }
-    }
-
-    /**
-     * Get a nms class directly from the server version
-     *
-     * @param clazz the class name
-     * @return a Class
-     */
-    @Nullable
-    static Class<?> getNMSClass(@NotNull final String clazz) {
-        try {
-            String version = Bukkit.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3];
-            return Class.forName("net.minecraft.server." + version + "." + clazz);
-        } catch (Throwable e) {
-            return null;
         }
     }
 }

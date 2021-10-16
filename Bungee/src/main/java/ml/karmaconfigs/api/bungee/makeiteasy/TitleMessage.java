@@ -2,6 +2,7 @@ package ml.karmaconfigs.api.bungee.makeiteasy;
 
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.Title;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import org.jetbrains.annotations.NotNull;
@@ -74,8 +75,8 @@ public final class TitleMessage {
     /**
      * Send the title
      */
-    public final void send() {
-        net.md_5.bungee.api.Title server_title = ProxyServer.getInstance().createTitle();
+    public void send() {
+        Title server_title = ProxyServer.getInstance().createTitle();
         server_title.title(TextComponent.fromLegacyText(title));
         server_title.subTitle(TextComponent.fromLegacyText(subtitle));
         server_title.fadeIn(20 * 2);
@@ -94,8 +95,8 @@ public final class TitleMessage {
      * @param hideIn the time that will take to
      *               completely hide the title
      */
-    public final void send(final int showIn, final int keepIn, final int hideIn) {
-        net.md_5.bungee.api.Title server_title = ProxyServer.getInstance().createTitle();
+    public void send(final int showIn, final int keepIn, final int hideIn) {
+        Title server_title = ProxyServer.getInstance().createTitle();
         server_title.title(TextComponent.fromLegacyText(title));
         server_title.subTitle(TextComponent.fromLegacyText(subtitle));
         server_title.fadeIn(20 * showIn);
