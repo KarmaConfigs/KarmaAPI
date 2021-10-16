@@ -38,7 +38,7 @@ import java.util.*;
 public final class StringUtils {
 
     /**
-     * Replace the last regex in the string
+     * Replace the last regex in the text
      *
      * @param text the text to search in
      * @param regex the text to find
@@ -92,7 +92,7 @@ public final class StringUtils {
      * @param text the text to translate
      * @return the translated text
      */
-    public static String toConsoleColor(String text) {
+    public static String toConsoleColor(final String text) {
         String str = text;
         HashSet<String> color_codes = new HashSet<>();
         for (int i = 0; i < text.length(); i++) {
@@ -171,7 +171,7 @@ public final class StringUtils {
      * @param texts the texts to translate
      * @return the colored texts
      */
-    public static List<String> toColor(List<String> texts) {
+    public static List<String> toColor(final List<String> texts) {
         List<String> newTexts = new ArrayList<>();
         HashSet<String> color_codes = new HashSet<>();
         for (String text : texts) {
@@ -198,7 +198,7 @@ public final class StringUtils {
      * @param text the text to read from
      * @return the text colors
      */
-    public static Set<String> getColors(String text) {
+    public static Set<String> getColors(final String text) {
         Set<String> color_codes = new HashSet<>();
         for (int i = 0; i < text.length(); i++) {
             char curr = text.charAt(i);
@@ -218,7 +218,7 @@ public final class StringUtils {
      * @param text the text to read from
      * @return the text colors
      */
-    public static String getLastColor(String text) {
+    public static String getLastColor(final String text) {
         List<String> color_codes = new ArrayList<>();
         for (int i = 0; i < text.length(); i++) {
             char curr = text.charAt(i);
@@ -248,13 +248,14 @@ public final class StringUtils {
      * @param index the text index
      * @return the texts last color
      */
-    public static String getLastColor(List<String> texts, int index) {
+    public static String getLastColor(final List<String> texts, final int index) {
         List<String> color_codes = new ArrayList<>();
+        int tmpIndex = index;
         if (index == texts.size())
-            index--;
-        if (texts.size() > index)
+            tmpIndex--;
+        if (texts.size() > tmpIndex)
             try {
-                String text = texts.get(index);
+                String text = texts.get(tmpIndex);
                 for (int i = 0; i < text.length(); i++) {
                     char curr = text.charAt(i);
                     char next = Character.MIN_VALUE;
@@ -284,7 +285,7 @@ public final class StringUtils {
      * @param text the text to read
      * @return the text without colors
      */
-    public static String stripColor(String text) {
+    public static String stripColor(final String text) {
         String str = text;
         HashSet<String> color_codes = new HashSet<>();
         for (int i = 0; i < str.length(); i++) {
@@ -307,7 +308,7 @@ public final class StringUtils {
      * @param texts the texts
      * @return the uncolored texts
      */
-    public static List<String> stripColor(List<String> texts) {
+    public static List<String> stripColor(final List<String> texts) {
         List<String> newTexts = new ArrayList<>();
         for (String text : texts) {
             HashSet<String> color_codes = new HashSet<>();
@@ -335,7 +336,7 @@ public final class StringUtils {
      * @param amount the index
      * @return the split text
      */
-    public static String[] splitByAmount(String text, int amount) {
+    public static String[] splitByAmount(final String text, final int amount) {
         List<String> list = new ArrayList<>();
         int index = 0;
         while (index < text.length()) {
@@ -346,19 +347,19 @@ public final class StringUtils {
     }
 
     /**
-     * Generate a new random string
+     * Generate a new random text
      *
-     * @return a random string creator
+     * @return a random text creator
      */
     public static RandomString generateString() {
         return new RandomString();
     }
 
     /**
-     * Generate a new random string
+     * Generate a new random text
      *
-     * @param options the random string options
-     * @return a random string creator
+     * @param options the random text options
+     * @return a random text creator
      */
     public static RandomString generateString(final OptionsBuilder options) {
         return new RandomString(options);
@@ -382,9 +383,9 @@ public final class StringUtils {
      *
      * @param text the text to format
      * @param replaces the text replaces
-     * @return the formatted string
+     * @return the formatted text
      */
-    public static String formatString(String text, Object... replaces) {
+    public static String formatString(final String text, final Object... replaces) {
         String str = text;
         for (int i = 0; i < replaces.length; i++) {
             String placeholder = "{" + i + "}";
@@ -408,9 +409,9 @@ public final class StringUtils {
      *
      * @param text the text to format
      * @param replaces the text replaces
-     * @return the formatted string
+     * @return the formatted text
      */
-    public static String formatString(String text, Map<String, Object> replaces) {
+    public static String formatString(final String text, final Map<String, Object> replaces) {
         String str = text;
         for (String key : replaces.keySet()) {
             String placeholder = "{" + key + "}";
@@ -421,12 +422,12 @@ public final class StringUtils {
     }
 
     /**
-     * Read
+     * Read the file completely
      *
-     * @param file
-     * @return
+     * @param file the file to read
+     * @return the file content as text
      */
-    public static String readFrom(File file) {
+    public static String readFrom(final File file) {
         try {
             byte[] encoded = Files.readAllBytes(file.toPath());
             return new String(encoded, StandardCharsets.UTF_8);
@@ -435,7 +436,16 @@ public final class StringUtils {
         }
     }
 
-    public static String listToString(List<String> lines, boolean spaces) {
+    /**
+     * Transform a list of texts into a single text line
+     *
+     * @param lines the lines
+     * @param spaces replace new lines with spaces, otherwise,
+     *               new lines will be replaced with nothing and '\n'
+     *               will be added at the end of the line
+     * @return the list of texts as single line text
+     */
+    public static String listToString(final List<String> lines, final boolean spaces) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
@@ -448,11 +458,23 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String unEscapeString(String text) {
+    /**
+     * Un scape text
+     *
+     * @param text the text to un scape
+     * @return the unescaped text
+     */
+    public static String unEscapeString(final String text) {
         return text.replaceAll("\\\\", "");
     }
 
-    public static String escapeString(String text) {
+    /**
+     * Escape text
+     *
+     * @param text the text to scape
+     * @return the escaped text
+     */
+    public static String escapeString(final String text) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < text.length(); i++) {
             Character character = text.charAt(i);
@@ -481,7 +503,13 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String serialize(Object instance) {
+    /**
+     * Serialize an object into a text
+     *
+     * @param instance the object instance
+     * @return the serialized object
+     */
+    public static <T> String serialize(final T instance) {
         try {
             ByteArrayOutputStream bo = new ByteArrayOutputStream();
             ObjectOutputStream so = new ObjectOutputStream(bo);
@@ -494,8 +522,14 @@ public final class StringUtils {
         }
     }
 
+    /**
+     * Load the instance as an unknown object
+     *
+     * @param instance the serialized instance
+     * @return the instance object
+     */
     @Nullable
-    public static Object load(String instance) {
+    public static Object load(final String instance) {
         try {
             byte[] bytes = Base64.getDecoder().decode(instance);
             ByteArrayInputStream bi = new ByteArrayInputStream(bytes);
@@ -507,12 +541,27 @@ public final class StringUtils {
         }
     }
 
+    /**
+     * Load unsafely the instance as a known
+     * object
+     *
+     * @param instance the instance
+     * @param <T> the type
+     * @return the instance type
+     */
     @Nullable
-    public static <T> T loadUnsafe(String instance) {
+    @SuppressWarnings("unchecked")
+    public static <T> T loadUnsafe(final String instance) {
         return (T) load(instance);
     }
 
-    public static boolean containsLetters(CharSequence sequence) {
+    /**
+     * Get if the text contains letter
+     *
+     * @param sequence the text
+     * @return if the text contains letter
+     */
+    public static boolean containsLetters(final CharSequence sequence) {
         for (int i = 0; i < sequence.length(); i++) {
             if (Character.isLetter(sequence.charAt(i)))
                 return true;
@@ -520,7 +569,13 @@ public final class StringUtils {
         return false;
     }
 
-    public static boolean containsNumbers(CharSequence sequence) {
+    /**
+     * Get if the text contains numbers
+     *
+     * @param sequence the text
+     * @return if the text contains letter
+     */
+    public static boolean containsNumbers(final CharSequence sequence) {
         for (int i = 0; i < sequence.length(); i++) {
             if (Character.isDigit(sequence.charAt(i)))
                 return true;
@@ -528,26 +583,37 @@ public final class StringUtils {
         return false;
     }
 
-    public static boolean isNullOrEmpty(Object check) {
-        return (check == null || check.toString().replaceAll("\\s", "").isEmpty());
-    }
-
-    public static int compareTo(String v1, String v2) {
-        String[] v1parts = v1.split("\\.");
-        String[] v2parts = v2.split("\\.");
-        int length = Math.max(v1parts.length, v2parts.length);
-        for (int i = 0; i < length; i++) {
-            int thisPart = (i < v1parts.length) ? Integer.parseInt(v1parts[i]) : 0;
-            int thatPart = (i < v2parts.length) ? Integer.parseInt(v2parts[i]) : 0;
-            if (thisPart < thatPart)
-                return -1;
-            if (thisPart > thatPart)
-                return 1;
+    /**
+     * Get if the object is null or empty
+     *
+     * @param check the object to check
+     * @return if the object is null or empty
+     */
+    public static boolean isNullOrEmpty(final Object check) {
+        if (check != null) {
+            return String.valueOf(check).replaceAll("\\s", "").isEmpty() || check.toString().replaceAll("\\s", "").isEmpty();
+        } else {
+            return true;
         }
-        return 0;
     }
 
-    public static String removeNumbers(String original) {
+    /**
+     * Get the version difference between two versions
+     *
+     * @param builder the version difference builder
+     * @return a new version comparator
+     */
+    public static VersionComparator compareTo(final ComparatorBuilder builder) {
+        return new VersionComparator(builder);
+    }
+
+    /**
+     * Remove the numbers from text
+     *
+     * @param original the original text
+     * @return the text without numbers
+     */
+    public static String removeNumbers(final CharSequence original) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < original.length(); i++) {
             char character = original.charAt(i);
@@ -557,7 +623,13 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String removeLetters(String original) {
+    /**
+     * Remove the letters from text
+     *
+     * @param original the original text
+     * @return the text without letters
+     */
+    public static String removeLetters(final CharSequence original) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < original.length(); i++) {
             char character = original.charAt(i);
@@ -567,7 +639,14 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String parseNumbers(String original, Character... keep) {
+    /**
+     * Parse only the numbers from the text
+     *
+     * @param original the original text
+     * @param keep the characters to allow
+     * @return the parsed text
+     */
+    public static String parseNumbers(final CharSequence original, final Character... keep) {
         StringBuilder builder = new StringBuilder();
         Set<Character> chars = arrayToSet(keep);
         for (int i = 0; i < original.length(); i++) {
@@ -578,7 +657,14 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static String parseLetters(String original, Character... keep) {
+    /**
+     * Parse only the letters from the text
+     *
+     * @param original the original text
+     * @param keep the characters to allow
+     * @return the parsed text
+     */
+    public static String parseLetters(final CharSequence original, final Character... keep) {
         StringBuilder builder = new StringBuilder();
         Set<Character> chars = arrayToSet(keep);
         for (int i = 0; i < original.length(); i++) {
@@ -589,15 +675,14 @@ public final class StringUtils {
         return builder.toString();
     }
 
-    public static <T> Set<T> arrayToSet(T[] array) {
+    /**
+     * Parse an array to a set
+     *
+     * @param array the array
+     * @param <T> the array type
+     * @return the {@link T[] array} as {@link Set<T> set}
+     */
+    public static <T> Set<T> arrayToSet(final T[] array) {
         return new HashSet<>(Arrays.asList(array));
-    }
-
-    public enum StringGen {
-        ONLY_NUMBERS, ONLY_LETTERS, NUMBERS_AND_LETTERS;
-    }
-
-    public enum StringType {
-        ALL_UPPER, ALL_LOWER, RANDOM_SIZE;
     }
 }

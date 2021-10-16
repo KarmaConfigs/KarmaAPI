@@ -1,7 +1,10 @@
 package ml.karmaconfigs.api.bukkit.server;
 
 import ml.karmaconfigs.api.common.Console;
+import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.VersionComparator;
+import ml.karmaconfigs.api.common.utils.string.util.VersionDiff;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
@@ -160,7 +163,31 @@ public abstract class VersionUtils {
         String current_version = version().name().replace("v", "").replace("_", ".");
         String check_version = version.name().replace("v", "").replace("_", ".");
 
-        return StringUtils.compareTo(current_version, check_version) > 0;
+        ComparatorBuilder builder = VersionComparator.createBuilder()
+                .currentVersion(current_version)
+                .checkVersion(check_version);
+        VersionComparator comparator = StringUtils.compareTo(builder);
+
+        return comparator.getDifference().equals(VersionDiff.OVERDATED);
+    }
+
+    /**
+     * Check if the current server version is the specified one
+     *
+     * @param version the check version
+     * @return if the current version is the
+     * specified one
+     */
+    public final boolean isUpdated(final Version version) {
+        String current_version = version().name().replace("v", "").replace("_", ".");
+        String check_version = version.name().replace("v", "").replace("_", ".");
+
+        ComparatorBuilder builder = VersionComparator.createBuilder()
+                .currentVersion(current_version)
+                .checkVersion(check_version);
+        VersionComparator comparator = StringUtils.compareTo(builder);
+
+        return comparator.getDifference().equals(VersionDiff.UPDATED);
     }
 
     /**
@@ -175,7 +202,12 @@ public abstract class VersionUtils {
         String current_version = version().name().replace("v", "").replace("_", ".");
         String check_version = v.name().replace("v", "").replace("_", ".");
 
-        return StringUtils.compareTo(current_version, check_version) < 0;
+        ComparatorBuilder builder = VersionComparator.createBuilder()
+                .currentVersion(current_version)
+                .checkVersion(check_version);
+        VersionComparator comparator = StringUtils.compareTo(builder);
+
+        return comparator.getDifference().equals(VersionDiff.OUTDATED);
     }
 
     /**

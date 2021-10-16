@@ -26,20 +26,20 @@ package ml.karmaconfigs.api.common.utils.string.util;
  */
 
 /**
- * Karma string generator text
- * content
+ * Karma version comparator version difference
+ * results
  */
-public enum TextContent {
+public enum VersionDiff {
     /**
-     * Text with only numbers
+     * Out of date
      */
-    ONLY_NUMBERS,
+    OUTDATED,
     /**
-     * Text with only letters
+     * Up to date
      */
-    ONLY_LETTERS,
+    UPDATED,
     /**
-     * Text with letters and numbers
+     * Over of checked version
      */
-    NUMBERS_AND_LETTERS;
+    OVERDATED
 }

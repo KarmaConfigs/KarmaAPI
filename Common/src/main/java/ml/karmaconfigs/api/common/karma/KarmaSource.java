@@ -119,7 +119,7 @@ public interface KarmaSource extends Serializable {
         File dataFolder, mainJar = new File(getClass().getProtectionDomain().getCodeSource().getLocation().getPath().replaceAll("%20", " "));
         File parent = mainJar.getParentFile();
         if (StringUtils.isNullOrEmpty(name())) {
-            dataFolder = new File(parent, StringUtils.randomString(5, StringUtils.StringGen.ONLY_LETTERS, StringUtils.StringType.ALL_UPPER));
+            dataFolder = new File(parent, StringUtils.generateString().create());
         } else {
             dataFolder = new File(parent, name());
         }

@@ -1,12 +1,42 @@
 package ml.karmaconfigs.api.common.version;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karmafile.KarmaFile;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
+import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.string.VersionComparator;
+import ml.karmaconfigs.api.common.version.util.VersionCheckType;
+import ml.karmaconfigs.api.common.version.util.VersionResolver;
 
 import java.io.File;
 import java.io.InputStream;
@@ -15,28 +45,67 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+/**
+ * Karma version updater
+ */
 public abstract class VersionUpdater {
+
+    /**
+     * A map containing source => version fetch
+     */
     private static final Map<KarmaSource, VersionFetchResult> results = new ConcurrentHashMap<>();
+
+    /**
+     * The updater source
+     */
     private KarmaSource source;
+
+    /**
+     * The url where to check for updates
+     */
     private URL checkURL;
+
+    /**
+     * The version check type
+     */
     private VersionCheckType versionType;
+    /**
+     * The version resolver
+     */
     private VersionResolver versionResolver;
 
+    /**
+     * Instantiate a new version updater
+     *
+     * @return a new version updater instance
+     */
     static VersionUpdater instance() {
         return new VersionUpdater() {
 
         };
     }
 
-    public static VersionBuilder createNewBuilder(KarmaSource owner) {
+    /**
+     * Create a new version updater builder
+     *
+     * @param owner the updater source
+     * @return a new version updater builder
+     */
+    public static VersionBuilder createNewBuilder(final KarmaSource owner) {
         return VersionBuilder.instance(owner);
     }
 
+    /**
+     * Fetch for updates
+     *
+     * @param force force the update instead
+     *              of returning the cached result
+     * @return the fetch result
+     */
     public LateScheduler<VersionFetchResult> fetch(boolean force) {
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
 
@@ -46,7 +115,7 @@ public abstract class VersionUpdater {
                     boolean updated;
                     URLConnection connection = this.checkURL.openConnection();
                     InputStream file = connection.getInputStream();
-                    Path temp = Files.createTempFile("kfetcher_", StringUtils.randomString(6, StringUtils.StringGen.NUMBERS_AND_LETTERS, StringUtils.StringType.ALL_UPPER), (FileAttribute<?>[]) new FileAttribute[0]);
+                    Path temp = Files.createTempFile("kfetcher_", StringUtils.generateString().create());
                     File tempFile = FileUtilities.getFixedFile(temp.toFile());
                     tempFile.deleteOnExit();
                     if (!tempFile.exists())
@@ -56,15 +125,28 @@ public abstract class VersionUpdater {
                     String version = kFile.getString("VERSION", this.source.version());
                     String update = kFile.getString("UPDATE", "");
                     String[] changelog = (String[]) kFile.getStringList("CHANGELOG", new String[0]).toArray((Object[]) new String[0]);
+
+                    ComparatorBuilder builder;
+                    VersionComparator comparator;
                     switch (this.versionType) {
                         case ID:
                             updated = this.source.version().equals(version);
                             break;
                         case RESOLVABLE_ID:
-                            updated = (StringUtils.compareTo(this.versionResolver.resolve(this.source.version()), this.versionResolver.resolve(version)) >= 0);
+                            builder = VersionComparator.createBuilder()
+                                    .currentVersion(versionResolver.resolve(source.version()))
+                                    .checkVersion(versionResolver.resolve(version));
+                            comparator = StringUtils.compareTo(builder);
+
+                            updated = comparator.isUpToDate();
                             break;
                         default:
-                            updated = (StringUtils.compareTo(this.source.version(), version) >= 0);
+                            builder = VersionComparator.createBuilder()
+                                    .currentVersion(source.version())
+                                    .checkVersion(version);
+                            comparator = StringUtils.compareTo(builder);
+
+                            updated = comparator.isUpToDate();
                             break;
                     }
                     VersionFetchResult result = new VersionFetchResult(updated, version, this.source.version(), update, changelog, this.versionResolver);
@@ -81,6 +163,11 @@ public abstract class VersionUpdater {
         return asyncLateScheduler;
     }
 
+    /**
+     * Get the last update fetch result
+     *
+     * @return the last update fetch result
+     */
     public LateScheduler<VersionFetchResult> get() {
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
         APISource.asyncScheduler().queue(() -> {
@@ -94,29 +181,67 @@ public abstract class VersionUpdater {
         return asyncLateScheduler;
     }
 
+    /**
+     * Version updater builder
+     */
     public static abstract class VersionBuilder {
+
+        /**
+         * The updater source
+         */
         private final KarmaSource source;
 
+        /**
+         * The updater check type
+         */
         private VersionCheckType versionType = VersionCheckType.NUMBER;
 
+        /**
+         * The updater version resolver
+         */
         private VersionResolver versionResolver;
 
-        VersionBuilder(KarmaSource owner) {
+        /**
+         * Initialize the version updater builder
+         *
+         * @param owner the updater source
+         */
+        VersionBuilder(final KarmaSource owner) {
             this.source = owner;
         }
 
-        static VersionBuilder instance(KarmaSource owner) {
+        /**
+         * Create a new version builder instance
+         *
+         * @param owner the updater source
+         * @return a new version builder instance
+         */
+        static VersionBuilder instance(final KarmaSource owner) {
             return new VersionBuilder(owner) {
 
             };
         }
 
+        /**
+         * Set the version updater version type
+         *
+         * @param type the updater version type
+         * @return this instance
+         */
         public final VersionBuilder withVersionType(VersionCheckType type) {
             this.versionType = type;
             return this;
         }
 
-        public final VersionBuilder withVersionResolver(VersionResolver resolver) throws IllegalStateException {
+        /**
+         * Set the version updater version resolver
+         *
+         * @param resolver the version resolver
+         * @return this instance
+         * @throws IllegalStateException if the version type is not
+         * resolvable ID
+         */
+        public final VersionBuilder withVersionResolver(final VersionResolver resolver) throws IllegalStateException {
             if (this.versionType == VersionCheckType.RESOLVABLE_ID) {
                 this.versionResolver = resolver;
             } else {
@@ -125,110 +250,51 @@ public abstract class VersionUpdater {
             return this;
         }
 
+        /**
+         * Get the version updater source
+         *
+         * @return the version updater source
+         */
         protected KarmaSource getSource() {
             return this.source;
         }
 
+        /**
+         * Get the version updater check type
+         *
+         * @return the version updater check type
+         */
         protected VersionCheckType getType() {
             return this.versionType;
         }
 
+        /**
+         * Get the version updater version resolver
+         *
+         * @return the version updater version resolver
+         */
         protected VersionResolver getResolver() {
             return this.versionResolver;
         }
 
-        public VersionUpdater build() throws IllegalArgumentException {
-            try {
-                if (!StringUtils.isNullOrEmpty(this.source.updateURL()) && this.source.updateURL().endsWith(".kupdter")) {
-                    VersionUpdater analyzer = VersionUpdater.instance();
-                    analyzer.source = this.source;
-                    analyzer.checkURL = new URL(this.source.updateURL());
-                    analyzer.versionType = this.versionType;
-                    if (this.versionType.equals(VersionCheckType.RESOLVABLE_ID) && this.versionResolver == null)
-                        throw new IllegalArgumentException("Cannot build a version updater with null version resolver and using RESOLVABLE_ID version type");
-                    analyzer.versionResolver = this.versionResolver;
-                    return analyzer;
-                }
-                throw new IllegalArgumentException("Cannot build a version updater with null/invalid version check URL ( update url must be a .kupdter file )");
-            } catch (Throwable ex) {
-                throw new IllegalArgumentException(ex);
+        /**
+         * Build the version builder
+         *
+         * @return a new version updater instance
+         * @throws IllegalStateException if something goes wrong
+         */
+        public VersionUpdater build() throws IllegalStateException {
+            if (!StringUtils.isNullOrEmpty(URLUtils.getOrNull(source.updateURL())) && this.source.updateURL().endsWith(".kupdter")) {
+                VersionUpdater analyzer = VersionUpdater.instance();
+                analyzer.source = this.source;
+                analyzer.checkURL = URLUtils.getOrNull(source.updateURL());
+                analyzer.versionType = this.versionType;
+                if (this.versionType.equals(VersionCheckType.RESOLVABLE_ID) && this.versionResolver == null)
+                    throw new IllegalStateException("Cannot build a version updater with null version resolver and using RESOLVABLE_ID version type");
+                analyzer.versionResolver = this.versionResolver;
+                return analyzer;
             }
-        }
-    }
-
-    public static class VersionFetchResult {
-        private final boolean updated;
-
-        private final String latest;
-
-        private final String current;
-
-        private final String update;
-
-        private final String[] changelog;
-
-        private final VersionResolver resolver;
-
-        public VersionFetchResult(KarmaSource source, String latest_version, String downloadURL, String[] changes, VersionResolver solver) {
-            this.updated = true;
-            this.latest = latest_version;
-            this.current = source.version();
-            this.update = downloadURL;
-            this.changelog = changes;
-            this.resolver = solver;
-        }
-
-        VersionFetchResult(boolean status, String fetched, String active, String url, String[] changes, VersionResolver solver) {
-            this.updated = status;
-            this.latest = fetched;
-            this.current = active;
-            this.update = url;
-            this.changelog = changes;
-            this.resolver = solver;
-        }
-
-        public final boolean isUpdated() {
-            return this.updated;
-        }
-
-        public final String getLatest() {
-            return this.latest;
-        }
-
-        public final String getCurrent() {
-            return this.current;
-        }
-
-        public final String getUpdateURL() {
-            return this.update;
-        }
-
-        public final String resolve(VersionType type) {
-            if (resolver != null) {
-                switch (type) {
-                    case LATEST:
-                        return resolver.resolve(latest);
-                    case CURRENT:
-                        return resolver.resolve(current);
-                }
-            } else {
-                switch (type) {
-                    case CURRENT:
-                        return current;
-                    case LATEST:
-                        return latest;
-                }
-            }
-
-            return latest;
-        }
-
-        public final String[] getChangelog() {
-            return this.changelog;
-        }
-
-        public enum VersionType {
-            CURRENT, LATEST;
+            throw new IllegalStateException("Cannot build a version updater with null/invalid version check URL ( update url must be a .kupdter file )");
         }
     }
 }

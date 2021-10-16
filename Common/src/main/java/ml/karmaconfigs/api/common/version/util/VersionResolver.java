@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.utils.string.util;
+package ml.karmaconfigs.api.common.version.util;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -26,20 +26,15 @@ package ml.karmaconfigs.api.common.utils.string.util;
  */
 
 /**
- * Karma string generator text
- * content
+ * Karma version resolver
  */
-public enum TextContent {
+public abstract class VersionResolver {
+
     /**
-     * Text with only numbers
+     * Resolve the version
+     *
+     * @param paramString the version
+     * @return the solved version
      */
-    ONLY_NUMBERS,
-    /**
-     * Text with only letters
-     */
-    ONLY_LETTERS,
-    /**
-     * Text with letters and numbers
-     */
-    NUMBERS_AND_LETTERS;
+    public abstract String resolve(String paramString);
 }

@@ -108,7 +108,7 @@ public interface KarmaAPI extends Serializable {
     static boolean isLoaded(final KarmaSource source) {
         try {
             File jarFile = FileUtilities.getSourceFile(source);
-            Path randomLocation = Files.createTempFile(StringUtils.randomString(), StringUtils.randomString());
+            Path randomLocation = Files.createTempFile(StringUtils.generateString().create(), StringUtils.generateString().create());
 
             Files.copy(jarFile.toPath(), randomLocation, StandardCopyOption.REPLACE_EXISTING);
             Files.move(randomLocation, jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);

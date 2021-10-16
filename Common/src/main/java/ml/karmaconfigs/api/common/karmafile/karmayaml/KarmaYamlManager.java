@@ -177,7 +177,7 @@ public final class KarmaYamlManager {
         } else {
             try {
                 Yaml yaml = new Yaml();
-                Path file = Files.createTempFile("karmayaml", StringUtils.randomString(8, StringUtils.StringGen.NUMBERS_AND_LETTERS, StringUtils.StringType.RANDOM_SIZE), (FileAttribute<?>[]) new FileAttribute[0]);
+                Path file = Files.createTempFile("karmayaml", StringUtils.generateString().create());
                 Files.write(file, configuration.getBytes(StandardCharsets.UTF_8));
                 Map<String, Object> values = yaml.load(new InputStreamReader(new FileInputStream(file.toFile()), StandardCharsets.UTF_8));
                 if (values != null)

@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.utils.string.util;
+package ml.karmaconfigs.api.common.version.util;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -26,20 +26,24 @@ package ml.karmaconfigs.api.common.utils.string.util;
  */
 
 /**
- * Karma string generator text
- * content
+ * Karma updater checks type
  */
-public enum TextContent {
+public enum VersionCheckType {
     /**
-     * Text with only numbers
+     * Unique and non resolvable
+     * version ID type
      */
-    ONLY_NUMBERS,
+    ID,
     /**
-     * Text with only letters
+     * Classic version system
+     * ( 1.0.0 )
+     * ( 1.0.1 )
+     * ...
      */
-    ONLY_LETTERS,
+    NUMBER,
     /**
-     * Text with letters and numbers
+     * Unique version ID which has a way to
+     * be decoded to display some data
      */
-    NUMBERS_AND_LETTERS;
+    RESOLVABLE_ID;
 }

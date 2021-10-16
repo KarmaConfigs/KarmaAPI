@@ -1,5 +1,30 @@
 package ml.karmaconfigs.api.common;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
@@ -7,53 +32,104 @@ import ml.karmaconfigs.api.common.utils.enums.Level;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
+/**
+ * Karma console
+ */
 public final class Console {
 
-    public static boolean useConsoleOut = false;
-    public static boolean resetColors = true;
-    private static Consumer<String> messageAction = null;
+    /**
+     * The custom message actions
+     */
+    private final static Map<KarmaSource, Consumer<String>> messageActions = new ConcurrentHashMap<>();
+    /**
+     * The console source
+     */
     private final KarmaSource source;
 
-    public Console(KarmaSource src) {
+    /**
+     * Initialize a new console
+     *
+     * @param src the console source
+     */
+    public Console(final KarmaSource src) {
+        source = src;
+    }
+
+    /**
+     * Initialize a new console
+     *
+     * @param src the console source
+     * @param onMessage the console message action
+     */
+    public Console(final KarmaSource src, final Consumer<String> onMessage) {
         this.source = src;
+        if (onMessage != null && messageActions.getOrDefault(src, null) == null) {
+            send("&b[ KarmaAPI &b]&7 Using custom console message sender");
+        }
+
+        messageActions.put(src, onMessage);
     }
 
-    public Console messageRequest(Consumer<String> action) {
-        messageAction = action;
-        send("&b[ KarmaAPI &b]&7 Using custom console message sender");
-        return this;
-    }
-
+    /**
+     * Get the console prefix data
+     *
+     * @return this source prefix console data
+     */
     public PrefixConsoleData getData() {
         return new PrefixConsoleData(this.source);
     }
 
-    public void send(String message) {
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     */
+    public void send(final String message) {
+        Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
         if (messageAction == null) {
-            Printer.write(this.source, StringUtils.toConsoleColor(message) + "\033[0m");
+            System.out.println("\033[0m" + StringUtils.toConsoleColor(message) + "\033[0m");
         } else {
             messageAction.accept(message);
         }
     }
 
-    public void send(String message, Object... replaces) {
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param replaces the message replaces
+     */
+    public void send(final String message, final Object... replaces) {
+        Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+        String tmpMessage = message;
         for (int i = 0; i < replaces.length; i++) {
             String placeholder = "{" + i + "}";
             String value = replaces[i].toString();
-            message = message.replace(placeholder, value);
+            tmpMessage = tmpMessage.replace(placeholder, value);
         }
         if (messageAction == null) {
-            Printer.write(this.source, StringUtils.toConsoleColor(message) + "\033[0m");
+            System.out.println("\033[0m" + StringUtils.toConsoleColor(tmpMessage) + "\033[0m");
         } else {
-            messageAction.accept(message);
+            messageAction.accept(tmpMessage);
         }
     }
 
-    public void send(@NotNull String message, @NotNull Level level) {
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     */
+    public void send(final @NotNull String message, final @NotNull Level level) {
+        Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+        String tmpMessage = message;
         String prefix = "&b[ &fALERT &b] &7NONE: &b";
         PrefixConsoleData data = getData();
         switch (level) {
@@ -70,23 +146,33 @@ public final class Console {
                 prefix = data.getGravePrefix();
                 break;
         }
-        message = StringUtils.stripColor(message);
+        tmpMessage = StringUtils.stripColor(tmpMessage);
         if (messageAction == null) {
-            if (message.contains("\n")) {
-                for (String msg : message.split("\n"))
+            if (tmpMessage.contains("\n")) {
+                for (String msg : tmpMessage.split("\n"))
                     send(msg);
             } else {
-                send(prefix + message);
+                send(prefix + tmpMessage);
             }
         } else {
-            if (message.contains("\n"))
-                message = StringUtils.listToString(Arrays.asList(message.split("\n")), false);
+            if (tmpMessage.contains("\n"))
+                tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
 
-            messageAction.accept(prefix + message);
+            messageAction.accept(prefix + tmpMessage);
         }
     }
 
-    public void send(@NotNull String message, @NotNull Level level, @NotNull Object... replaces) {
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     * @param replaces the message replaces
+     */
+    public void send(final @NotNull String message, final @NotNull Level level, final @NotNull Object... replaces) {
+        Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+        String tmpMessage = message;
         String prefix = "&b[ &fALERT &b] &7NONE: &b";
         PrefixConsoleData data = getData();
         switch (level) {
@@ -106,71 +192,21 @@ public final class Console {
         for (int i = 0; i < replaces.length; i++) {
             String placeholder = "{" + i + "}";
             String value = replaces[i].toString();
-            message = message.replace(placeholder, value);
+            tmpMessage = tmpMessage.replace(placeholder, value);
         }
-        message = StringUtils.stripColor(message);
+        tmpMessage = StringUtils.stripColor(tmpMessage);
         if (messageAction == null) {
-            if (message.contains("\n")) {
-                for (String msg : message.split("\n"))
+            if (tmpMessage.contains("\n")) {
+                for (String msg : tmpMessage.split("\n"))
                     send(msg);
             } else {
-                send(prefix + message);
+                send(prefix + tmpMessage);
             }
         } else {
-            if (message.contains("\n"))
-                message = StringUtils.listToString(Arrays.asList(message.split("\n")), false);
+            if (tmpMessage.contains("\n"))
+                tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
 
-            messageAction.accept(prefix + message);
+            messageAction.accept(prefix + tmpMessage);
         }
-    }
-
-    protected static class Printer {
-        public static void write(KarmaSource source, String text) {
-            Logger logger = Logger.getLogger(source.name());
-            LogManager.getLogManager().addLogger(logger);
-            logger.setLevel(java.util.logging.Level.INFO);
-
-            if (Console.useConsoleOut) {
-                System.out.println((Console.resetColors ? "\033[0m" : "") + StringUtils.toConsoleColor(text) + (Console.resetColors ? "\033[0m" : ""));
-            } else {
-                logger.info((Console.resetColors ? "\033[0m" : "") + StringUtils.toConsoleColor(text) + (Console.resetColors ? "\033[0m" : ""));
-            }
-        }
-    }
-
-    public static class Colors {
-        public static final String RESET = "\033[0m";
-
-        public static final String BLACK = "\033[0;30m";
-
-        public static final String RED = "\033[0;31m";
-
-        public static final String GREEN = "\033[0;32m";
-
-        public static final String YELLOW = "\033[0;33m";
-
-        public static final String BLUE = "\033[0;34m";
-
-        public static final String PURPLE = "\033[0;35m";
-
-        public static final String CYAN = "\033[0;36m";
-
-        public static final String WHITE = "\033[0;37m";
-
-        public static final String BLACK_BRIGHT = "\033[0;90m";
-
-        public static final String RED_BRIGHT = "\033[0;91m";
-
-        public static final String GREEN_BRIGHT = "\033[0;92m";
-
-        public static final String YELLOW_BRIGHT = "\033[0;93m";
-
-        public static final String BLUE_BRIGHT = "\033[0;94m";
-
-        public static final String PURPLE_BRIGHT = "\033[0;95m";
-
-        public static final String CYAN_BRIGHT = "\033[0;96m";
-
-        public static final String WHITE_BRIGHT = "\033[0;97m";
     }
 }

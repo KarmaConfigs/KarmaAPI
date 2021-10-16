@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.utils.string.util;
+package ml.karmaconfigs.api.common.utils.string;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -26,20 +26,63 @@ package ml.karmaconfigs.api.common.utils.string.util;
  */
 
 /**
- * Karma string generator text
- * content
+ * Karma comparator builder
  */
-public enum TextContent {
+public final class ComparatorBuilder {
+
     /**
-     * Text with only numbers
+     * The current version
      */
-    ONLY_NUMBERS,
+    private String current = "1.0";
     /**
-     * Text with only letters
+     * The check version
      */
-    ONLY_LETTERS,
+    private String check = "1.0";
+
     /**
-     * Text with letters and numbers
+     * Initialize the comparator builder
      */
-    NUMBERS_AND_LETTERS;
+    ComparatorBuilder() {}
+
+    /**
+     * Set the current version
+     *
+     * @param c the current version
+     * @return this instance
+     */
+    public ComparatorBuilder currentVersion(final String c) {
+        current = c;
+
+        return this;
+    }
+
+    /**
+     * Set the check version
+     *
+     * @param c the check version
+     * @return this instance
+     */
+    public ComparatorBuilder checkVersion(final String c) {
+        check = c;
+
+        return this;
+    }
+
+    /**
+     * Get the current version
+     *
+     * @return the current version
+     */
+    public String getCurrentVersion() {
+        return current;
+    }
+
+    /**
+     * Get the check version
+     *
+     * @return the check version
+     */
+    public String getCheckVersion() {
+        return check;
+    }
 }

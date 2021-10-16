@@ -1,5 +1,30 @@
 package ml.karmaconfigs.api.common;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
@@ -12,17 +37,42 @@ import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+/**
+ * Karma resource downloader
+ */
 public final class ResourceDownloader {
+
+    /**
+     * The destination download file
+     */
     private final File destFile;
 
+    /**
+     * The download URL
+     */
     private final String url;
 
-    public ResourceDownloader(File destination, String _url) {
+    /**
+     * Initialize the resource downloader
+     *
+     * @param destination the resource destination
+     * @param _url the resource download URL
+     */
+    public ResourceDownloader(final File destination, final String _url) {
         this.destFile = destination;
         this.url = _url;
     }
 
-    public static ResourceDownloader toCache(KarmaSource source, String fileName, String downloadURL, String... sub) {
+    /**
+     * Download something to cache
+     *
+     * @param source the resource source
+     * @param fileName the destination file name
+     * @param downloadURL the resource download URL
+     * @param sub the resource path
+     * @return a new resource download instance
+     */
+    public static ResourceDownloader toCache(final KarmaSource source, final String fileName, final String downloadURL, final String... sub) {
         File target;
         if (sub.length > 0) {
             StringBuilder builder = new StringBuilder();
@@ -37,6 +87,9 @@ public final class ResourceDownloader {
         throw new RuntimeException("Tried to download invalid resource file");
     }
 
+    /**
+     * Download the resource
+     */
     public void download() {
         ReadableByteChannel rbc = null;
         InputStream stream = null;
@@ -51,7 +104,7 @@ public final class ResourceDownloader {
             long destSize = this.destFile.length();
             long connSize = connection.getContentLengthLong();
             if (destSize != connSize) {
-                APISource.getConsole().send("&b[ KarmaAPI ] &3Downloading file {0}", new Object[]{this.destFile.getName()});
+                APISource.getConsole().send("&b[ KarmaAPI ] &3Downloading file {0}", this.destFile.getName());
                 rbc = Channels.newChannel(download_url.openStream());
                 output = new FileOutputStream(this.destFile);
                 output.getChannel().transferFrom(rbc, 0L, Long.MAX_VALUE);
@@ -69,12 +122,17 @@ public final class ResourceDownloader {
                     output.close();
                 if (connection != null)
                     connection.disconnect();
-            } catch (Throwable throwable) {
+            } catch (Throwable ignored) {
             }
-            APISource.getConsole().send("&b[ KarmaAPI ] &3Downloaded file {0}", new Object[]{this.destFile.getName()});
+            APISource.getConsole().send("&b[ KarmaAPI ] &3Downloaded file {0}", this.destFile.getName());
         }
     }
 
+    /**
+     * Get the resource destination file
+     *
+     * @return the resource destination file
+     */
     public File getDestFile() {
         return this.destFile;
     }

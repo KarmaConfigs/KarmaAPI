@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.utils.string.util;
+package ml.karmaconfigs.api;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,21 +25,39 @@ package ml.karmaconfigs.api.common.utils.string.util;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.Console;
+import ml.karmaconfigs.api.common.Logger;
+import ml.karmaconfigs.api.common.karma.APISource;
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
+
+import java.util.ArrayList;
+
 /**
- * Karma string generator text
- * content
+ * Karma test class
  */
-public enum TextContent {
+public final class Test {
+
     /**
-     * Text with only numbers
+     * Karma source
      */
-    ONLY_NUMBERS,
+    private final static KarmaSource source = new Source();
+
     /**
-     * Text with only letters
+     * Main initializer
+     *
+     * @param args the launch arguments
      */
-    ONLY_LETTERS,
-    /**
-     * Text with letters and numbers
-     */
-    NUMBERS_AND_LETTERS;
+    public static void main(String[] args) {
+        APISource.setProvider(source);
+        Console console = new Console(source);
+        Logger logger = new Logger(source);
+
+        console.send("&a" + StringUtils.listToString(new ArrayList<>(StringUtils.arrayToSet(args)), false));
+
+        logger.scheduleLog(Level.INFO, "Hello world!");
+        logger.scheduleLog(Level.GRAVE, new Throwable());
+        logger.scheduleLog(Level.INFO, "Something went wrong {0} {1}", "lol", 69);
+    }
 }
