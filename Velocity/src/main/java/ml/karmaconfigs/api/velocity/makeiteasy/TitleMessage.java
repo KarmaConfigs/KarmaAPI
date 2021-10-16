@@ -77,7 +77,7 @@ public final class TitleMessage {
     /**
      * Send the title
      */
-    public final void send() {
+    public void send() {
         Title.Times times = Title.Times.of(Duration.ofSeconds(2), Duration.ofSeconds(2), Duration.ofSeconds(2));
         Title server_title = Title.title(
                 TextComponent.ofChildren(Component.text().content(StringUtils.toColor(title))),
@@ -97,7 +97,7 @@ public final class TitleMessage {
      * @param hideIn the time that will take to
      *               completely hide the title
      */
-    public final void send(final int showIn, final int keepIn, final int hideIn) {
+    public void send(final int showIn, final int keepIn, final int hideIn) {
         Title.Times times = Title.Times.of(Duration.ofSeconds(showIn), Duration.ofSeconds(keepIn), Duration.ofSeconds(hideIn));
         Title server_title = Title.title(
                 TextComponent.ofChildren(Component.text().content(StringUtils.toColor(title))),
