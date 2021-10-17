@@ -39,26 +39,9 @@ import org.jetbrains.annotations.Nullable;
  * version utils. Check versions
  * and more...
  */
-public abstract class VersionUtils {
+public final class VersionUtils {
 
-    private final Server server;
-
-    /**
-     * Get the minecraft server version
-     * of the server
-     */
-    VersionUtils() {
-        server = Bukkit.getServer();
-    }
-
-    /**
-     * Get a new instance of the version utils
-     *
-     * @return a new instance of version utils
-     */
-    public static VersionUtils newInstance() {
-        return new VersionUtils() {};
-    }
+    private final static Server server = Bukkit.getServer();
 
     /**
      * Get the full version string of
@@ -66,7 +49,7 @@ public abstract class VersionUtils {
      *
      * @return a String
      */
-    public final String getRealVersion() {
+    public static String getRealVersion() {
         return server.getBukkitVersion();
     }
 
@@ -76,7 +59,7 @@ public abstract class VersionUtils {
      *
      * @return a String
      */
-    public final String getFullVersion() {
+    public static String getFullVersion() {
         return server.getBukkitVersion().split("-")[0];
     }
 
@@ -85,7 +68,7 @@ public abstract class VersionUtils {
      *
      * @return a string
      */
-    public final String getPackageType() {
+    public static String getPackageType() {
         return server.getBukkitVersion().split("-")[2];
     }
 
@@ -94,7 +77,7 @@ public abstract class VersionUtils {
      *
      * @return a string
      */
-    public final String getPackageBuild() {
+    public static String getPackageBuild() {
         return server.getBukkitVersion().split("-")[1];
     }
 
@@ -103,7 +86,7 @@ public abstract class VersionUtils {
      *
      * @return a float
      */
-    public final float getVersion() {
+    public static float getVersion() {
         String[] versionData = server.getBukkitVersion().split("-");
         String version_head = versionData[0].split("\\.")[0];
         String version_sub = versionData[0].split("\\.")[1];
@@ -117,7 +100,7 @@ public abstract class VersionUtils {
      *
      * @return an integer
      */
-    public final int getVersionUpdate() {
+    public static int getVersionUpdate() {
         String[] versionData = server.getBukkitVersion().split("-");
         String version = versionData[0];
         versionData = version.split("\\.");
@@ -132,7 +115,7 @@ public abstract class VersionUtils {
      *
      * @return a Version instance
      */
-    public final Version version() {
+    public static Version version() {
         String full = getFullVersion();
         full = "v" + full.replace(".", "_");
 
@@ -147,7 +130,7 @@ public abstract class VersionUtils {
      * @return if current version is over the
      * specified one
      */
-    public final boolean isOver(final Version version) {
+    public static boolean isOver(final Version version) {
         String current_version = version().name().replace("v", "").replace("_", ".");
         String check_version = version.name().replace("v", "").replace("_", ".");
 
@@ -166,7 +149,7 @@ public abstract class VersionUtils {
      * @return if the current version is the
      * specified one
      */
-    public final boolean isUpdated(final Version version) {
+    public static boolean isUpdated(final Version version) {
         String current_version = version().name().replace("v", "").replace("_", ".");
         String check_version = version.name().replace("v", "").replace("_", ".");
 
@@ -186,7 +169,7 @@ public abstract class VersionUtils {
      * @return if current version is over the
      * specified one
      */
-    public final boolean isUnder(final Version v) {
+    public static boolean isUnder(final Version v) {
         String current_version = version().name().replace("v", "").replace("_", ".");
         String check_version = v.name().replace("v", "").replace("_", ".");
 
@@ -205,7 +188,7 @@ public abstract class VersionUtils {
      * @return a Class
      */
     @Nullable
-    public final Class<?> getMinecraftClass(@NotNull final String clazz) {
+    public static Class<?> getMinecraftClass(@NotNull final String clazz) {
         try {
             String version = server.getClass().getPackage().getName().replace(".", ",").split(",")[3];
             return Class.forName("net.minecraft.server." + version + "." + clazz);
@@ -222,7 +205,7 @@ public abstract class VersionUtils {
      * @return a Class
      */
     @Nullable
-    public final Class<?> getBukkitClass(@NotNull final String clazz) {
+    public static Class<?> getBukkitClass(@NotNull final String clazz) {
         try {
             String version = server.getClass().getPackage().getName().replace(".", ",").split(",")[3];
             return Class.forName("org.bukkit.craftbukkit." + version + "." + clazz);

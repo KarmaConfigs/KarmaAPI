@@ -295,8 +295,8 @@ public final class BossMessage extends BossProvider<ProxiedPlayer> {
     public void scheduleBar(final Collection<ProxiedPlayer> players) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
 
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -315,8 +315,8 @@ public final class BossMessage extends BossProvider<ProxiedPlayer> {
     public void scheduleBar(final ProxiedPlayer player) {
         b_bars.add(this);
         boss_bars.put(id, this);
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
 
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
