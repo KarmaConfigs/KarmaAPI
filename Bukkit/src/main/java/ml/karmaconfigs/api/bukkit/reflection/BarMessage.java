@@ -44,8 +44,6 @@ import java.util.concurrent.TimeUnit;
  */
 public final class BarMessage {
 
-    private final VersionUtils utils = VersionUtils.newInstance();
-    
     private final Player player;
 
     private String message;
@@ -71,14 +69,14 @@ public final class BarMessage {
         if (player != null && player.isOnline()) {
             String msg = StringUtils.toColor(message);
             try {
-                Constructor<?> constructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutChat")).getConstructor(utils.getMinecraftClass("IChatBaseComponent"), byte.class);
+                Constructor<?> constructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutChat")).getConstructor(VersionUtils.getMinecraftClass("IChatBaseComponent"), byte.class);
 
-                Object icbc = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
+                Object icbc = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
                 Object packet = constructor.newInstance(icbc, (byte) 2);
                 Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
                 Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-                playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+                playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
                 sent = true;
             } catch (Throwable ex) {
                 try {

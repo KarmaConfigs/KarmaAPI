@@ -15,13 +15,6 @@
         <finalName>KarmaAPI-Bundle</finalName>
         <plugins>
             <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.7</version>
-                <configuration>
-                    <altDeploymentRepository>internal.repo::default::file://D:/Intel/Projects/KarmaAPI/maven</altDeploymentRepository>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -52,14 +45,6 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
-
-    <distributionManagement>
-        <repository>
-            <id>internal.repo</id>
-            <name>Temporary Staging Repository</name>
-            <url>file://D:/Intel/Projects/KarmaAPI/maven</url>
-        </repository>
-    </distributionManagement>
 
     <dependencies>
         <dependency>

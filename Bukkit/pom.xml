@@ -15,13 +15,6 @@
         <finalName>KarmaAPI-Bukkit</finalName>
         <plugins>
             <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.7</version>
-                <configuration>
-                    <altDeploymentRepository>internal.repo::default::file://D:/Intel/Projects/KarmaAPI/maven</altDeploymentRepository>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -48,14 +41,6 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>internal.repo</id>
-            <name>Temporary Staging Repository</name>
-            <url>file://D:/Intel/Projects/KarmaAPI/maven</url>
-        </repository>
-    </distributionManagement>
-
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
@@ -76,7 +61,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.16.5-R0.1-SNAPSHOT</version>
+            <version>1.17-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

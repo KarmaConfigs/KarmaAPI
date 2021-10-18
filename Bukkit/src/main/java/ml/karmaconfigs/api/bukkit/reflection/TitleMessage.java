@@ -38,8 +38,7 @@ import java.util.Objects;
  * Title message
  */
 public final class TitleMessage {
-
-    private final static VersionUtils utils = VersionUtils.newInstance();
+    
     private final Player player;
     private final String title, subtitle;
 
@@ -80,29 +79,29 @@ public final class TitleMessage {
      */
     public void send() {
         try {
-            Object chatTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatTitle = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + title + "\"}");
-            Constructor<?> titleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
+            Constructor<?> titleConstructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], VersionUtils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object packet = titleConstructor.newInstance(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
                     20 * 2, 20 * 5, 20 * 2);
 
-            Object chatsTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatsTitle = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + subtitle + "\"}");
-            Constructor<?> timingTitleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
+            Constructor<?> timingTitleConstructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], VersionUtils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object timingPacket = timingTitleConstructor.newInstance(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
                     20 * 2, 20 * 5, 20 * 2);
 
             Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
             Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
-            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
+            playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+            playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
         } catch (Throwable ex) {
             player.sendTitle(title, subtitle, 20 * 2, 20 * 5, 20 * 2);
         }
@@ -119,29 +118,29 @@ public final class TitleMessage {
      */
     public void send(final int showIn, final int keepIn, final int hideIn) {
         try {
-            Object chatTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatTitle = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + title + "\"}");
-            Constructor<?> titleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
+            Constructor<?> titleConstructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], VersionUtils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object packet = titleConstructor.newInstance(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("TITLE").get(null), chatTitle,
                     20 * showIn, 20 * keepIn, 20 * hideIn);
 
-            Object chatsTitle = Objects.requireNonNull(utils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
+            Object chatsTitle = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class)
                     .invoke(null, "{\"text\": \"" + subtitle + "\"}");
-            Constructor<?> timingTitleConstructor = Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], utils.getMinecraftClass("IChatBaseComponent"),
+            Constructor<?> timingTitleConstructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getConstructor(
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0], VersionUtils.getMinecraftClass("IChatBaseComponent"),
                     int.class, int.class, int.class);
             Object timingPacket = timingTitleConstructor.newInstance(
-                    Objects.requireNonNull(utils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
+                    Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutTitle")).getDeclaredClasses()[0].getField("SUBTITLE").get(null), chatsTitle,
                     20 * showIn, 20 * keepIn, 20 * hideIn);
 
             Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
             Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
 
-            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
-            playerConnection.getClass().getMethod("sendPacket", utils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
+            playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+            playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, timingPacket);
         } catch (Throwable ex) {
             player.sendTitle(title, subtitle, 20 * showIn, 20 * keepIn, 20 * hideIn);
         }
