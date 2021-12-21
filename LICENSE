@@ -1,5 +1,5 @@
 GSA GENERAL PLUGIN LICENSE
-                       Version 1.1, October 2020
+                       Version 1.2, October 2021
 
  GSA General Plugin License ( GSA GPL ) is a license created
  by GSA to protect their intellectual property jobs.
@@ -7,32 +7,66 @@ GSA GENERAL PLUGIN LICENSE
  The use of this license is only allowed to GSA members.
 
 
-            Conditions / Terms of use
+What is GSA GPL?
 
- - Anytime the license gets updated, you will need to accept
-   the new conditions, otherwise you will lose the previously
-   granted access.
+GSA GPL ( GSA General Plugin License ) is a license created on January 2020 to protect GSA resources
+from copy & paste into not-allowed projects. This is because some of our resources contains code that took hours or even months to
+make or work. With the idea of protecting our time, the GSA GPL license was created. This is not a public license, and only GSA
+members are able to use it. As there are a lot of "GSA" groups, we will provide our discord link as "group identifier". Any member
+of that discord group with the role CEO or Developer can use GSA GPL license freely on their projects.
 
- - If the class has Private GSA code tag you won't be able to use
-   that code in any another work until you receive access to
-   use it from GSA, if GSA team rejects the use of that code, you
-   will accept that condition and won't use the code.
 
- - Using any code from any class with Private GSA code tag
-   while having the correspondent permission ( GSA allowed it )
-   will require a link to our discord
+Conditions
 
- - Modifying the code from any class with Private GSA tag
-   is totally forbidden. Even if you have the permission to
-   use that code.
+Before starting with the conditions, we must clarify when this license is applied. If specified in
+README.*, the license will be applied to the whole code, otherwise, if it's not specified in README.* or it doens't exist, any class
+/file/method with "Private GSA code" will be under this license. If specified in README.* and anyway, also specified separately in
+the class/file/method with the "Private GSA code" comment, this will be also under GSA GPL license.
+If the comment is not
+literally "Private GSA code", but similar ( like "private gsa code", "gsa code" ) or contains it. Will be also took as "Private GSA
+code" and the class/file/method will be also under GSA GPL license.
 
- - The use of code with Private GSA code tag is also allowed
-   for non-comercial profit and personal profits only. If you
-   are going to sell/redistribuite something that has modified
-   or has GSA code, is totally forbidden.
 
- - Editing the code for fixes ( only privately ) is allowed
-   by GSA and will require a revision of GSA owners to be
-   approved. As compensation, you will be mentioned in the code
-   and you will have free-access to it until your modification is
-   removed
+- By decompiling or opening a GSA protected project/resource/object you are automatically accepting GSA
+GPL therms and conditions.
+
+- To use any class/file/method protected by GSA, you must ask permission to use it, in our discord
+providing a valid email address.
+
+- If the license gets updated, you are forced to accept new conditions or cancel the permission to use it.
+You will be notified by email. If you decline, you won't be able to use the private GSA code anymore until you ask again for
+permission.
+
+
+- Using any class/file/method protected by GSA, will require a link to the original author project or site.
+
+
+- Modifying GSA protected code is completely forbbiden, even with the correspondent access, this will not
+be tolerated. In case you modify/use private GSA code without a valid license, legal actions will be taken. If you have a valid
+license, that license will be revoked. You can suggest a code change, without modifying the original one, but the code you suggest
+to change/add will be also under GSA license even it doesn't has the private GSA comment.
+
+
+- Before publishing a resource that contains private GSA code, will require a request to the GSA code
+author. If declined, you are free to ask what changes does your project need to be published. You have also the right to create a
+vote in the discord to let the users choose if the project will be published or not. If the users decide to accept the project.
+
+
+- By creating a vote for a project to be accepted, you will lose access to more GSA private code ( you
+will be restricted to the code you are currently using, if your project has GSA code but it's not really being used, you will also
+lose access to that GSA code ).
+
+
+- Using a project that contains GSA code without a valid license and without GSA approvation, is
+forbbiden. If you found one, please stop using it, notify the project author and report it to our discord.
+
+
+Warranty Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
