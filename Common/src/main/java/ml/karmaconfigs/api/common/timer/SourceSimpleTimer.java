@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.timer;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.IllegalTimerAccess;
@@ -107,7 +108,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * Send a warning to the console when the timer is
      * cancelled because its owner has been unloaded
      */
-    private boolean noticeUnloaded;
+    private boolean cancelUnloaded = true;
     /**
      * If the timer is cancelled
      */
@@ -149,23 +150,23 @@ public final class SourceSimpleTimer extends SimpleScheduler {
     public SourceSimpleTimer(final KarmaSource owner, final Number time, final boolean autoRestart) {
         super(owner);
         int seconds;
-        this.period = 1L;
-        this.noticeUnloaded = false;
-        this.cancel = false;
-        this.pause = false;
-        this.temp_restart = false;
-        this.thread = false;
-        this.periodActions = new ConcurrentHashMap<>();
-        this.secondsActions = new ConcurrentHashMap<>();
-        this.secondsConsumer = new ConcurrentHashMap<>();
-        this.periodConsumer = new ConcurrentHashMap<>();
-        this.onEndTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.onStartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.onRestartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.pauseAction = null;
-        this.cancelAction = null;
-        this.source = owner;
-        this.restart = autoRestart;
+        period = 1L;
+        cancelUnloaded = false;
+        cancel = false;
+        pause = false;
+        temp_restart = false;
+        thread = false;
+        periodActions = new ConcurrentHashMap<>();
+        secondsActions = new ConcurrentHashMap<>();
+        secondsConsumer = new ConcurrentHashMap<>();
+        periodConsumer = new ConcurrentHashMap<>();
+        onEndTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        onStartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        onRestartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        pauseAction = null;
+        cancelAction = null;
+        source = owner;
+        restart = autoRestart;
         String value = time.toString();
         int milli = 0;
         if (value.contains(".")) {
@@ -183,10 +184,10 @@ public final class SourceSimpleTimer extends SimpleScheduler {
         } else {
             seconds = (int) TimeUnit.SECONDS.toMillis(time.intValue());
         }
-        this.original = (seconds + milli);
-        this.back = this.original;
-        this.id = getId();
-        timersData.put(this.id, this);
+        original = (seconds + milli);
+        back = original;
+        id = getId();
+        timersData.put(id, this);
     }
 
     /**
@@ -200,29 +201,29 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     public SourceSimpleTimer(final KarmaSource owner, final int builtId) throws TimerNotFound, IllegalTimerAccess {
         super(owner);
-        this.period = 1L;
-        this.noticeUnloaded = false;
-        this.cancel = false;
-        this.pause = false;
-        this.temp_restart = false;
-        this.thread = false;
-        this.periodActions = new ConcurrentHashMap<>();
-        this.secondsActions = new ConcurrentHashMap<>();
-        this.secondsConsumer = new ConcurrentHashMap<>();
-        this.periodConsumer = new ConcurrentHashMap<>();
-        this.onEndTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.onStartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.onRestartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.pauseAction = null;
-        this.cancelAction = null;
+        period = 1L;
+        cancelUnloaded = false;
+        cancel = false;
+        pause = false;
+        temp_restart = false;
+        thread = false;
+        periodActions = new ConcurrentHashMap<>();
+        secondsActions = new ConcurrentHashMap<>();
+        secondsConsumer = new ConcurrentHashMap<>();
+        periodConsumer = new ConcurrentHashMap<>();
+        onEndTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        onStartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        onRestartTasks = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        pauseAction = null;
+        cancelAction = null;
         SimpleScheduler built = timersData.getOrDefault(builtId, null);
         if (built != null) {
             if (built.getSource().isSource(owner)) {
-                this.source = built.getSource();
-                this.restart = built.autoRestart();
-                this.original = built.getOriginalTime();
-                this.back = built.getMillis();
-                this.id = builtId;
+                source = built.getSource();
+                restart = built.autoRestart();
+                original = built.getOriginalTime();
+                back = built.getMillis();
+                id = builtId;
             } else {
                 throw new IllegalTimerAccess(owner, built);
             }
@@ -238,8 +239,8 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * @param status the notice unloaded status
      * @return this instance
      */
-    public SimpleScheduler noticeUnloaded(final boolean status) {
-        this.noticeUnloaded = status;
+    public SimpleScheduler cancelUnloaded(final boolean status) {
+        cancelUnloaded = status;
         return this;
     }
 
@@ -248,7 +249,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public void cancel() {
-        this.cancel = true;
+        cancel = true;
     }
 
     /**
@@ -256,9 +257,9 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public void pause() {
-        this.pause = true;
-        if (this.pauseAction != null)
-            runPeriodWithThread(this.pauseAction);
+        pause = true;
+        if (pauseAction != null)
+            runPeriodWithThread(pauseAction);
     }
 
     /**
@@ -268,53 +269,82 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public void start() throws TimerAlreadyStarted {
-        Set<Integer> ids = runningTimers.getOrDefault(this.source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        if (!ids.contains(this.id)) {
+        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        if (!ids.contains(id)) {
             final Timer timer = new Timer();
             timer.schedule(new TimerTask() {
                 public void run() {
-                    if (!SourceSimpleTimer.this.pause)
-                        if (SourceSimpleTimer.this.cancel || SourceSimpleTimer.this.temp_restart) {
-                            if (!SourceSimpleTimer.this.temp_restart) {
-                                SourceSimpleTimer.timersData.remove(SourceSimpleTimer.this.id);
-                                Set<Integer> ids = SourceSimpleTimer.runningTimers.getOrDefault(SourceSimpleTimer.this.source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-                                ids.remove(SourceSimpleTimer.this.id);
-                                SourceSimpleTimer.runningTimers.put(SourceSimpleTimer.this.source, ids);
-                                if (SourceSimpleTimer.this.cancelAction != null)
-                                    SourceSimpleTimer.this.runPeriodWithThread(SourceSimpleTimer.this.cancelAction);
-                                SourceSimpleTimer.this.cancel = false;
-                                SourceSimpleTimer.this.pause = false;
-                                SourceSimpleTimer.this.temp_restart = false;
-                                timer.cancel();
-                            } else {
-                                SourceSimpleTimer.this.back = SourceSimpleTimer.this.original;
-                                SourceSimpleTimer.this.onRestartTasks.forEach(x$0 -> runTaskWithThread(x$0));
-                                SourceSimpleTimer.this.temp_restart = false;
-                            }
-                        } else {
-                            SourceSimpleTimer.this.executeTasks();
-                            if (SourceSimpleTimer.this.back > 0L) {
-                                SourceSimpleTimer.this.back--;
-                            } else {
-                                SourceSimpleTimer.this.back = SourceSimpleTimer.this.original;
-                                if (SourceSimpleTimer.this.restart) {
-                                    SourceSimpleTimer.this.onRestartTasks.forEach(x$0 -> runTaskWithThread(x$0));
-                                    SourceSimpleTimer.this.back = SourceSimpleTimer.this.original;
-                                } else {
-                                    SourceSimpleTimer.this.onEndTasks.forEach(x$0 -> runTaskWithThread(x$0));
-                                    SourceSimpleTimer.timersData.remove(SourceSimpleTimer.this.id);
-                                    Set<Integer> ids = SourceSimpleTimer.runningTimers.getOrDefault(SourceSimpleTimer.this.source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-                                    ids.remove(SourceSimpleTimer.this.id);
-                                    SourceSimpleTimer.runningTimers.put(SourceSimpleTimer.this.source, ids);
-                                    SourceSimpleTimer.this.cancel = false;
-                                    SourceSimpleTimer.this.pause = false;
-                                    SourceSimpleTimer.this.temp_restart = false;
+                    boolean run = (!cancelUnloaded || KarmaAPI.isLoaded(source));
+
+                    if (run) {
+                        if (!pause) {
+                            if (cancel || temp_restart) {
+                                if (!temp_restart) {
+                                    timersData.remove(id);
+
+                                    Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                                    ids.remove(id);
+
+                                    runningTimers.put(source, ids);
+                                    if (cancelAction != null)
+                                        runPeriodWithThread(cancelAction);
+
+                                    cancel = false;
+                                    pause = false;
+                                    temp_restart = false;
+
                                     timer.cancel();
+                                } else {
+                                    back = original;
+                                    onRestartTasks.forEach(x$0 -> runTaskWithThread(x$0));
+                                    temp_restart = false;
+                                }
+                            } else {
+                                executeTasks();
+                                if (back > 0L) {
+                                    back--;
+                                } else {
+                                    back = original;
+                                    if (restart) {
+                                        onRestartTasks.forEach(x$0 -> runTaskWithThread(x$0));
+                                        back = original;
+                                    } else {
+                                        onEndTasks.forEach(x$0 -> runTaskWithThread(x$0));
+
+                                        timersData.remove(id);
+
+                                        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                                        ids.remove(id);
+
+                                        runningTimers.put(source, ids);
+
+                                        cancel = false;
+                                        pause = false;
+                                        temp_restart = false;
+
+                                        timer.cancel();
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        timersData.remove(id);
+
+                        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                        ids.remove(id);
+
+                        runningTimers.put(source, ids);
+                        if (cancelAction != null)
+                            runPeriodWithThread(cancelAction);
+
+                        cancel = false;
+                        pause = false;
+                        temp_restart = false;
+
+                        timer.cancel();
+                    }
                 }
-            }, 0L, this.period);
+            }, 0L, period);
         } else {
             throw new TimerAlreadyStarted(this);
         }
@@ -325,7 +355,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public void restart() {
-        this.temp_restart = true;
+        temp_restart = true;
     }
 
     /**
@@ -337,7 +367,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler updateAutoRestart(final boolean status) {
-        this.restart = status;
+        restart = status;
         return this;
     }
 
@@ -367,7 +397,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
         } else {
             seconds = (int) TimeUnit.SECONDS.toMillis(time.intValue());
         }
-        this.period = (seconds + milli);
+        period = (seconds + milli);
         return this;
     }
 
@@ -379,7 +409,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler multiThreading(final boolean status) {
-        this.thread = status;
+        thread = status;
         return this;
     }
 
@@ -393,9 +423,9 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler exactSecondPeriodAction(final int time, final Runnable task) {
-        Set<Runnable> actions = this.secondsActions.getOrDefault(time, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Runnable> actions = secondsActions.getOrDefault(time, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         actions.add(task);
-        this.secondsActions.put(time, actions);
+        secondsActions.put(time, actions);
         return this;
     }
 
@@ -409,9 +439,9 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler exactPeriodAction(final long time, final Runnable task) {
-        Set<Runnable> actions = this.periodActions.getOrDefault(time, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Runnable> actions = periodActions.getOrDefault(time, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         actions.add(task);
-        this.periodActions.put(time, actions);
+        periodActions.put(time, actions);
         return this;
     }
 
@@ -423,12 +453,12 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler secondChangeAction(final Consumer<Integer> action) {
-        long second = TimeUnit.MILLISECONDS.toSeconds(this.original);
+        long second = TimeUnit.MILLISECONDS.toSeconds(original);
         while (second >= 0L) {
             final long millis = TimeUnit.SECONDS.toMillis(second--);
-            final Set<Consumer<Integer>> actions = this.secondsConsumer.getOrDefault(millis, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
+            final Set<Consumer<Integer>> actions = secondsConsumer.getOrDefault(millis, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
             actions.add(action);
-            this.secondsConsumer.put(millis, actions);
+            secondsConsumer.put(millis, actions);
         }
         return this;
     }
@@ -441,11 +471,11 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler periodChangeAction(final Consumer<Long> action) {
-        long milli = this.original;
+        long milli = original;
         while (milli >= 0L) {
-            final Set<Consumer<Long>> actions = this.periodConsumer.getOrDefault(milli--, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
+            final Set<Consumer<Long>> actions = periodConsumer.getOrDefault(milli--, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
             actions.add(action);
-            this.periodConsumer.put(milli, actions);
+            periodConsumer.put(milli, actions);
         }
         return this;
     }
@@ -458,7 +488,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler cancelAction(final Consumer<Long> action) {
-        this.cancelAction = action;
+        cancelAction = action;
         return this;
     }
 
@@ -470,7 +500,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler pauseAction(final Consumer<Long> action) {
-        this.pauseAction = action;
+        pauseAction = action;
         return this;
     }
 
@@ -482,7 +512,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler startAction(final Runnable task) {
-        this.onStartTasks.add(task);
+        onStartTasks.add(task);
         return this;
     }
 
@@ -495,7 +525,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler endAction(final Runnable task) {
-        this.onEndTasks.add(task);
+        onEndTasks.add(task);
         return this;
     }
 
@@ -507,7 +537,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler restartAction(final Runnable task) {
-        this.onRestartTasks.add(task);
+        onRestartTasks.add(task);
         return this;
     }
 
@@ -524,26 +554,26 @@ public final class SourceSimpleTimer extends SimpleScheduler {
     public SimpleScheduler conditionalAction(final TimeCondition condition, final int condition_value, final Consumer<Integer> action) {
         switch (condition) {
             case EQUALS: {
-                final Set<Consumer<Integer>> actions = this.secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(condition_value), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
+                final Set<Consumer<Integer>> actions = secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(condition_value), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
                 actions.add(action);
-                this.secondsConsumer.put(TimeUnit.SECONDS.toMillis(condition_value), actions);
+                secondsConsumer.put(TimeUnit.SECONDS.toMillis(condition_value), actions);
                 break;
             }
             case OVER_OF: {
                 long c_over_val = condition_value;
-                while (c_over_val <= this.original) {
-                    final Set<Consumer<Integer>> actions = this.secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(c_over_val++), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
+                while (c_over_val <= original) {
+                    final Set<Consumer<Integer>> actions = secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(c_over_val++), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
                     actions.add(action);
-                    this.secondsConsumer.put(c_over_val, actions);
+                    secondsConsumer.put(c_over_val, actions);
                 }
                 break;
             }
             case MINUS_TO: {
                 long c_minus_val = condition_value;
                 while (c_minus_val >= 0L) {
-                    final Set<Consumer<Integer>> actions = this.secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(c_minus_val--), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
+                    final Set<Consumer<Integer>> actions = secondsConsumer.getOrDefault(TimeUnit.SECONDS.toMillis(c_minus_val--), Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Integer>, Boolean>()));
                     actions.add(action);
-                    this.secondsConsumer.put(c_minus_val, actions);
+                    secondsConsumer.put(c_minus_val, actions);
                 }
                 break;
             }
@@ -563,26 +593,26 @@ public final class SourceSimpleTimer extends SimpleScheduler {
     public SimpleScheduler conditionalPeriodAction(final TimeCondition condition, final long condition_value, final Consumer<Long> action) {
         switch (condition) {
             case EQUALS: {
-                final Set<Consumer<Long>> actions = this.periodConsumer.getOrDefault(condition_value, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
+                final Set<Consumer<Long>> actions = periodConsumer.getOrDefault(condition_value, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
                 actions.add(action);
-                this.periodConsumer.put(TimeUnit.SECONDS.toMillis(condition_value), actions);
+                periodConsumer.put(TimeUnit.SECONDS.toMillis(condition_value), actions);
                 break;
             }
             case OVER_OF: {
                 long c_over_val = condition_value;
-                while (c_over_val <= this.original) {
-                    final Set<Consumer<Long>> actions = this.periodConsumer.getOrDefault(c_over_val++, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
+                while (c_over_val <= original) {
+                    final Set<Consumer<Long>> actions = periodConsumer.getOrDefault(c_over_val++, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
                     actions.add(action);
-                    this.periodConsumer.put(c_over_val, actions);
+                    periodConsumer.put(c_over_val, actions);
                 }
                 break;
             }
             case MINUS_TO: {
                 long c_minus_val = condition_value;
                 while (c_minus_val >= 0L) {
-                    final Set<Consumer<Long>> actions = this.periodConsumer.getOrDefault(c_minus_val--, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
+                    final Set<Consumer<Long>> actions = periodConsumer.getOrDefault(c_minus_val--, Collections.newSetFromMap(new ConcurrentHashMap<Consumer<Long>, Boolean>()));
                     actions.add(action);
-                    this.periodConsumer.put(c_minus_val, actions);
+                    periodConsumer.put(c_minus_val, actions);
                 }
                 break;
             }
@@ -597,7 +627,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public boolean isCancelled() {
-        return this.cancel;
+        return cancel;
     }
 
     /**
@@ -607,8 +637,8 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public boolean isRunning() {
-        Set<Integer> ids = runningTimers.getOrDefault(this.source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        return ids.contains(this.id);
+        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        return ids.contains(id);
     }
 
     /**
@@ -618,7 +648,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public boolean isPaused() {
-        return this.pause;
+        return pause;
     }
 
     /**
@@ -629,7 +659,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public boolean autoRestart() {
-        return this.restart;
+        return restart;
     }
 
     /**
@@ -639,7 +669,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public boolean isMultiThreading() {
-        return this.thread;
+        return thread;
     }
 
     /**
@@ -649,7 +679,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public long getOriginalTime() {
-        return this.original;
+        return original;
     }
 
     /**
@@ -659,7 +689,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public long getPeriod() {
-        return this.period;
+        return period;
     }
 
     /**
@@ -669,7 +699,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      */
     @Override
     public long getMillis() {
-        return this.back;
+        return back;
     }
 
     /**
@@ -677,10 +707,10 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * second/millisecond
      */
     private void executeTasks() {
-        Set<Consumer<Long>> periodConsumers = this.periodConsumer.getOrDefault(this.back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        Set<Consumer<Integer>> secondConsumers = this.secondsConsumer.getOrDefault(this.back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        Set<Runnable> runnables = this.periodActions.getOrDefault(this.back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        Set<Runnable> secondRunnable = this.secondsActions.getOrDefault((int) TimeUnit.MILLISECONDS.toSeconds(this.back), Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Consumer<Long>> periodConsumers = periodConsumer.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Consumer<Integer>> secondConsumers = secondsConsumer.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Runnable> runnables = periodActions.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Runnable> secondRunnable = secondsActions.getOrDefault((int) TimeUnit.MILLISECONDS.toSeconds(back), Collections.newSetFromMap(new ConcurrentHashMap<>()));
         runnables.addAll(secondRunnable);
         for (Consumer<Long> consumer : periodConsumers)
             runPeriodWithThread(consumer);
@@ -697,10 +727,10 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * @param task the task to run
      */
     private void runSecondsWithThread(final Consumer<Integer> task) {
-        if (this.thread) {
-            (new Thread(() -> task.accept((int) TimeUnit.MILLISECONDS.toSeconds(this.back)))).start();
+        if (thread) {
+            (new Thread(() -> task.accept((int) TimeUnit.MILLISECONDS.toSeconds(back)))).start();
         } else {
-            task.accept((int) TimeUnit.MILLISECONDS.toSeconds(this.back));
+            task.accept((int) TimeUnit.MILLISECONDS.toSeconds(back));
         }
     }
 
@@ -711,10 +741,10 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * @param task the task to run
      */
     private void runPeriodWithThread(final Consumer<Long> task) {
-        if (this.thread) {
-            (new Thread(() -> task.accept(this.back))).start();
+        if (thread) {
+            (new Thread(() -> task.accept(back))).start();
         } else {
-            task.accept(this.back);
+            task.accept(back);
         }
     }
 
@@ -725,7 +755,7 @@ public final class SourceSimpleTimer extends SimpleScheduler {
      * @param task the task to run
      */
     private void runTaskWithThread(final Runnable task) {
-        if (this.thread) {
+        if (thread) {
             (new Thread(task)).start();
         } else {
             task.run();

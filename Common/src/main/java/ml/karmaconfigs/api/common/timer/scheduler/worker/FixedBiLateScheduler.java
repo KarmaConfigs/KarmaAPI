@@ -25,7 +25,6 @@ package ml.karmaconfigs.api.common.timer.scheduler.worker;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.timer.scheduler.BiLateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.CancellableScheduler;
 import ml.karmaconfigs.api.common.utils.TriConsumer;
@@ -163,7 +162,7 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source().sync().queue(() -> {
+            source(true).sync().queue(() -> {
                 if (this.whenComplete != null)
                     this.whenComplete.accept(target, subTarget);
                 if (this.whenCompleteWithError != null)
@@ -192,7 +191,7 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source().sync().queue(() -> {
+            source(true).sync().queue(() -> {
                 if (this.whenCompleteWithError != null)
                     this.whenCompleteWithError.accept(target, subTarget, error);
                 if (this.whenComplete != null)

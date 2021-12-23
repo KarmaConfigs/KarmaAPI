@@ -69,6 +69,36 @@ public final class PathUtilities {
     }
 
     /**
+     * Deletes a file
+     *
+     * @param file the path to delete
+     */
+    public static void destroy(final @NotNull Path file) {
+        FileUtilities.destroy(file.toFile());
+    }
+
+    /**
+     * Deletes a file and catch any exception
+     *
+     * @param file the path to delete
+     * @throws IOException any exception
+     */
+    public static void destroyWithException(final @NotNull Path file) throws IOException {
+        FileUtilities.destroyWithException(file.toFile());
+    }
+
+    /**
+     * Deletes a file and return if the file
+     * could be created
+     *
+     * @param file the path to delete
+     * @return if the file could be created
+     */
+    public static boolean destroyWithResults(final @NotNull Path file) {
+        return FileUtilities.destroyWithResults(file.toFile());
+    }
+
+    /**
      * Get if the file is a karma file
      *
      * @param file the file

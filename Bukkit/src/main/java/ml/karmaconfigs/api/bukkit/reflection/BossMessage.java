@@ -25,26 +25,26 @@ package ml.karmaconfigs.api.bukkit.reflection;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.bukkit.server.BukkitServer;
 import ml.karmaconfigs.api.bukkit.server.Version;
-import ml.karmaconfigs.api.bukkit.server.VersionUtils;
 import ml.karmaconfigs.api.common.boss.*;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.SourceSecondsTimer;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import org.bukkit.Location;
 import org.bukkit.Bukkit;
-import org.bukkit.util.Vector;
-import org.bukkit.boss.BarStyle;
+import org.bukkit.Location;
 import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.lang.reflect.Method;
-import java.lang.reflect.Constructor;
 
 /**
  * Karma boss bar message
@@ -74,7 +74,7 @@ public final class BossMessage extends BossProvider<Player> {
     /**
      * If the boss bar needs reflection
      */
-    private static boolean isLegacy = VersionUtils.isUnder(Version.v1_13);
+    private static boolean isLegacy = BukkitServer.isUnder(Version.v1_13);
 
     /**
      * If the boss bar set health/progress method
@@ -342,7 +342,7 @@ public final class BossMessage extends BossProvider<Player> {
                         
                         packet_connect_send.invoke(packet_connection.cast(p_connection), packet);
                         wither_objects.put(id, wither);
-                        bar_timer = new SourceSecondsTimer(plugin, live_time, false);
+                        bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
 
                         bar_timer.conditionalAction(TimeCondition.OVER_OF, 2, second -> {
                             try {
@@ -352,8 +352,8 @@ public final class BossMessage extends BossProvider<Player> {
                                 new_c_player = craft_player.cast(player);
                                 new_e_player = craft_player_handle.invoke(new_c_player);
                                 new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
-                                packet_connection = VersionUtils.getMinecraftClass("PlayerConnection");
-                                packet_class = VersionUtils.getMinecraftClass("Packet");
+                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                packet_class = BukkitServer.getMinecraftClass("Packet");
                                 packet_connect_send.invoke(packet_connection.cast(new_p_connection), teleport_packet);
                             } catch (Throwable ex) {
                                 ex.printStackTrace();
@@ -361,11 +361,11 @@ public final class BossMessage extends BossProvider<Player> {
                             }
                         }).endAction(() -> {
                             try {
-                                remove_wither = packet_play_out_destroy.getConstructor(VersionUtils.getMinecraftClass("EntityLiving"))
+                                remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
                                         .newInstance(player.getUniqueId());
-                                packet_connection = VersionUtils.getMinecraftClass("PlayerConnection");
-                                packet_class = VersionUtils.getMinecraftClass("Packet");
-                                craft_player = VersionUtils.getMinecraftClass("entity.CraftPlayer");
+                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                packet_class = BukkitServer.getMinecraftClass("Packet");
+                                craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
                                 if (craft_player != null) {
                                     new_c_player = craft_player.cast(player);
                                     new_e_player = craft_player_handle.invoke(new_c_player);
@@ -382,11 +382,11 @@ public final class BossMessage extends BossProvider<Player> {
                             }
                         }).cancelAction(time -> {
                             try {
-                                remove_wither = packet_play_out_destroy.getConstructor(VersionUtils.getMinecraftClass("EntityLiving"))
+                                remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
                                         .newInstance(player.getUniqueId());
-                                packet_connection = VersionUtils.getMinecraftClass("PlayerConnection");
-                                packet_class = VersionUtils.getMinecraftClass("Packet");
-                                craft_player = VersionUtils.getMinecraftClass("entity.CraftPlayer");
+                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                packet_class = BukkitServer.getMinecraftClass("Packet");
+                                craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
                                 if (craft_player != null) {
                                     new_c_player = craft_player.cast(player);
                                     new_e_player = craft_player_handle.invoke(new_c_player);
@@ -403,7 +403,7 @@ public final class BossMessage extends BossProvider<Player> {
                             }
                         }).start();
                         
-                        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false);
+                        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
                         hp_timer.secondChangeAction(second -> {
                             if (!cancelled) {
                                 try {
@@ -447,7 +447,7 @@ public final class BossMessage extends BossProvider<Player> {
 
             wither.setVisible(true);
             wither_objects.put(id, wither);
-            bar_timer = new SourceSecondsTimer(plugin, live_time, false);
+            bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
 
             bar_timer.endAction(() -> {
                 wither.setVisible(false);
@@ -471,7 +471,7 @@ public final class BossMessage extends BossProvider<Player> {
                 bars--;
             }).start();
 
-            SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false);
+            SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
             hp_timer.secondChangeAction(second -> {
                 if (!cancelled) {
                     double percentage;
@@ -516,7 +516,7 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -536,7 +536,7 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -662,20 +662,20 @@ public final class BossMessage extends BossProvider<Player> {
      */
     private void doReflectionStuff() {
         try {
-            craft_world = VersionUtils.getBukkitClass("CraftWorld");
-            Class<?> entity_wither = VersionUtils.getMinecraftClass("EntityWither");
+            craft_world = BukkitServer.getBukkitClass("CraftWorld");
+            Class<?> entity_wither = BukkitServer.getMinecraftClass("EntityWither");
             if (entity_wither != null) {
-                Class<?> packet_entity_living_out = VersionUtils.getMinecraftClass("PacketPlayOutSpawnEntityLiving");
+                Class<?> packet_entity_living_out = BukkitServer.getMinecraftClass("PacketPlayOutSpawnEntityLiving");
                 if (packet_entity_living_out != null) {
-                    craft_player = VersionUtils.getBukkitClass("entity.CraftPlayer");
-                    packet_class = VersionUtils.getMinecraftClass("Packet");
-                    packet_connection = VersionUtils.getMinecraftClass("PlayerConnection");
-                    packet_play_out_destroy = VersionUtils.getMinecraftClass("PacketPlayOutEntityDestroy");
-                    Class<?> packet_play_teleport = VersionUtils.getMinecraftClass("PacketPlayOutEntityTeleport");
+                    craft_player = BukkitServer.getBukkitClass("entity.CraftPlayer");
+                    packet_class = BukkitServer.getMinecraftClass("Packet");
+                    packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                    packet_play_out_destroy = BukkitServer.getMinecraftClass("PacketPlayOutEntityDestroy");
+                    Class<?> packet_play_teleport = BukkitServer.getMinecraftClass("PacketPlayOutEntityTeleport");
                     if (packet_play_teleport != null) {
-                        wither_constructor = entity_wither.getConstructor(VersionUtils.getMinecraftClass("World"));
-                        entity_living_constructor = packet_entity_living_out.getConstructor(VersionUtils.getMinecraftClass("EntityLiving"));
-                        packet_play_teleport_constructor = packet_play_teleport.getConstructor(VersionUtils.getMinecraftClass("Entity"));
+                        wither_constructor = entity_wither.getConstructor(BukkitServer.getMinecraftClass("World"));
+                        entity_living_constructor = packet_entity_living_out.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"));
+                        packet_play_teleport_constructor = packet_play_teleport.getConstructor(BukkitServer.getMinecraftClass("Entity"));
                         craft_world_handle = craft_world.getMethod("getHandle");
                         craft_player_handle = craft_player.getMethod("getHandle");
                         packet_connect_send = packet_connection.getMethod("sendPacket", packet_class);

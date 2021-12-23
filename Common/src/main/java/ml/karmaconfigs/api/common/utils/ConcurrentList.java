@@ -1,5 +1,30 @@
 package ml.karmaconfigs.api.common.utils;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -207,8 +232,6 @@ public final class ConcurrentList<T> implements List<T> {
      *                                       from this collection.  Implementations may throw this exception if a
      *                                       matching element cannot be removed or if, in general, removal is not
      *                                       supported.
-     * @implSpec The default implementation traverses all elements of the collection using
-     * its {@link #iterator}.  Each matching element is removed using
      * {@link Iterator#remove()}.  If the collection's iterator does not
      * support removal then an {@code UnsupportedOperationException} will be
      * thrown on the first matching element.
@@ -268,14 +291,6 @@ public final class ConcurrentList<T> implements List<T> {
      *                                       if the operator result is a null value and this list does
      *                                       not permit null elements
      *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
-     * @implSpec The default implementation is equivalent to, for this {@code list}:
-     * <pre>{@code
-     *     final ListIterator<E> li = list.listIterator();
-     *     while (li.hasNext()) {
-     *         li.set(operator.apply(li.next()));
-     *     }
-     * }</pre>
-     * <p>
      * If the list's list-iterator does not support the {@code set} operation
      * then an {@code UnsupportedOperationException} will be thrown when
      * replacing the first element.
@@ -317,27 +332,14 @@ public final class ConcurrentList<T> implements List<T> {
      * @throws IllegalArgumentException      (<a href="Collection.html#optional-restrictions">optional</a>)
      *                                       if the comparator is found to violate the {@link Comparator}
      *                                       contract
-     * @implSpec The default implementation obtains an array containing all elements in
-     * this list, sorts the array, and iterates over this list resetting each
-     * element from the corresponding position in the array. (This avoids the
-     * n<sup>2</sup> log(n) performance that would result from attempting
-     * to sort a linked list in place.)
-     * @implNote This implementation is a stable, adaptive, iterative mergesort that
-     * requires far fewer than n lg(n) comparisons when the input array is
-     * partially sorted, while offering the performance of a traditional
-     * mergesort when the input array is randomly ordered.  If the input array
-     * is nearly sorted, the implementation requires approximately n
-     * comparisons.  Temporary storage requirements vary from a small constant
-     * for nearly sorted input arrays to n/2 object references for randomly
-     * ordered input arrays.
      *
-     * <p>The implementation takes equal advantage of ascending and
+     * The implementation takes equal advantage of ascending and
      * descending order in its input array, and can take advantage of
      * ascending and descending order in different parts of the same
      * input array.  It is well-suited to merging two or more sorted arrays:
      * simply concatenate the arrays and sort the resulting array.
      *
-     * <p>The implementation was adapted from Tim Peters's list sort for Python
+     * The implementation was adapted from Tim Peters's list sort for Python
      * (<a href="http://svn.python.org/projects/python/trunk/Objects/listsort.txt">
      * TimSort</a>).  It uses techniques from Peter McIlroy's "Optimistic
      * Sorting and Information Theoretic Complexity", in Proceedings of the
@@ -575,8 +577,8 @@ public final class ConcurrentList<T> implements List<T> {
      * empty.)  The returned list is backed by this list, so non-structural
      * changes in the returned list are reflected in this list, and vice-versa.
      * The returned list supports all of the optional list operations supported
-     * by this list.<p>
-     * <p>
+     * by this list.
+     *
      * This method eliminates the need for explicit range operations (of
      * the sort that commonly exist for arrays).  Any operation that expects
      * a list can be used as a range operation by passing a subList view
@@ -587,8 +589,8 @@ public final class ConcurrentList<T> implements List<T> {
      * }</pre>
      * Similar idioms may be constructed for {@code indexOf} and
      * {@code lastIndexOf}, and all of the algorithms in the
-     * {@code Collections} class can be applied to a subList.<p>
-     * <p>
+     * {@code Collections} class can be applied to a subList.
+     *
      * The semantics of the list returned by this method become undefined if
      * the backing list (i.e., this list) is <i>structurally modified</i> in
      * any way other than via the returned list.  (Structural modifications are
@@ -621,24 +623,6 @@ public final class ConcurrentList<T> implements List<T> {
      * reporting of additional characteristic values.
      *
      * @return a {@code Spliterator} over the elements in this list
-     * @implSpec The default implementation creates a
-     * <em><a href="Spliterator.html#binding">late-binding</a></em>
-     * spliterator as follows:
-     * <ul>
-     * <li>If the list is an instance of {@link RandomAccess} then the default
-     *     implementation creates a spliterator that traverses elements by
-     *     invoking the method {@link List#get}.  If such invocation results or
-     *     would result in an {@code IndexOutOfBoundsException} then the
-     *     spliterator will <em>fail-fast</em> and throw a
-     *     {@code ConcurrentModificationException}.
-     *     If the list is also an instance of {@link AbstractList} then the
-     *     spliterator will use the list's {@link AbstractList#modCount modCount}
-     *     field to provide additional <em>fail-fast</em> behavior.
-     * <li>Otherwise, the default implementation creates a spliterator from the
-     *     list's {@code Iterator}.  The spliterator inherits the
-     *     <em>fail-fast</em> of the list's iterator.
-     * </ul>
-     * @implNote The created {@code Spliterator} additionally reports
      * {@link Spliterator#SUBSIZED}.
      * @since 1.8
      */
@@ -661,8 +645,6 @@ public final class ConcurrentList<T> implements List<T> {
      * for details.)
      *
      * @return a sequential {@code Stream} over the elements in this collection
-     * @implSpec The default implementation creates a sequential {@code Stream} from the
-     * collection's {@code Spliterator}.
      * @since 1.8
      */
     @Override
@@ -686,8 +668,6 @@ public final class ConcurrentList<T> implements List<T> {
      *
      * @return a possibly parallel {@code Stream} over the elements in this
      * collection
-     * @implSpec The default implementation creates a parallel {@code Stream} from the
-     * collection's {@code Spliterator}.
      * @since 1.8
      */
     @Override
@@ -786,7 +766,6 @@ public final class ConcurrentList<T> implements List<T> {
      *
      * @param action The action to be performed for each element
      * @throws NullPointerException if the specified action is null
-     * @implSpec <p>The default implementation behaves as if:
      * <pre>{@code
      *     for (T t : this)
      *         action.accept(t);

@@ -26,12 +26,14 @@ package ml.karmaconfigs.api.common.karma;
  */
 
 import ml.karmaconfigs.api.common.Console;
-import ml.karmaconfigs.api.common.timer.AsyncScheduler;
-import ml.karmaconfigs.api.common.timer.SyncScheduler;
+import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.timer.worker.AsyncScheduler;
+import ml.karmaconfigs.api.common.timer.worker.SyncScheduler;
+import ml.karmaconfigs.api.common.utils.KarmaLogger;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 import java.io.File;
 import java.io.Serializable;
@@ -152,7 +154,7 @@ public interface KarmaSource extends Serializable {
      * @return the source async scheduler
      */
     default Scheduler async() {
-        return new AsyncScheduler(this);
+        return new AsyncScheduler<>(this);
     }
 
     /**
@@ -161,7 +163,16 @@ public interface KarmaSource extends Serializable {
      * @return the source sync scheduler
      */
     default Scheduler sync() {
-        return new SyncScheduler(this);
+        return new SyncScheduler<>(this);
+    }
+
+    /**
+     * Get the source logger
+     *
+     * @return the source logger
+     */
+    default KarmaLogger logger() {
+        return new Logger(this);
     }
 
     /**

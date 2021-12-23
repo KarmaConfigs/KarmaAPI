@@ -26,6 +26,8 @@ package ml.karmaconfigs.api.common.karma.loader;
  */
 
 import ml.karmaconfigs.api.common.JavaVM;
+import ml.karmaconfigs.api.common.ResourceDownloader;
+import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
 import org.burningwave.core.assembler.StaticComponentContainer;
 
 import java.io.File;
@@ -33,6 +35,8 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+
+import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * Brute source loader
@@ -61,14 +65,35 @@ public final class BruteLoader {
         if (JavaVM.javaVersion() > 11 && !open) {
             open = true;
             StaticComponentContainer.Modules.exportAllToAll();
-            StaticComponentContainer.ManagedLoggersRepository.disableLogging();
+            /*if (StaticComponentContainer.ManagedLoggerRepository.isEnabled()) {
+                StaticComponentContainer.ManagedLoggerRepository.disableLogging();
+                StaticComponentContainer.ManagedLoggerRepository.close();
+            }*/
         }
+    }
+
+    /**
+     * Download and then inject the result
+     * into the API
+     *
+     * @param downloadURL the source download URL
+     * @param name the source name, use {@link NameComponent#forFile(CharSequence, String, String...)}
+     */
+    public void downloadAndInject(final URL downloadURL, final NameComponent name) {
+        //Dependencies will always be inside ./KarmaAPI/cache/dependencies/...
+        name.addParentStart("dependencies");
+
+        ResourceDownloader downloader = ResourceDownloader.toCache(source(true), name.getName() + "." + name.findExtension(), downloadURL.toString(), name.getParents());
+        downloader.download();
+
+        add(downloader.getDestFile());
     }
 
     /**
      * Tries to add the specified source to the
      * application classpath
      *
+     * @param source the source to add
      * @return if the source could be added
      */
     public boolean add(final URL source) {
@@ -89,6 +114,7 @@ public final class BruteLoader {
      * Tries to add the specified source to the
      * application classpath
      *
+     * @param source the source to add
      * @return if the source could be added
      */
     public boolean add(final File source) {
@@ -109,6 +135,7 @@ public final class BruteLoader {
      * Tries to add the specified source to the
      * application classpath
      *
+     * @param source the source to add
      * @return if the source could be added
      */
     public boolean add(final Path source) {

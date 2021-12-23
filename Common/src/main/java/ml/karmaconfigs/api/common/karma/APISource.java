@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.karma;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Map;
@@ -35,12 +36,21 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class APISource implements KarmaSource {
 
+    /**
+     * All sources
+     */
     private final static Map<String, KarmaSource> sources = new ConcurrentHashMap<>();
 
+    /**
+     * Default source name
+     */
     @ApiStatus.ScheduledForRemoval
     @Deprecated
     public static String DEFAULT_SOURCE = "karmaapi";
 
+    /**
+     * Default source name
+     */
     private static String DEFAULT = "karmaapi";
 
     /**
@@ -49,6 +59,12 @@ public final class APISource implements KarmaSource {
     APISource() {
         try {
             addProvider(this);
+
+            PrefixConsoleData data = new PrefixConsoleData(this);
+            data.setOkPrefix("&7[ KarmaAPI ] &3");
+            data.setInfoPrefix("&b[ KarmaAPI ] &3");
+            data.setWarnPrefix("&e[ KarmaAPI ] &3");
+            data.setGravePrefix("&c[ KarmaAPI ] &3");
         } catch (IllegalStateException ignored) {}
     }
 
@@ -132,7 +148,7 @@ public final class APISource implements KarmaSource {
             if (stored != null) {
                 return stored;
             } else {
-                throw new IllegalArgumentException("KarmaSource with name " + name + " as not been registered as provider");
+                throw new IllegalArgumentException("KarmaSource with name " + name + " has not been registered as provider");
             }
         } else {
             if (stored != null) {
@@ -167,10 +183,15 @@ public final class APISource implements KarmaSource {
     /**
      * Get the original karma source
      *
+     * @param forceKarma force KarmaAPI provider
      * @return the original karma source
      */
-    public KarmaSource getOriginal() {
-        return loadProvider(DEFAULT);
+    public static KarmaSource getOriginal(final boolean forceKarma) {
+        if (forceKarma) {
+            return loadProvider("KarmaAPI");
+        } else {
+            return loadProvider(DEFAULT);
+        }
     }
 
     /**

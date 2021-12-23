@@ -26,32 +26,23 @@ package ml.karmaconfigs.api.common.karmafile;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.file.PathUtilities;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.*;
-
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * Karma file
  */
 public final class KarmaFile implements Serializable {
-
-    /**
-     * Broadcast when the file path is created
-     */
-    private static boolean broadcast_file_creation = false;
-    /**
-     * Broadcast when the file is created
-     */
-    private static boolean broadcast_folder_creation = false;
 
     /**
      * The karma file
@@ -64,16 +55,21 @@ public final class KarmaFile implements Serializable {
      * @param source the file source
      * @param name the file name
      * @param dir the file path
+     *
+     * @throws IllegalStateException if the target path is not a valid path
      */
-    public KarmaFile(final KarmaSource source, final String name, final String... dir) {
-        File dataFolder = source().getDataPath().toFile();
+    public KarmaFile(final KarmaSource source, final String name, final String... dir) throws IllegalStateException {
+        Path dataFolder = source.getDataPath();
         if (dir.length > 0) {
-            StringBuilder builder = new StringBuilder();
-            for (String str : dir)
-                builder.append(File.separator).append(str);
-            this.file = new File(dataFolder + builder.toString(), name);
-        } else {
-            this.file = new File(dataFolder, name);
+            for (String str : dir) {
+                dataFolder = dataFolder.resolve(str);
+            }
+        }
+
+        file = PathUtilities.getFixedPath(dataFolder.resolve(name)).toFile();
+
+        if (!FileUtilities.isValidFile(file)) {
+            throw new IllegalStateException("Tried to start a karma file on invalid file path ( " + dataFolder.resolve(name) + " )");
         }
     }
 
@@ -87,14 +83,12 @@ public final class KarmaFile implements Serializable {
     }
 
     /**
-     * Set debug options
+     * Initialize the karma file
      *
-     * @param broadcast_folder broadcast folder creation
-     * @param broadcast_file broadcast file creation
+     * @param target the target karma file
      */
-    public void setBroadcastOptions(final boolean broadcast_folder, final boolean broadcast_file) {
-        broadcast_file_creation = broadcast_file;
-        broadcast_folder_creation = broadcast_folder;
+    public KarmaFile(final Path target) {
+        file = PathUtilities.getFixedPath(target).toFile();
     }
 
     /**
@@ -207,28 +201,7 @@ public final class KarmaFile implements Serializable {
      * Create the file
      */
     public void create() {
-        if (!this.file.getParentFile().exists()) {
-            String dir = this.file.getParentFile().getPath().replaceAll("\\\\", "/");
-            if (this.file.getParentFile().mkdirs()) {
-                if (broadcast_folder_creation)
-                    source().console().send("&aCreated directory {0}", dir);
-            } else {
-                source().console().send("&cAn unknown error occurred while creating directory {0}", dir);
-            }
-        }
-        if (!this.file.exists())
-            try {
-                String dir = this.file.getPath().replaceAll("\\\\", "/");
-                if (this.file.createNewFile()) {
-                    if (broadcast_file_creation)
-                        source().console().send("&aCreated file {0}", dir);
-                } else {
-                    source().console().send("&cAn unknown error occurred while creating file {0}", dir);
-                }
-                applyKarmaAttribute();
-            } catch (Throwable ex) {
-                ex.printStackTrace();
-            }
+        FileUtilities.create(file);
     }
 
     /**
@@ -281,12 +254,19 @@ public final class KarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
         if (isSet(path) && isList(path))
             unset(path);
-        byte[] toByte = value.toString().getBytes(StandardCharsets.UTF_8);
-        String val = new String(toByte, StandardCharsets.UTF_8);
+        String val;
+        byte[] toByte;
+        if (value instanceof byte[]) {
+            toByte = (byte[]) value;
+        } else {
+            toByte = String.valueOf(value).getBytes(StandardCharsets.UTF_8);
+        }
+
+        val = new String(toByte, StandardCharsets.UTF_8);
         BufferedReader reader = null;
         try {
             reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
-            List<Object> sets = new ArrayList();
+            List<Object> sets = new ArrayList<>();
             boolean alreadySet = false;
             String line;
             while ((line = reader.readLine()) != null) {
@@ -423,11 +403,7 @@ public final class KarmaFile implements Serializable {
      * Delete the file
      */
     public void delete() {
-        try {
-            Files.deleteIfExists(FileUtilities.getFixedFile(this.file).toPath());
-        } catch (Throwable ex) {
-            source().console().send("&cFile {0} not deleted", FileUtilities.getPrettyParentFile(this.file));
-        }
+        FileUtilities.destroy(file);
     }
 
     /**
@@ -449,8 +425,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = line.replace(actualPath + ": ", "");
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = line.replace(actualPath + ": ", "");
+                            } else {
+                                val = line.replace(actualPath + ":", "");
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -481,8 +462,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = line.replace(actualPath + ": ", "");
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = line.replace(actualPath + ": ", "");
+                            } else {
+                                val = line.replace(actualPath + ":", "");
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -504,7 +490,7 @@ public final class KarmaFile implements Serializable {
     @NotNull
     public List<?> getList(String path, final Object... default_contents) {
         path = path.replaceAll("\\s", "_");
-        List<Object> values = new ArrayList();
+        List<Object> values = new ArrayList<>();
         if (isSet(path)) {
             if (exists()) {
                 BufferedReader reader = null;
@@ -589,8 +575,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = Boolean.parseBoolean(line.replace(actualPath + ": ", ""));
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Boolean.parseBoolean(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Boolean.parseBoolean(line.replace(actualPath + ":", ""));
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -681,8 +672,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = Integer.parseInt(line.replace(actualPath + ": ", ""));
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Integer.parseInt(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Integer.parseInt(line.replace(actualPath + ":", ""));
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -712,8 +708,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = Double.parseDouble(line.replace(actualPath + ": ", ""));
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Double.parseDouble(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Double.parseDouble(line.replace(actualPath + ":", ""));
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -743,8 +744,13 @@ public final class KarmaFile implements Serializable {
                 while ((line = reader.readLine()) != null) {
                     if (line.split(":")[0] != null) {
                         String actualPath = line.split(":")[0];
-                        if (actualPath.equals(path))
-                            val = Long.parseLong(line.replace(actualPath + ": ", ""));
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Long.parseLong(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Long.parseLong(line.replace(actualPath + ":", ""));
+                            }
+                        }
                     }
                 }
             } catch (Throwable e) {
@@ -753,6 +759,154 @@ public final class KarmaFile implements Serializable {
                 closeStreams(reader);
             }
         }
+        return val;
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the value path
+     * @param def the default value
+     * @return the value
+     */
+    public float getFloat(String path, final float def) {
+        float val = def;
+        path = path.replaceAll("\\s", "_");
+        if (exists()) {
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.split(":")[0] != null) {
+                        String actualPath = line.split(":")[0];
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Float.parseFloat(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Float.parseFloat(line.replace(actualPath + ":", ""));
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                closeStreams(reader);
+            }
+        }
+        return val;
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the value path
+     * @param def the default value
+     * @return the value
+     */
+    public short getShort(String path, final short def) {
+        short val = def;
+        path = path.replaceAll("\\s", "_");
+        if (exists()) {
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.split(":")[0] != null) {
+                        String actualPath = line.split(":")[0];
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Short.parseShort(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Short.parseShort(line.replace(actualPath + ":", ""));
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                closeStreams(reader);
+            }
+        }
+        return val;
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the value path
+     * @param def the default value
+     * @return the value
+     */
+    public byte getByte(String path, final byte def) {
+        byte val = def;
+        path = path.replaceAll("\\s", "_");
+        if (exists()) {
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.split(":")[0] != null) {
+                        String actualPath = line.split(":")[0];
+                        if (actualPath.equals(path)) {
+                            if (line.startsWith(actualPath + ": ")) {
+                                val = Byte.parseByte(line.replace(actualPath + ": ", ""));
+                            } else {
+                                val = Byte.parseByte(line.replace(actualPath + ":", ""));
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                closeStreams(reader);
+            }
+        }
+        return val;
+    }
+
+    /**
+     * Get a value
+     *
+     * @param path the value path
+     * @param def the default value
+     * @return the value
+     */
+    public byte[] getBytes(String path, final byte[] def) {
+        byte[] val = def;
+        path = path.replaceAll("\\s", "_");
+        if (exists()) {
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(this.file.toPath(), StandardCharsets.UTF_8);
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.split(":")[0] != null) {
+                        String actualPath = line.split(":")[0];
+                        if (actualPath.equals(path)) {
+                            String result;
+                            if (line.startsWith(actualPath + ": ")) {
+                                result = line.replace(actualPath + ": ", "");
+                            } else {
+                                result = line.replace(actualPath + ":", "");
+                            }
+
+                            val = result.getBytes(StandardCharsets.UTF_8);
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                closeStreams(reader);
+            }
+        }
+
         return val;
     }
 

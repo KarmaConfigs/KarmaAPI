@@ -28,7 +28,10 @@ package ml.karmaconfigs.api.common.karmafile;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 

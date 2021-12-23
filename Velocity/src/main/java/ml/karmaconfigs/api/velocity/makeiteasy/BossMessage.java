@@ -219,7 +219,7 @@ public final class BossMessage extends BossProvider<Player> {
             player.showBossBar(bar);
 
         bar_objects.put(id, bar);
-        bar_timer = new SourceSecondsTimer(plugin, live_time, false);
+        bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
 
         bar_timer.endAction(() -> {
             for (Player player : fixed) {
@@ -241,7 +241,7 @@ public final class BossMessage extends BossProvider<Player> {
             bars--;
         }).start();
 
-        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false);
+        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
         hp_timer.secondChangeAction(second -> {
             if (!cancelled) {
                 try {
@@ -289,7 +289,7 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
@@ -309,7 +309,7 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).multiThreading(true);
+        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
         timer.periodChangeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);

@@ -162,7 +162,7 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source().async().queue(() -> {
+            source(true).async().queue(() -> {
                 if (this.whenComplete != null)
                     this.whenComplete.accept(target, subTarget);
                 if (this.whenCompleteWithError != null)
@@ -191,7 +191,7 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source().async().queue(() -> {
+            source(true).async().queue(() -> {
                 if (this.whenCompleteWithError != null)
                     this.whenCompleteWithError.accept(target, subTarget, error);
                 if (this.whenComplete != null)

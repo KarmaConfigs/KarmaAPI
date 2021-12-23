@@ -50,6 +50,8 @@ public class BukkitAsyncScheduler<T extends KarmaPlugin> extends Scheduler {
                         data.onTaskEnd().accept(next);
                 }
             }, 0L, 20L);
+
+            data.updateScheduler(scheduler);
         }
     }
 

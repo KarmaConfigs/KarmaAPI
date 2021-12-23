@@ -25,6 +25,13 @@ package ml.karmaconfigs.api.common.utils.string;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.KarmaAPI;
+import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
+import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
+import ml.karmaconfigs.api.common.utils.placeholder.SimplePlaceholder;
+import ml.karmaconfigs.api.common.utils.placeholder.util.Placeholder;
 import ml.karmaconfigs.api.common.utils.string.util.time.CleanTimeBuilder;
 import ml.karmaconfigs.api.common.utils.string.util.time.TimeName;
 import org.jetbrains.annotations.Nullable;
@@ -33,9 +40,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import static ml.karmaconfigs.api.common.utils.string.util.KarmaUnit.*;
 
 /**
  * Karma string utilities
@@ -504,15 +508,97 @@ public final class StringUtils {
      * @param text the text to format
      * @param replaces the text replaces
      * @return the formatted text
+     *
+     * @deprecated It's better to use {@link ml.karmaconfigs.api.common.utils.placeholder.util.PlaceholderEngine now}. By
+     * default, KarmaAPI uses {@link ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine} with a implementation
+     * of {@link ml.karmaconfigs.api.common.utils.placeholder.util.Placeholder} as {@link ml.karmaconfigs.api.common.utils.placeholder.SimplePlaceholder}. For
+     * now, this method registers the map key to a placeholder which contains the map value and uses global placeholder engine to return the formatted string
      */
+    @Deprecated
     public static String formatString(final CharSequence text, final Map<String, Object> replaces) {
-        String str = String.valueOf(text);
+        Set<Placeholder<Object>> placeholders = new HashSet<>();
+
         for (String key : replaces.keySet()) {
-            String placeholder = "{" + key + "}";
-            String val = replaces.get(key).toString();
-            str = str.replace(placeholder, val);
+            Object value = replaces.getOrDefault(key, null);
+
+            if (value != null) {
+                placeholders.add(new SimplePlaceholder<>(key, value));
+            }
         }
-        return str;
+
+        GlobalPlaceholderEngine engine = new GlobalPlaceholderEngine(KarmaAPI.source(true));
+        placeholders.forEach(engine::forceRegister);
+
+        return engine.parse(String.valueOf(text));
+    }
+
+    /**
+     * Format the specified text
+     *
+     * @param owner the text owner
+     * @param text the text to format
+     * @param level the text level
+     * @return the formatted text
+     */
+    public static String formatString(final KarmaSource owner, final CharSequence text, final Level level) {
+        String tmpMessage = String.valueOf(text);
+        String prefix = "&b[ &fALERT &b] &7NONE: &b";
+        PrefixConsoleData data = new PrefixConsoleData(owner);
+        switch (level) {
+            case OK:
+                prefix = data.getOkPrefix();
+                break;
+            case INFO:
+                prefix = data.getInfoPrefix();
+                break;
+            case WARNING:
+                prefix = data.getWarningPrefix();
+                break;
+            case GRAVE:
+                prefix = data.getGravePrefix();
+                break;
+        }
+
+        tmpMessage = StringUtils.stripColor(tmpMessage);
+        return prefix + tmpMessage;
+    }
+
+    /**
+     * Format the specified text
+     *
+     * @param owner the text owner
+     * @param text the text to format
+     * @param level the text level
+     * @param replaces the text replaces
+     * @return the formatted text
+     */
+    public static String formatString(final KarmaSource owner, final CharSequence text, final Level level, final Object... replaces) {
+        String tmpMessage = String.valueOf(text);
+        String prefix = "&b[ &fALERT &b] &7NONE: &b";
+        PrefixConsoleData data = new PrefixConsoleData(owner);
+        switch (level) {
+            case OK:
+                prefix = data.getOkPrefix();
+                break;
+            case INFO:
+                prefix = data.getInfoPrefix();
+                break;
+            case WARNING:
+                prefix = data.getWarningPrefix();
+                break;
+            case GRAVE:
+                prefix = data.getGravePrefix();
+                break;
+        }
+
+        for (int i = 0; i < replaces.length; i++) {
+            String placeholder = "{" + i + "}";
+            String value = String.valueOf(replaces[i]);
+            tmpMessage = tmpMessage.replace(placeholder, value);
+        }
+
+        tmpMessage = StringUtils.stripColor(tmpMessage);
+        return prefix + tmpMessage;
     }
 
     /**
@@ -600,6 +686,7 @@ public final class StringUtils {
     /**
      * Serialize an object into a text
      *
+     * @param <T> the objet type
      * @param instance the object instance
      * @return the serialized object
      */
@@ -630,7 +717,6 @@ public final class StringUtils {
             ObjectInputStream si = new ObjectInputStream(bi);
             return si.readObject();
         } catch (Throwable ex) {
-            ex.printStackTrace();
             return null;
         }
     }

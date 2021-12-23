@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.common;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 
 import java.io.File;
@@ -35,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 
 import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
@@ -76,12 +78,13 @@ public final class ResourceDownloader {
     public static ResourceDownloader toCache(final KarmaSource source, final String fileName, final String downloadURL, final String... sub) {
         File target;
         if (sub.length > 0) {
-            StringBuilder builder = new StringBuilder();
+            Path dataPath = source.getDataPath();
             for (String dir : sub)
-                builder.append(File.separator).append(dir);
-            target = new File(source().getDataPath() + File.separator + "cache" + builder, fileName);
+                dataPath = dataPath.resolve(dir);
+
+            target = dataPath.resolve(fileName).toFile();
         } else {
-            target = new File(source().getDataPath() + File.separator + "cache", fileName);
+            target = source.getDataPath().resolve("cache").resolve(fileName).toFile();
         }
         if (FileUtilities.isValidFile(target))
             return new ResourceDownloader(target, downloadURL);
@@ -97,7 +100,7 @@ public final class ResourceDownloader {
         FileOutputStream output = null;
         HttpURLConnection connection = null;
         try {
-            FileUtilities.create(this.destFile);
+            FileUtilities.create(destFile);
             URL download_url = new URL(this.url);
             connection = (HttpURLConnection) download_url.openConnection();
             connection.connect();
@@ -105,7 +108,7 @@ public final class ResourceDownloader {
             long destSize = this.destFile.length();
             long connSize = connection.getContentLengthLong();
             if (destSize != connSize) {
-                source().console().send("&b[ KarmaAPI ] &3Downloading file {0}", this.destFile.getName());
+                source(false).console().send("Downloading file {0}", Level.INFO, this.destFile.getName());
                 rbc = Channels.newChannel(download_url.openStream());
                 output = new FileOutputStream(this.destFile);
                 output.getChannel().transferFrom(rbc, 0L, Long.MAX_VALUE);
@@ -125,7 +128,7 @@ public final class ResourceDownloader {
                     connection.disconnect();
             } catch (Throwable ignored) {
             }
-            source().console().send("&b[ KarmaAPI ] &3Downloaded file {0}", this.destFile.getName());
+            source(false).console().send("Downloaded file {0}", Level.OK, this.destFile.getName());
         }
     }
 

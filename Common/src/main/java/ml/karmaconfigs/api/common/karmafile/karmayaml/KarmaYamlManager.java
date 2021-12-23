@@ -26,9 +26,9 @@ package ml.karmaconfigs.api.common.karmafile.karmayaml;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.reader.BoundedBufferedReader;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.DumperOptions;
@@ -38,7 +38,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.util.*;
 
 /**
@@ -458,6 +457,7 @@ public final class KarmaYamlManager {
     /**
      * Store an object instance
      *
+     * @param <T> the type to store
      * @param path the instance object path
      * @param object the object to store
      * @return this instance

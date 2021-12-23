@@ -200,7 +200,7 @@ public final class FileCopy {
                         Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
                         String last_section = "";
                         if (this.debug)
-                            source().console().send("&b[ KarmaAPI ] &3Preparing writer for file generation ( {0} )", FileUtilities.getPrettyFile(destFile));
+                            source(true).console().send("Preparing writer for file generation ( {0} )", Level.INFO, FileUtilities.getPrettyFile(destFile));
 
                         String line;
                         while ((line = reader.readLine()) != null) {
@@ -210,7 +210,7 @@ public final class FileCopy {
 
                                     if (line.startsWith("#") || this.keySet.getOrDefault(key, null) == null || this.keySet.get(key) instanceof KarmaYamlManager) {
                                         if (this.debug)
-                                            source().console().send("&b[ KarmaAPI ] &3Writing comment / section &e{0}", key);
+                                            source(true).console().send("Writing comment / section &e{0}", Level.INFO, key);
 
                                         writer.write(line + "\n");
                                         continue;
@@ -244,13 +244,13 @@ public final class FileCopy {
                                                 String space = getSpace(last_section);
                                                 writer.write(space + "- '" + object.toString().replace("'", "''") + "'\n");
                                                 if (this.debug)
-                                                    source().console().send("&b[ KarmaAPI ] &3Writing list value &6{0}&3 of &e{1}", object, key);
+                                                    source(true).console().send("Writing list value {0} of {1}", Level.INFO, object, key);
                                             }
                                             continue;
                                         }
                                         writer.write(path + ": []\n");
                                         if (this.debug)
-                                            source().console().send("&b[ KarmaAPI ] &3Written empty list &e{0}", key);
+                                            source(true).console().send("Written empty list {0}", Level.INFO, key);
                                         continue;
                                     }
                                     String val = line.replace(path + ": ", "");
@@ -260,7 +260,7 @@ public final class FileCopy {
                                         writer.write(line.replace(": " + val, "") + ": " + this.keySet.get(key).toString().replace("'", "").replace("\"", "") + "\n");
                                     }
                                     if (this.debug)
-                                        source().console().send("&b[ KarmaAPI ] &3Writing single value &6{0}&3 of &e{1}", val, key);
+                                        source(true).console().send("Writing single value {0} of {1}", Level.INFO, val, key);
                                 }
                                 continue;
                             }
@@ -277,14 +277,14 @@ public final class FileCopy {
                         }
 
                         if (builder.toString().replaceAll("\\s", "").isEmpty()) {
-                            source().console().send("&b[ KarmaAPI ] &3Writing to {0} using in-jar file", FileUtilities.getPrettyFile(destFile));
+                            source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
                             inReader = new InputStreamReader(inFile, StandardCharsets.UTF_8);
                             reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
                             Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 if (debug) {
-                                    source().console().send("&b[ KarmaAPI ] &3Writing raw text {0} to {1}", line, FileUtilities.getPrettyFile(destFile));
+                                    source(true).console().send("Writing raw text {0} to {1}", Level.INFO, line, FileUtilities.getPrettyFile(destFile));
                                 }
                                 writer.write(line + "\n");
                             }
@@ -303,10 +303,10 @@ public final class FileCopy {
                 }
             } else {
                 if (!destFile.getParentFile().exists() && destFile.getParentFile().mkdirs())
-                    source().console().send("&b[ KarmaAPI ] &3Created directory {0}", FileUtilities.getPrettyParentFile(destFile));
+                    source(true).console().send("Created directory {0}", Level.INFO, FileUtilities.getPrettyParentFile(destFile));
 
                 if (destFile.createNewFile()) {
-                    source().console().send("&b[ KarmaAPI ] &3Writing to {0} using in-jar file", FileUtilities.getPrettyFile(destFile));
+                    source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
                     File source = new File(main.getProtectionDomain().getCodeSource().getLocation().getFile());
                     JarFile jar = new JarFile(source);
                     ZipEntry entry = jar.getEntry(fileName);
@@ -335,6 +335,8 @@ public final class FileCopy {
     /**
      * Fix the sections for files who
      * have section names same as keys
+     *
+     * @param destFile the file to fix
      */
     @SuppressWarnings("unused")
     public void fix(File destFile) {

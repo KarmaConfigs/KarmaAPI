@@ -25,15 +25,39 @@ package ml.karmaconfigs.api.common.utils;
  *  SOFTWARE.
  */
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Scanner;
 
 /**
  * Karma URL utilities
  */
 public final class URLUtils {
+
+    /**
+     * Connect and instantly disconnect from a URL.
+     * This method may be called only when actually
+     * needed
+     *
+     * @param url the url to connect
+     */
+    public static void fastConnect(final URL url) {
+        try(CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            HttpGet httpget = new HttpGet(url.toURI());
+            httpclient.execute(httpget);
+        } catch (Throwable ignored) {}
+    }
 
     /**
      * Get if the URL exists
@@ -98,5 +122,50 @@ public final class URLUtils {
         }
 
         return defURL;
+    }
+
+    /**
+     * Get the web response
+     *
+     * @param url the url to fetch response from
+     * @return the web response or empty
+     */
+    public static String getResponse(final URL url) {
+        String response = "";
+
+        try {
+            CloseableHttpClient httpclient = HttpClients.createDefault();
+            HttpGet httpget = new HttpGet(url.toURI());
+
+            HttpResponse httpresponse = httpclient.execute(httpget);
+            Header[] contentType = httpresponse.getHeaders("Content-type");
+            boolean json = false;
+            for (Header header : contentType) {
+                if (header.getValue().equalsIgnoreCase("application/json")) {
+                    json = true;
+                    break;
+                }
+            }
+            Scanner sc = new Scanner(httpresponse.getEntity().getContent());
+
+            StringBuilder sb = new StringBuilder();
+            while(sc.hasNext()) {
+                sb.append(sc.next());
+            }
+
+            response = sb.toString();
+
+            if (json) {
+                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+                JsonElement object = gson.fromJson(response, JsonElement.class);
+
+                //Set json to pretty print
+                response = gson.toJson(object);
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
+        return response;
     }
 }

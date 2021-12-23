@@ -1,5 +1,30 @@
 package ml.karmaconfigs.api.common.utils;
 
+/*
+ * This file is part of KarmaAPI, licensed under the MIT License.
+ *
+ *  Copyright (c) karma (KarmaDev) <karmaconfigs@gmail.com>
+ *  Copyright (c) contributors
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
+ */
+
 import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.utils.enums.Level;
@@ -15,6 +40,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Karma logger
+ */
 public abstract class KarmaLogger implements AutoCloseable {
 
     private final static Map<String, KarmaLogger> loggers = new ConcurrentHashMap<>();
@@ -24,6 +52,11 @@ public abstract class KarmaLogger implements AutoCloseable {
     private final boolean printErrors;
     private final boolean printMessages;
 
+    /**
+     * Initialize the karma logger
+     *
+     * @param owner the logger owner
+     */
     public KarmaLogger(final KarmaSource owner) {
         KarmaLogger stored = loggers.getOrDefault(owner.name().toLowerCase(), null);
         if (stored == null) {
@@ -43,6 +76,14 @@ public abstract class KarmaLogger implements AutoCloseable {
         }
     }
 
+    /**
+     * Initialize the karma logger
+     *
+     * @param owner the logger owner
+     * @param autoFlush auto flush log files
+     * @param errors display errors as messages too
+     * @param messages display messages as console messages too
+     */
     public KarmaLogger(final KarmaSource owner, final boolean autoFlush, final boolean errors, final boolean messages) {
         KarmaLogger stored = loggers.getOrDefault(owner.name().toLowerCase(), null);
         if (stored == null) {

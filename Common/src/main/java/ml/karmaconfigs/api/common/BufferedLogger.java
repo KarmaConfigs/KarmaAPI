@@ -37,7 +37,6 @@ import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

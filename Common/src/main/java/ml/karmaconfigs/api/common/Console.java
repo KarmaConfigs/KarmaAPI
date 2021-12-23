@@ -27,8 +27,8 @@ package ml.karmaconfigs.api.common;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -110,7 +110,7 @@ public final class Console {
         String tmpMessage = String.valueOf(message);
         for (int i = 0; i < replaces.length; i++) {
             String placeholder = "{" + i + "}";
-            String value = replaces[i].toString();
+            String value = String.valueOf(replaces[i]);
             tmpMessage = tmpMessage.replace(placeholder, value);
         }
         if (messageAction == null) {
@@ -191,7 +191,7 @@ public final class Console {
         }
         for (int i = 0; i < replaces.length; i++) {
             String placeholder = "{" + i + "}";
-            String value = replaces[i].toString();
+            String value = String.valueOf(replaces[i]);
             tmpMessage = tmpMessage.replace(placeholder, value);
         }
         tmpMessage = StringUtils.stripColor(tmpMessage);

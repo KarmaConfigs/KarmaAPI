@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.common.utils.file;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +37,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,25 +54,39 @@ public class FileUtilities {
     public static boolean DEBUG = true;
 
     /**
+     * Is an intern
+     */
+    private static boolean INTERNAL_CALL = false;
+
+    /**
      * Create a file
      *
      * @param file the file to create
      */
     public static void create(final @NotNull File file) {
-        if (!file.isDirectory())
+        if (!file.isDirectory()) {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    if (DEBUG)
-                        source().console().send("&b[ KarmaAPI ] &3Created directory {0}", getPrettyParentFile(file));
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
                 }
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    if (DEBUG)
-                        source().console().send("&b[ KarmaAPI ] &3Created file {0}", getPrettyFile(file));
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
                 }
             } catch (Throwable ignored) {
             }
+        } else {
+            try {
+                if (!file.exists()) {
+                    Files.createDirectories(file.toPath());
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 
     /**
@@ -83,13 +99,19 @@ public class FileUtilities {
         if (!file.isDirectory()) {
             if (!file.getParentFile().exists()) {
                 Files.createDirectories(file.getParentFile().toPath());
-                if (DEBUG)
-                    source().console().send("&b[ KarmaAPI ] &3Created directory {0}", getPrettyParentFile(file));
+                if (DEBUG && !INTERNAL_CALL)
+                    source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
             }
             if (!file.exists()) {
                 Files.createFile(file.toPath());
-                if (DEBUG)
-                    source().console().send("&b[ KarmaAPI ] &3Created file {0}", getPrettyFile(file));
+                if (DEBUG && !INTERNAL_CALL)
+                    source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
+            }
+        } else {
+            if (!file.exists()) {
+                Files.createDirectories(file.toPath());
+                if (DEBUG && !INTERNAL_CALL)
+                    source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
             }
         }
     }
@@ -102,21 +124,100 @@ public class FileUtilities {
      * @return if the file could be created
      */
     public static boolean createWithResults(final @NotNull File file) {
-        if (!file.isDirectory())
+        if (!file.isDirectory()) {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    if (DEBUG)
-                        source().console().send("&b[ KarmaAPI ] &3Created directory {0}", getPrettyParentFile(file));
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
                 }
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    if (DEBUG)
-                        source().console().send("&b[ KarmaAPI ] &3Created file {0}", getPrettyFile(file));
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
                     return true;
                 }
-            } catch (Throwable ignored) {
+            } catch (Throwable ignored) {}
+        } else {
+            try {
+                if (!file.exists()) {
+                    Files.createDirectories(file.toPath());
+                    if (DEBUG && !INTERNAL_CALL)
+                        source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
+                    return true;
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        return false;
+    }
+
+    /**
+     * Deletes a file
+     *
+     * @param file the file to delete
+     */
+    public static void destroy(final @NotNull File file) {
+        try {
+            if (file.exists()) {
+                boolean dir = file.isDirectory();
+                if (dir) {
+                    //Let's remove first all the sub files and folders
+                    Files.list(file.toPath()).forEach((sub) -> destroy(sub.toFile()));
+                }
+                Files.delete(file.toPath());
+
+                if (DEBUG && !INTERNAL_CALL)
+                    source(true).console().send("Deleted {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
             }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Deletes a file and catch any exception
+     *
+     * @param file the file to delete
+     * @throws IOException any exception
+     */
+    public static void destroyWithException(final @NotNull File file) throws IOException {
+        if (file.exists()) {
+            boolean dir = file.isDirectory();
+            if (dir) {
+                //Let's remove first all the sub files and folders
+                Files.list(file.toPath()).forEach((sub) -> destroy(sub.toFile()));
+            }
+            Files.delete(file.toPath());
+
+            if (DEBUG && !INTERNAL_CALL)
+                source(true).console().send("Deleted {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
+        }
+    }
+
+    /**
+     * Deletes a file and return if the file
+     * could be created
+     *
+     * @param file the file to delete
+     * @return if the file could be created
+     */
+    public static boolean destroyWithResults(final @NotNull File file) {
+        try {
+            if (file.exists()) {
+                boolean dir = file.isDirectory();
+                if (dir) {
+                    //Let's remove first all the sub files and folders
+                    Files.list(file.toPath()).forEach((sub) -> destroy(sub.toFile()));
+                }
+                Files.delete(file.toPath());
+
+                if (DEBUG && !INTERNAL_CALL)
+                    source(true).console().send("Removed {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+
         return false;
     }
 
@@ -146,8 +247,20 @@ public class FileUtilities {
      */
     public static boolean isValidFile(final File file) {
         try {
-            String filePath = file.getCanonicalPath();
-            return !StringUtils.isNullOrEmpty(filePath);
+            if (file.exists()) {
+                String filePath = file.getCanonicalPath();
+                return !StringUtils.isNullOrEmpty(filePath);
+            } else {
+                INTERNAL_CALL = true;
+
+                create(file);
+                boolean result = isValidFile(file);
+                destroy(file);
+
+                INTERNAL_CALL = false;
+                
+                return result;
+            }
         } catch (Throwable ex) {
             return false;
         }
@@ -160,10 +273,22 @@ public class FileUtilities {
      * @return if the file is a valid file
      */
     public static boolean isValidFile(final String path) {
-        File file = new File(path);
         try {
-            String filePath = file.getCanonicalPath();
-            return !StringUtils.isNullOrEmpty(filePath);
+            File file = new File(path);
+            if (file.exists()) {
+                String filePath = file.getCanonicalPath();
+                return !StringUtils.isNullOrEmpty(filePath);
+            } else {
+                INTERNAL_CALL = true;
+
+                create(file);
+                boolean result = isValidFile(file);
+                destroy(file);
+
+                INTERNAL_CALL = false;
+
+                return result;
+            }
         } catch (Throwable ex) {
             return false;
         }
@@ -267,6 +392,39 @@ public class FileUtilities {
     }
 
     /**
+     * Find parent files on a file string
+     *
+     * @param fileString the file string
+     * @return the file string parent directories
+     */
+    public static String[] findParents(final String fileString) {
+        if (fileString.contains(File.separator)) {
+            String[] data = fileString.replace(File.separatorChar, ';').split(";");
+
+            //Remove the last object from array as it will always be the file name
+            return Arrays.copyOf(data, data.length - 1);
+        }
+
+        return new String[0];
+    }
+
+    /**
+     * Clear parent files on a file string
+     *
+     * @param fileString the files string
+     * @return the file string without parent files
+     */
+    public static String clearParents(final String fileString) {
+        if (fileString.contains(File.separator)) {
+            String[] data = fileString.replace(File.separatorChar, ';').split(";");
+
+            return data[data.length - 1];
+        }
+
+        return fileString;
+    }
+
+    /**
      * Get the file name
      *
      * @param file the file name
@@ -343,7 +501,7 @@ public class FileUtilities {
      * @return the source jar file
      */
     public static File getSourceFile(final KarmaSource source) {
-        File file = new File(source().getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
+        File file = new File(source.getClass().getProtectionDomain().getCodeSource().getLocation().getFile());
         return getFixedFile(file);
     }
 
@@ -400,7 +558,7 @@ public class FileUtilities {
      * @return the project parent folder
      */
     public static File getProjectParent() {
-        return getFixedFile(source().getDataPath().toFile().getParentFile());
+        return getFixedFile(source(false).getDataPath().toFile().getParentFile());
     }
 
     /**
@@ -412,6 +570,6 @@ public class FileUtilities {
      */
     @Deprecated
     public static File getProjectFolder(final KarmaSource source) {
-        return getFixedFile(source().getDataPath().toFile());
+        return getFixedFile(source.getDataPath().toFile());
     }
 }

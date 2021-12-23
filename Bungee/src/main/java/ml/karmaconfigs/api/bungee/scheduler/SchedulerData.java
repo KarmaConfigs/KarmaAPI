@@ -1,6 +1,5 @@
 package ml.karmaconfigs.api.bungee.scheduler;
 
-import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.scheduler.TaskScheduler;
 
 import java.util.Map;

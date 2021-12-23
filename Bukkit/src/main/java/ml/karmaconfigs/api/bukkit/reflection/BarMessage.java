@@ -25,7 +25,7 @@ package ml.karmaconfigs.api.bukkit.reflection;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.bukkit.server.VersionUtils;
+import ml.karmaconfigs.api.bukkit.server.BukkitServer;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -33,10 +33,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
-import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,12 +42,16 @@ import java.util.concurrent.TimeUnit;
  */
 public final class BarMessage {
 
+    private final static Map<UUID, BarMessage> data = new ConcurrentHashMap<>();
+
     private final Player player;
 
     private String message;
 
     private boolean sent = false;
     private boolean send = false;
+
+    private int remaining = 0;
 
     /**
      * Initialize the ActionBar class
@@ -66,26 +68,24 @@ public final class BarMessage {
      * Send the action bar
      */
     private void send() {
-        if (player != null && player.isOnline()) {
-            String msg = StringUtils.toColor(message);
+        String msg = StringUtils.toColor(message);
+        try {
+            Constructor<?> constructor = Objects.requireNonNull(BukkitServer.getMinecraftClass("PacketPlayOutChat")).getConstructor(BukkitServer.getMinecraftClass("IChatBaseComponent"), byte.class);
+
+            Object icbc = Objects.requireNonNull(BukkitServer.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
+            Object packet = constructor.newInstance(icbc, (byte) 2);
+            Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
+            Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
+
+            playerConnection.getClass().getMethod("sendPacket", BukkitServer.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+            sent = true;
+        } catch (Throwable ex) {
             try {
-                Constructor<?> constructor = Objects.requireNonNull(VersionUtils.getMinecraftClass("PacketPlayOutChat")).getConstructor(VersionUtils.getMinecraftClass("IChatBaseComponent"), byte.class);
-
-                Object icbc = Objects.requireNonNull(VersionUtils.getMinecraftClass("IChatBaseComponent")).getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + msg + "\"}");
-                Object packet = constructor.newInstance(icbc, (byte) 2);
-                Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
-                Object playerConnection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
-
-                playerConnection.getClass().getMethod("sendPacket", VersionUtils.getMinecraftClass("Packet")).invoke(playerConnection, packet);
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, UUID.randomUUID(), TextComponent.fromLegacyText(msg));
                 sent = true;
-            } catch (Throwable ex) {
-                try {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, UUID.randomUUID(), TextComponent.fromLegacyText(msg));
-                    sent = true;
-                } catch (Throwable exc) {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
-                    sent = true;
-                }
+            } catch (Throwable exc) {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+                sent = true;
             }
         }
     }
@@ -94,20 +94,29 @@ public final class BarMessage {
      * Send the message until you tell it to stop
      *
      * @param persistent if the message should be persistent
-     *                   until you order to stop
+     *                   until you order stopping
      */
     public void send(final boolean persistent) {
-        send = persistent;
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (!send)
-                    cancel();
-
-                send();
+        if (player != null && player.isOnline()) {
+            BarMessage stored = data.getOrDefault(player.getUniqueId(), null);
+            if (stored != null) {
+                stored.stop();
             }
-        }, 0, TimeUnit.SECONDS.toMillis(1));
+
+            send = persistent;
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    if (!send)
+                        cancel();
+
+                    send();
+                }
+            }, 0, TimeUnit.SECONDS.toMillis(1));
+
+            data.put(player.getUniqueId(), this);
+        }
     }
 
     /**
@@ -116,22 +125,36 @@ public final class BarMessage {
      * @param repeats the amount of times to send it
      */
     public void send(final int repeats) {
-        send = true;
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            int repeated = 0;
-            @Override
-            public void run() {
-                if (!send)
-                    stop();
-
-                repeated++;
-                send();
-                if (repeated == repeats) {
-                    cancel();
-                }
+        if (player != null && player.isOnline()) {
+            BarMessage stored = data.getOrDefault(player.getUniqueId(), null);
+            if (stored != null) {
+                stored.stop();
+                stored.remaining = 0;
             }
-        }, 0, TimeUnit.SECONDS.toMillis(2));
+
+            remaining = repeats;
+            send = true;
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                int repeated = 0;
+
+                @Override
+                public void run() {
+                    if (!send)
+                        stop();
+
+                    repeated++;
+                    send();
+                    if (repeated >= remaining) {
+                        cancel();
+                    }
+                }
+            }, 0, TimeUnit.SECONDS.toMillis(2));
+
+            if (stored != null) {
+                data.put(player.getUniqueId(), this);
+            }
+        }
     }
 
     /**

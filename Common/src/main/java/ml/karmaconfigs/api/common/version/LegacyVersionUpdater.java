@@ -26,15 +26,14 @@ package ml.karmaconfigs.api.common.version;
  */
 
 import ml.karmaconfigs.api.common.Logger;
-import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
 import ml.karmaconfigs.api.common.utils.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.string.VersionComparator;
 import ml.karmaconfigs.api.common.version.util.VersionCheckType;
 import ml.karmaconfigs.api.common.version.util.VersionResolver;
@@ -51,8 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * Karma legacy version updater

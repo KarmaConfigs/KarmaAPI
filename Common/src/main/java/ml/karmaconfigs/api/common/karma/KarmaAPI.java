@@ -25,15 +25,17 @@ package ml.karmaconfigs.api.common.karma;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.loader.BruteLoader;
+import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
+import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
-import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
 /**
@@ -106,23 +108,76 @@ public interface KarmaAPI extends Serializable {
      * @return if the source jar is loaded
      */
     static boolean isLoaded(final KarmaSource source) {
-        try {
-            File jarFile = FileUtilities.getSourceFile(source);
-            Path randomLocation = Files.createTempFile(StringUtils.generateString().create(), StringUtils.generateString().create());
+        boolean status = false;
+        Path destJar = null;
 
-            Files.copy(jarFile.toPath(), randomLocation, StandardCopyOption.REPLACE_EXISTING);
-            Files.move(randomLocation, jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Files.deleteIfExists(randomLocation);
-            return false;
+        try {
+            Path sourceJar = source.getSourceFile().toPath();
+            destJar = Files.createTempFile(StringUtils.generateString().create() + "_", StringUtils.generateString().create());
+
+            Files.move(sourceJar, destJar);
+            Files.move(destJar, sourceJar);
         } catch (Throwable ex) {
-            return true;
+            status = true;
+        } finally {
+            try {
+                Files.deleteIfExists(destJar);
+            } catch (Throwable ignored) {}
         }
+
+        return status;
     }
 
     /**
      * Get the API source
+     *
+     * @param force force default KarmaAPI
+     * @return a KarmaSource
      */
-    static KarmaSource source() {
-        return new APISource().getOriginal();
+    static KarmaSource source(final boolean force) {
+        return APISource.getOriginal(force);
+    }
+
+    /**
+     * Install KarmaAPI dependencies
+     */
+    static void install() {
+        BruteLoader loader = null;
+        try {
+            loader = new BruteLoader(
+                    (URLClassLoader) source(false).getClass().getClassLoader());
+        } catch (Throwable ex) {
+            try {
+                loader = new BruteLoader(
+                        (URLClassLoader) Thread.currentThread().getContextClassLoader());
+            } catch (Throwable exc) {
+                source(false).console().send("Failed to install KarmaAPI dependencies because of {0}", Level.GRAVE, ex.fillInStackTrace());
+                for (StackTraceElement element : ex.getStackTrace()) {
+                    source(false).console().send("&c             {0}", element);
+                }
+            }
+        }
+
+        if (loader != null) {
+            try {
+                Class.forName("com.google.gson.Gson");
+            } catch (Throwable ex) {
+                source(false).console().send("Google GSON dependency not found for UUID utilities, downloading it...", Level.WARNING);
+
+                loader.downloadAndInject(
+                        URLUtils.getOrNull("https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.9/gson-2.8.9.jar"),
+                        NameComponent.forFile("GoogleGSON", "jar"));
+            }
+
+            try {
+                Class.forName("org.apache.http.HttpResponse");
+            } catch (Throwable ex) {
+                source(false).console().send("Apache HTTP components not found for URL utilities, downloading it...", Level.WARNING);
+
+                loader.downloadAndInject(
+                        URLUtils.getOrNull("https://repo1.maven.org/maven2/org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar"),
+                        NameComponent.forFile("ApacheHTTP", "jar"));
+            }
+        }
     }
 }

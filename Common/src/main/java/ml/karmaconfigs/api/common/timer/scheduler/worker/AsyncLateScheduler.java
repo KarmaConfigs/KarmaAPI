@@ -25,7 +25,6 @@ package ml.karmaconfigs.api.common.timer.scheduler.worker;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.timer.scheduler.CancellableScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 
@@ -144,16 +143,20 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
      */
     @Override
     public void complete(final A target) {
-        if (this.cancelled || this.completed)
+        if (this.cancelled || this.completed) {
             return;
+        }
         try {
-            source().async().queue(() -> {
-                if (this.whenComplete != null)
+            source(true).async().queue(() -> {
+                if (this.whenComplete != null) {
                     this.whenComplete.accept(target);
-                if (this.whenCompleteWithError != null)
+                }
+                if (this.whenCompleteWithError != null) {
                     this.whenCompleteWithError.accept(target, null);
-                if (this.whenCompleteRunner != null)
+                }
+                if (this.whenCompleteRunner != null) {
                     this.whenCompleteRunner.run();
+                }
 
                 typeA = target;
             });
@@ -171,10 +174,11 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
      */
     @Override
     public void complete(final A target, final Throwable error) {
-        if (this.cancelled || this.completed)
+        if (this.cancelled || this.completed) {
             return;
+        }
         try {
-            source().async().queue(() -> {
+            source(true).async().queue(() -> {
                 if (this.whenCompleteWithError != null)
                     this.whenCompleteWithError.accept(target, error);
                 if (this.whenComplete != null)

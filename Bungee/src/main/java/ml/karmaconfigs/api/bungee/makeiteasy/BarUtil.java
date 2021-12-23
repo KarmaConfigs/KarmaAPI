@@ -396,6 +396,7 @@ final class BarUtil {
         for (BaseComponent component : title) {
             titleBuilder.append(component.toString()).append(", ");
         }
+
         return "BossBar(" +
                 "title=" + titleBuilder +
                 ", color=" + color +

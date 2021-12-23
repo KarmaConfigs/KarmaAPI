@@ -34,12 +34,16 @@ import java.util.Set;
  */
 public final class BossNotFoundException extends Exception {
 
+    /**
+     * The available boss bar ids
+     */
     private final Set<Integer> barIds = new LinkedHashSet<>();
 
     /**
      * Initialize the exception
      *
      * @param bossId the boss id
+     * @param ids the valid boss bar ids
      */
     public BossNotFoundException(final int bossId, final Set<Integer> ids) {
         super("BossMessage with id " + bossId + " not found");

@@ -51,6 +51,8 @@ public class BungeeAsyncScheduler<T extends KarmaPlugin> extends Scheduler {
                         data.onTaskEnd().accept(next);
                 }
             }), 0, 1, TimeUnit.SECONDS);
+
+            data.updateScheduler(scheduler);
         }
     }
 

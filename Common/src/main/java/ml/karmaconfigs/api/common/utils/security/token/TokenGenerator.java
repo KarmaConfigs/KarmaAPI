@@ -46,7 +46,7 @@ public class TokenGenerator {
     /**
      * The token buffer
      */
-    private static char[] buf = new char[512];
+    private static final char[] buf = new char[512];
 
     /**
      * The token max length
@@ -91,6 +91,24 @@ public class TokenGenerator {
         String value = new String(buf);
         if (length != -1) {
             value = value.substring(0, length);
+        }
+
+        return value;
+    }
+
+    /**
+     * Generate a token without base 64 encoding
+     *
+     * @param size the token size
+     * @return the token
+     */
+    public static String generateLiteral(final int size) {
+        for (int idx = 0; idx < buf.length; idx++)
+            buf[idx] = symbols[random.nextInt(symbols.length)];
+
+        String value = new String(buf);
+        if (size != -1) {
+            value = value.substring(0, size);
         }
 
         return value;
