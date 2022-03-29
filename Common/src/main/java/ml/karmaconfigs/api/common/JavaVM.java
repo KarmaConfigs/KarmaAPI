@@ -25,6 +25,8 @@ package ml.karmaconfigs.api.common;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.utils.OperativeSys;
+
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
@@ -40,8 +42,28 @@ public final class JavaVM {
      * @return the os name
      */
     public static String osName() {
-        String os = System.getProperty("os.name");
+        String os = System.getProperty("os.name", "unknown");
         return os.substring(0, 1).toUpperCase() + os.substring(1).toLowerCase();
+    }
+
+    /**
+     * Get the OS of the current jvm
+     *
+     * @return the current OS
+     */
+    public static OperativeSys getSystem() {
+        String name = osName().toLowerCase();
+        if (name.contains("win")) {
+            return OperativeSys.WINDOWS;
+        }
+        if (name.contains("mac") || name.contains("darwin")) {
+            return OperativeSys.MAC;
+        }
+        if (name.contains("nux")) {
+            return OperativeSys.LINUX;
+        }
+
+        return OperativeSys.OTHER;
     }
 
     /**
@@ -50,7 +72,7 @@ public final class JavaVM {
      * @return the os version
      */
     public static String osVersion() {
-        return System.getProperty("os.version");
+        return System.getProperty("os.version", "unknown");
     }
 
     /**
@@ -59,7 +81,7 @@ public final class JavaVM {
      * @return the os model
      */
     public static String osModel() {
-        return System.getProperty("sun.arch.data.model");
+        return System.getProperty("sun.arch.data.model", "unknown");
     }
 
     /**
@@ -70,7 +92,7 @@ public final class JavaVM {
     public static String osArchitecture() {
         String arch = System.getenv("PROCESSOR_ARCHITECTURE");
         String wow64Arch = System.getenv("PROCESSOR_ARCHITEW6432");
-        String lastTry = System.getProperty("sun.cpu.isalist");
+        String lastTry = System.getProperty("sun.cpu.isalist", "unknown");
         return (arch != null) ? arch : ((wow64Arch != null) ? wow64Arch : ((lastTry != null) ? lastTry : jvmArchitecture()));
     }
 

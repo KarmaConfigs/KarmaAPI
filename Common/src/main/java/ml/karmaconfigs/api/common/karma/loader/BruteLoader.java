@@ -28,6 +28,8 @@ package ml.karmaconfigs.api.common.karma.loader;
 import ml.karmaconfigs.api.common.JavaVM;
 import ml.karmaconfigs.api.common.ResourceDownloader;
 import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 import org.burningwave.core.assembler.StaticComponentContainer;
 
 import java.io.File;
@@ -35,6 +37,9 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.Enumeration;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
@@ -52,7 +57,28 @@ public final class BruteLoader {
 
     private static boolean open = false;
 
-    private final URLClassLoader loader;
+    private final ClassLoader loader;
+
+    /**
+     * Initialize the brute loader
+     *
+     * @param ucl the main class loader
+     */
+    public BruteLoader(final ClassLoader ucl) {
+        ClassLoader tmp = ucl;
+        if (!(tmp instanceof URLClassLoader)) {
+            tmp = Thread.currentThread().getContextClassLoader();
+
+            if (!(tmp instanceof URLClassLoader))
+                tmp = ucl;
+        }
+
+        loader = tmp;
+        if (JavaVM.javaVersion() >= 9 && !open) {
+            open = true;
+            StaticComponentContainer.Modules.exportAllToAll();
+        }
+    }
 
     /**
      * Initialize the brute loader
@@ -62,13 +88,9 @@ public final class BruteLoader {
     public BruteLoader(final URLClassLoader ucl) {
         loader = ucl;
 
-        if (JavaVM.javaVersion() > 11 && !open) {
+        if (JavaVM.javaVersion() >= 9 && !open) {
             open = true;
             StaticComponentContainer.Modules.exportAllToAll();
-            /*if (StaticComponentContainer.ManagedLoggerRepository.isEnabled()) {
-                StaticComponentContainer.ManagedLoggerRepository.disableLogging();
-                StaticComponentContainer.ManagedLoggerRepository.close();
-            }*/
         }
     }
 
@@ -83,7 +105,8 @@ public final class BruteLoader {
         //Dependencies will always be inside ./KarmaAPI/cache/dependencies/...
         name.addParentStart("dependencies");
 
-        ResourceDownloader downloader = ResourceDownloader.toCache(source(true), name.getName() + "." + name.findExtension(), downloadURL.toString(), name.getParents());
+        ResourceDownloader downloader = ResourceDownloader.toCache(source(true), name.getName() + "." + name.findExtension(), downloadURL.toString(), name.getParents())
+                .history(true);
         downloader.download();
 
         add(downloader.getDestFile());
@@ -98,9 +121,44 @@ public final class BruteLoader {
      */
     public boolean add(final URL source) {
         try {
-            Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            method.setAccessible(true);
-            method.invoke(loader, source);
+            Method method;
+            if (loader instanceof URLClassLoader) {
+                method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                method.setAccessible(true);
+                method.invoke(loader, source);
+            } else {
+                method = ClassLoader.class.getDeclaredMethod("addClass", Class.class);
+                Method define = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+                Method load = ClassLoader.class.getMethod("loadClassData", String.class);
+                method.setAccessible(true);
+                define.setAccessible(true);
+                load.setAccessible(true);
+
+                JarFile jarFile = new JarFile(source.getFile());
+                Enumeration<JarEntry> e = jarFile.entries();
+
+                URL[] urls = { new URL("jar:file:" + FileUtilities.getPrettyFile(new File(source.getFile())) + "!/") };
+                URLClassLoader cl = URLClassLoader.newInstance(urls);
+
+                while (e.hasMoreElements()) {
+                    JarEntry je = e.nextElement();
+                    if(je.isDirectory() || !je.getName().endsWith(".class")){
+                        continue;
+                    }
+
+                    String className = je.getName().substring(0,je.getName().length()-6);
+                    className = className.replace('/', '.');
+                    if (!className.endsWith("module-info")) {
+                        Class<?> clazz = cl.loadClass(className);
+                        method.invoke(loader, clazz);
+                        byte[] data = (byte[]) load.invoke(loader, className);
+                        define.invoke(loader, className, data, 0, data.length);
+                    }
+                }
+
+                load.setAccessible(false);
+                define.setAccessible(false);
+            }
             method.setAccessible(false);
 
             return true;
@@ -119,9 +177,43 @@ public final class BruteLoader {
      */
     public boolean add(final File source) {
         try {
-            Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            method.setAccessible(true);
-            method.invoke(loader, source.toURI().toURL());
+            Method method;
+            if (loader instanceof URLClassLoader) {
+                method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                method.setAccessible(true);
+                method.invoke(loader, source.toURI().toURL());
+            } else {
+                method = ClassLoader.class.getDeclaredMethod("addClass", Class.class);
+                Method define = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+                Method load = ClassLoader.class.getMethod("loadClassData", String.class);
+                method.setAccessible(true);
+                define.setAccessible(true);
+                load.setAccessible(true);
+
+                JarFile jarFile = new JarFile(source);
+                Enumeration<JarEntry> e = jarFile.entries();
+
+                URL[] urls = { new URL("jar:file:" + FileUtilities.getPrettyFile(source) + "!/") };
+                URLClassLoader cl = URLClassLoader.newInstance(urls);
+
+                while (e.hasMoreElements()) {
+                    JarEntry je = e.nextElement();
+                    if(je.isDirectory() || !je.getName().endsWith(".class")){
+                        continue;
+                    }
+
+                    String className = je.getName().substring(0,je.getName().length()-6);
+                    if (!className.endsWith("module-info")) {
+                        Class<?> clazz = cl.loadClass(className);
+                        method.invoke(loader, clazz);
+                        byte[] data = (byte[]) load.invoke(loader, className);
+                        define.invoke(loader, className, data, 0, data.length);
+                    }
+                }
+
+                load.setAccessible(false);
+                define.setAccessible(false);
+            }
             method.setAccessible(false);
 
             return true;
@@ -140,9 +232,44 @@ public final class BruteLoader {
      */
     public boolean add(final Path source) {
         try {
-            Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-            method.setAccessible(true);
-            method.invoke(loader, source.toUri().toURL());
+            Method method;
+
+            if (loader instanceof URLClassLoader) {
+                method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                method.setAccessible(true);
+                method.invoke(loader, source.toUri().toURL());
+            } else {
+                method = ClassLoader.class.getDeclaredMethod("addClass", Class.class);
+                Method define = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+                Method load = ClassLoader.class.getMethod("loadClassData", String.class);
+                method.setAccessible(true);
+                define.setAccessible(true);
+                load.setAccessible(true);
+
+                JarFile jarFile = new JarFile(source.toFile());
+                Enumeration<JarEntry> e = jarFile.entries();
+
+                URL[] urls = { new URL("jar:file:" + PathUtilities.getPrettyPath(source) + "!/") };
+                URLClassLoader cl = URLClassLoader.newInstance(urls);
+
+                while (e.hasMoreElements()) {
+                    JarEntry je = e.nextElement();
+                    if(je.isDirectory() || !je.getName().endsWith(".class")){
+                        continue;
+                    }
+
+                    String className = je.getName().substring(0,je.getName().length()-6);
+                    if (!className.endsWith("module-info")) {
+                        Class<?> clazz = cl.loadClass(className);
+                        method.invoke(loader, clazz);
+                        byte[] data = (byte[]) load.invoke(loader, className);
+                        define.invoke(loader, className, data, 0, data.length);
+                    }
+                }
+
+                load.setAccessible(false);
+                define.setAccessible(false);
+            }
             method.setAccessible(false);
 
             return true;
@@ -157,7 +284,7 @@ public final class BruteLoader {
      *
      * @return the class loader
      */
-    public URLClassLoader getLoader() {
+    public ClassLoader getLoader() {
         return loader;
     }
 }

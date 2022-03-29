@@ -28,13 +28,15 @@ package ml.karmaconfigs.api.bukkit.util.spigot;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.utils.url.HttpUtil;
+import ml.karmaconfigs.api.common.utils.url.URLUtils;
 
 import java.net.URL;
 
 /**
  * Karma implementation of XenforoResourceManagerAPI
  */
+@SuppressWarnings("unused")
 public final class SpigotRequest {
 
     /**
@@ -82,12 +84,17 @@ public final class SpigotRequest {
         }
 
         if (url != null) {
-            String response = URLUtils.getResponse(url);
+            HttpUtil utils = URLUtils.extraUtils(url);
+            if (utils != null) {
+                String response = utils.getResponse();
 
-            if (response != null) {
-                return gson.fromJson(response, JsonElement.class);
+                if (response != null) {
+                    return gson.fromJson(response, JsonElement.class);
+                } else {
+                    throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                }
             } else {
-                throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because something went internally wrong");
             }
         } else {
             throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because URL is null");
@@ -130,12 +137,17 @@ public final class SpigotRequest {
         }
 
         if (url != null) {
-            String response = URLUtils.getResponse(url);
+            HttpUtil utils = URLUtils.extraUtils(url);
+            if (utils != null) {
+                String response = utils.getResponse();
 
-            if (response != null) {
-                return gson.fromJson(response, JsonElement.class);
+                if (response != null) {
+                    return gson.fromJson(response, JsonElement.class);
+                } else {
+                    throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                }
             } else {
-                throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because something went internally wrong");
             }
         } else {
             throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because URL is null");
@@ -182,12 +194,17 @@ public final class SpigotRequest {
         }
 
         if (url != null) {
-            String response = URLUtils.getResponse(url);
+            HttpUtil utils = URLUtils.extraUtils(url);
+            if (utils != null) {
+                String response = utils.getResponse();
 
-            if (response != null) {
-                return gson.fromJson(response, JsonElement.class);
+                if (response != null) {
+                    return gson.fromJson(response, JsonElement.class);
+                } else {
+                    throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                }
             } else {
-                throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because something went internally wrong");
             }
         } else {
             throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because URL is null");
@@ -234,12 +251,17 @@ public final class SpigotRequest {
         }
 
         if (url != null) {
-            String response = URLUtils.getResponse(url);
+            HttpUtil utils = URLUtils.extraUtils(url);
+            if (utils != null) {
+                String response = utils.getResponse();
 
-            if (response != null) {
-                return gson.fromJson(response, JsonElement.class);
+                if (response != null) {
+                    return gson.fromJson(response, JsonElement.class);
+                } else {
+                    throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                }
             } else {
-                throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because something went internally wrong");
             }
         } else {
             throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because URL is null");
@@ -258,12 +280,17 @@ public final class SpigotRequest {
         if (method.equals(Request.FIND_AUTHOR)) {
             URL url = URLUtils.getOrNull("https://api.spigotmc.org/simple/0.2/index.php?action=findAuthor&name=" + data);
             if (url != null) {
-                String response = URLUtils.getResponse(url);
+                HttpUtil utils = URLUtils.extraUtils(url);
+                if (utils != null) {
+                    String response = utils.getResponse();
 
-                if (response != null) {
-                    return gson.fromJson(response, JsonElement.class);
+                    if (response != null) {
+                        return gson.fromJson(response, JsonElement.class);
+                    } else {
+                        throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                    }
                 } else {
-                    throw new IllegalStateException("Fetched request " + method.name() + " but response was null");
+                    throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because something went internally wrong");
                 }
             } else {
                 throw new IllegalStateException("Couldn't fetch for request " + method.name() + " because URL is null");

@@ -26,14 +26,16 @@ package ml.karmaconfigs.api.common.utils.file;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
@@ -49,11 +51,6 @@ import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 public class FileUtilities {
 
     /**
-     * Enable debug
-     */
-    public static boolean DEBUG = true;
-
-    /**
      * Is an intern
      */
     private static boolean INTERNAL_CALL = false;
@@ -64,16 +61,18 @@ public class FileUtilities {
      * @param file the file to create
      */
     public static void create(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
         if (!file.isDirectory()) {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
                 }
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
                 }
             } catch (Throwable ignored) {
@@ -82,7 +81,7 @@ public class FileUtilities {
             try {
                 if (!file.exists()) {
                     Files.createDirectories(file.toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
                 }
             } catch (Throwable ignored) {}
@@ -96,21 +95,23 @@ public class FileUtilities {
      * @throws IOException any exception
      */
     public static void createWithException(final @NotNull File file) throws IOException {
+        KarmaConfig config = new KarmaConfig();
+
         if (!file.isDirectory()) {
             if (!file.getParentFile().exists()) {
                 Files.createDirectories(file.getParentFile().toPath());
-                if (DEBUG && !INTERNAL_CALL)
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                     source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
             }
             if (!file.exists()) {
                 Files.createFile(file.toPath());
-                if (DEBUG && !INTERNAL_CALL)
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                     source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
             }
         } else {
             if (!file.exists()) {
                 Files.createDirectories(file.toPath());
-                if (DEBUG && !INTERNAL_CALL)
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                     source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
             }
         }
@@ -124,16 +125,18 @@ public class FileUtilities {
      * @return if the file could be created
      */
     public static boolean createWithResults(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
         if (!file.isDirectory()) {
             try {
                 if (!file.getParentFile().exists()) {
                     Files.createDirectories(file.getParentFile().toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created directory {0}", Level.INFO, getPrettyParentFile(file));
                 }
                 if (!file.exists()) {
                     Files.createFile(file.toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created file {0}", Level.INFO, getPrettyFile(file));
                     return true;
                 }
@@ -142,7 +145,7 @@ public class FileUtilities {
             try {
                 if (!file.exists()) {
                     Files.createDirectories(file.toPath());
-                    if (DEBUG && !INTERNAL_CALL)
+                    if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                         source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
                     return true;
                 }
@@ -153,11 +156,68 @@ public class FileUtilities {
     }
 
     /**
+     * Create a file
+     *
+     * @param file the file to create
+     */
+    public static void createDirectory(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
+        try {
+            if (!file.exists()) {
+                Files.createDirectories(file.toPath());
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
+                    source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    /**
+     * Create a file and catch any exception
+     *
+     * @param file the file to create
+     * @throws IOException any exception
+     */
+    public static void createDirectoryWithException(final @NotNull File file) throws IOException {
+        KarmaConfig config = new KarmaConfig();
+
+        if (!file.exists()) {
+            Files.createDirectories(file.toPath());
+            if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
+                source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
+        }
+    }
+
+    /**
+     * Create a file and return if the file
+     * could be created
+     *
+     * @param file the file to create
+     * @return if the file could be created
+     */
+    public static boolean createDirectoryWithResults(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
+        try {
+            if (!file.exists()) {
+                Files.createDirectories(file.toPath());
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
+                    source(true).console().send("Created directory {0}", Level.INFO, getPrettyFile(file));
+                return true;
+            }
+        } catch (Throwable ignored) {}
+
+        return false;
+    }
+
+    /**
      * Deletes a file
      *
      * @param file the file to delete
      */
     public static void destroy(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
         try {
             if (file.exists()) {
                 boolean dir = file.isDirectory();
@@ -167,7 +227,7 @@ public class FileUtilities {
                 }
                 Files.delete(file.toPath());
 
-                if (DEBUG && !INTERNAL_CALL)
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                     source(true).console().send("Deleted {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
             }
         } catch (Throwable ignored) {
@@ -181,6 +241,8 @@ public class FileUtilities {
      * @throws IOException any exception
      */
     public static void destroyWithException(final @NotNull File file) throws IOException {
+        KarmaConfig config = new KarmaConfig();
+
         if (file.exists()) {
             boolean dir = file.isDirectory();
             if (dir) {
@@ -189,7 +251,7 @@ public class FileUtilities {
             }
             Files.delete(file.toPath());
 
-            if (DEBUG && !INTERNAL_CALL)
+            if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                 source(true).console().send("Deleted {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
         }
     }
@@ -202,6 +264,8 @@ public class FileUtilities {
      * @return if the file could be created
      */
     public static boolean destroyWithResults(final @NotNull File file) {
+        KarmaConfig config = new KarmaConfig();
+
         try {
             if (file.exists()) {
                 boolean dir = file.isDirectory();
@@ -211,7 +275,7 @@ public class FileUtilities {
                 }
                 Files.delete(file.toPath());
 
-                if (DEBUG && !INTERNAL_CALL)
+                if (config.utilDebug(Level.INFO) && !INTERNAL_CALL)
                     source(true).console().send("Removed {0} {1}", Level.INFO, (dir ? "directory" : "file"), getPrettyFile(file));
                 return true;
             }
@@ -292,6 +356,61 @@ public class FileUtilities {
         } catch (Throwable ex) {
             return false;
         }
+    }
+
+    /**
+     * Get if the file is a compressed file
+     *
+     * @param file the file to check
+     * @return if the file is a compressed file
+     */
+    public static boolean isCompressedFile(final File file) {
+        String name = getName(file, true).toLowerCase();
+
+        InputStream stream = null;
+        InputStreamReader inReader = null;
+        BufferedReader reader = null;
+        try {
+            stream = FileUtilities.class.getResourceAsStream("/compressions.txt");
+            if (stream != null) {
+                inReader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+                reader = new BufferedReader(inReader);
+
+                String format;
+                while ((format = reader.readLine()) != null)
+                    if (name.endsWith(format.toLowerCase()))
+                        return true;
+            }
+        } catch (Throwable ignored) {} finally {
+            try {
+                if (reader != null)
+                    reader.close();
+
+                if (inReader != null)
+                    inReader.close();
+
+                if (stream != null)
+                    stream.close();
+            } catch (Throwable ignored) {}
+        }
+
+        return false;
+    }
+
+    /**
+     * Read the file bytes
+     *
+     * @param file the file to read
+     * @return the file bytes
+     */
+    public static byte[] readFile(final File file) {
+        byte[] bytes = new byte[(int) file.length()];
+
+        try (InputStream stream = new FileInputStream(file); DataInputStream dataInputStream = new DataInputStream(stream)) {
+            dataInputStream.readFully(bytes);
+        } catch (Throwable ignored) {}
+
+        return bytes;
     }
 
     /**
@@ -478,6 +597,46 @@ public class FileUtilities {
         }
 
         return "directory";
+    }
+
+    /**
+     * Get the file compression
+     *
+     * @param file the file to check
+     * @return the file compression or null if none
+     */
+    @Nullable
+    public static String getFileCompression(final File file) {
+        String name = getName(file, true).toLowerCase();
+
+        InputStream stream = null;
+        InputStreamReader inReader = null;
+        BufferedReader reader = null;
+        try {
+            stream = FileUtilities.class.getResourceAsStream("/compressions.txt");
+            if (stream != null) {
+                inReader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+                reader = new BufferedReader(inReader);
+
+                String format;
+                while ((format = reader.readLine()) != null)
+                    if (name.endsWith(format.toLowerCase()))
+                        return format.replaceFirst("\\.", "");
+            }
+        } catch (Throwable ignored) {} finally {
+            try {
+                if (reader != null)
+                    reader.close();
+
+                if (inReader != null)
+                    inReader.close();
+
+                if (stream != null)
+                    stream.close();
+            } catch (Throwable ignored) {}
+        }
+
+        return null;
     }
 
     /**

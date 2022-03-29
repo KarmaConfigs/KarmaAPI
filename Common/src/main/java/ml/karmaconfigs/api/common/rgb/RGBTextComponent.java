@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.rgb;
  *  SOFTWARE.
  */
 
+import com.google.gson.JsonObject;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 import java.io.Serializable;

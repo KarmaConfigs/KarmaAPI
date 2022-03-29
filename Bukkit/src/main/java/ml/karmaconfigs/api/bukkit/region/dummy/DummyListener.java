@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.bukkit.region;
+package ml.karmaconfigs.api.bukkit.region.dummy;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.bukkit.region;
  */
 
 import com.bergerkiller.bukkit.common.events.EntityMoveEvent;
+import ml.karmaconfigs.api.bukkit.region.Cuboid;
 import ml.karmaconfigs.api.bukkit.region.event.InteractAction;
 import ml.karmaconfigs.api.bukkit.region.event.death.Forensics;
 import ml.karmaconfigs.api.bukkit.region.event.entity.*;
@@ -54,7 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * event
  */
 @SuppressWarnings({"unused"})
-class DummyListener implements Listener {
+public class DummyListener implements Listener {
 
     private final static Map<Cuboid, Set<Entity>> entity_cache = new ConcurrentHashMap<>();
     private final static Map<UUID, Object> damage_data = new ConcurrentHashMap<>();
@@ -70,7 +71,7 @@ class DummyListener implements Listener {
      *
      * @param channel the dummy plugin channel
      */
-    DummyListener(final Plugin channel) {
+    public DummyListener(final Plugin channel) {
         plugin = channel;
 
         //Remove invalid entities cache every 5 minutes

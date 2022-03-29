@@ -27,9 +27,10 @@ package ml.karmaconfigs.api.common.version;
 
 import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
-import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.string.ComparatorBuilder;
@@ -105,6 +106,8 @@ public final class LegacyVersionUpdater extends VersionUpdater {
      * @return the fetch result
      */
     public LateScheduler<VersionFetchResult> fetch(final boolean force) {
+        KarmaConfig config = new KarmaConfig();
+
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
         if (force || !results.containsKey(this.source) || results.getOrDefault(this.source, null) == null) {
             source.async().queue(() -> {
@@ -154,10 +157,17 @@ public final class LegacyVersionUpdater extends VersionUpdater {
                     results.put(this.source, result);
                     asyncLateScheduler.complete(result);
                 } catch (Throwable ex) {
-                    logger.scheduleLog(Level.GRAVE, ex);
-                    logger.scheduleLog(Level.INFO, "Failed to check for updates for source {0}", source.name());
+                    if (config.log(Level.GRAVE)) {
+                        logger.scheduleLog(Level.GRAVE, ex);
+                    }
+                    if (config.log(Level.INFO)) {
+                        logger.scheduleLog(Level.INFO, "Failed to check for updates for source {0}", source.name());
+                    }
 
-                    source.console().send("Failed to check for updates at {0}", Level.GRAVE, source.updateURL());
+                    if (config.debug(Level.GRAVE)) {
+                        source.console().send("Failed to check for updates at {0}", Level.GRAVE, source.updateURL());
+                    }
+
                     asyncLateScheduler.complete(null, ex);
                 }
             });

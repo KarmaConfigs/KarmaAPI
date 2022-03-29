@@ -35,8 +35,8 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: net.md-5:bungeecord-chat:1.16-R0.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.yaml:snakeyaml:1.28" level="project" />
     <orderEntry type="module" module-name="KarmaAPI-Common" />
-    <orderEntry type="library" name="Maven: org.burningwave:core:12.41.1" level="project" />
-    <orderEntry type="library" name="Maven: io.github.toolfactory:jvm-driver:8.7.9" level="project" />
+    <orderEntry type="library" name="Maven: org.burningwave:core:12.45.1" level="project" />
+    <orderEntry type="library" name="Maven: io.github.toolfactory:jvm-driver:8.9.3" level="project" />
     <orderEntry type="library" name="Maven: io.github.toolfactory:narcissus:1.0.7" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.bergerkiller.bukkit:BKCommonLib:1.17.1-v5" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.bergerkiller.mountiplex:Mountiplex:2.54" level="project" />

@@ -37,6 +37,7 @@ import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 import java.io.File;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 
 /**
@@ -100,6 +101,7 @@ public interface KarmaSource extends Serializable {
             builder.append(separator).append(author);
         if (firstSeparator)
             return builder.toString();
+
         return builder.toString().replaceFirst(separator, "");
     }
 
@@ -145,7 +147,33 @@ public interface KarmaSource extends Serializable {
      * @return the source out
      */
     default Console console() {
-        return new Console(this);
+        Console simple = new Console(this);
+
+        try {
+            //Fixes a problem related with papermc and 'nag authors'
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
+            Method getServer = bukkit.getMethod("getServer");
+
+            Object server = getServer.invoke(bukkit);
+
+            Class<?> svClass = server.getClass();
+            Method consoleSender = svClass.getMethod("getConsoleSender");
+
+            Object commandSender = consoleSender.invoke(server);
+
+            Class<?> consoleCommandSender = commandSender.getClass();
+            Method sendMessage = consoleCommandSender.getMethod("sendMessage", String.class);
+
+            return new Console(this, (msg) -> {
+                try {
+                    sendMessage.invoke(commandSender, StringUtils.toColor(msg));
+                } catch (Throwable ex) {
+                    simple.send(msg);
+                }
+            });
+        } catch (Throwable ex) {
+            return simple;
+        }
     }
 
     /**

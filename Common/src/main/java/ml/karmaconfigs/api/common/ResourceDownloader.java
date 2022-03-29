@@ -26,17 +26,20 @@ package ml.karmaconfigs.api.common;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
@@ -44,6 +47,8 @@ import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
  * Karma resource downloader
  */
 public final class ResourceDownloader {
+
+    private final static Set<String> success = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * The destination download file
@@ -55,6 +60,8 @@ public final class ResourceDownloader {
      */
     private final String url;
 
+    private boolean history = false;
+
     /**
      * Initialize the resource downloader
      *
@@ -65,6 +72,7 @@ public final class ResourceDownloader {
         this.destFile = destination;
         this.url = _url;
     }
+
 
     /**
      * Download something to cache
@@ -92,28 +100,51 @@ public final class ResourceDownloader {
     }
 
     /**
+     * Set this download history status
+     *
+     * @param status the history
+     * @return this instance
+     */
+    public ResourceDownloader history(final boolean status) {
+        history = status;
+
+        return this;
+    }
+
+    /**
      * Download the resource
      */
     public void download() {
+        KarmaConfig config = new KarmaConfig();
         ReadableByteChannel rbc = null;
+
         InputStream stream = null;
         FileOutputStream output = null;
-        HttpURLConnection connection = null;
         try {
-            FileUtilities.create(destFile);
-            URL download_url = new URL(this.url);
-            connection = (HttpURLConnection) download_url.openConnection();
-            connection.connect();
-            stream = connection.getInputStream();
-            long destSize = this.destFile.length();
-            long connSize = connection.getContentLengthLong();
-            if (destSize != connSize) {
-                source(false).console().send("Downloading file {0}", Level.INFO, this.destFile.getName());
-                rbc = Channels.newChannel(download_url.openStream());
-                output = new FileOutputStream(this.destFile);
-                output.getChannel().transferFrom(rbc, 0L, Long.MAX_VALUE);
+            boolean process = true;
+            if (history) {
+                if (success.contains(FileUtilities.getPrettyFile(destFile))) {
+                    process = !destFile.exists();
+                }
             }
-            connection.disconnect();
+            if (process) {
+                FileUtilities.create(destFile);
+
+                URL download_url = new URL(this.url);
+                stream = download_url.openStream();
+
+                if (config.debug(Level.INFO)) {
+                    source(false).console().send("Downloading file {0}", Level.INFO, this.destFile.getName());
+                }
+
+                rbc = Channels.newChannel(stream);
+                output = new FileOutputStream(destFile);
+                output.getChannel().transferFrom(rbc, 0L, Long.MAX_VALUE);
+
+                if (history) {
+                    success.add(FileUtilities.getPrettyFile(destFile));
+                }
+            }
         } catch (Throwable ex) {
             ex.printStackTrace();
         } finally {
@@ -124,11 +155,12 @@ public final class ResourceDownloader {
                     stream.close();
                 if (output != null)
                     output.close();
-                if (connection != null)
-                    connection.disconnect();
             } catch (Throwable ignored) {
             }
-            source(false).console().send("Downloaded file {0}", Level.OK, this.destFile.getName());
+
+            if (config.debug(Level.OK)) {
+                source(false).console().send("Downloaded file {0}", Level.OK, this.destFile.getName());
+            }
         }
     }
 
@@ -139,5 +171,21 @@ public final class ResourceDownloader {
      */
     public File getDestFile() {
         return this.destFile;
+    }
+
+    /**
+     * Clear the download history
+     */
+    public static void clearHistory() {
+        success.clear();
+    }
+
+    /**
+     * Remove a file from the history
+     *
+     * @param file the file
+     */
+    public static void removeHistory(final File file) {
+        success.remove(FileUtilities.getPrettyFile(file));
     }
 }

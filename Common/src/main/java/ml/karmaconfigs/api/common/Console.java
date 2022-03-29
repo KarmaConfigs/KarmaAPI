@@ -26,13 +26,16 @@ package ml.karmaconfigs.api.common;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
 import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
+import ml.karmaconfigs.api.common.utils.placeholder.util.PlaceholderEngine;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.string.color.ConsoleColor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -45,6 +48,8 @@ public final class Console {
      * The custom message actions
      */
     private final static Map<KarmaSource, Consumer<String>> messageActions = new ConcurrentHashMap<>();
+    private final static Map<KarmaSource, Set<PlaceholderEngine>> engines = new ConcurrentHashMap<>();
+
     /**
      * The console source
      */
@@ -57,6 +62,12 @@ public final class Console {
      */
     public Console(final KarmaSource src) {
         source = src;
+
+        PlaceholderEngine global = new GlobalPlaceholderEngine(src);
+        Set<PlaceholderEngine> stored = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        stored.add(global);
+
+        engines.put(source, stored);
     }
 
     /**
@@ -67,11 +78,27 @@ public final class Console {
      */
     public Console(final KarmaSource src, final Consumer<String> onMessage) {
         this.source = src;
-        if (onMessage != null && messageActions.getOrDefault(src, null) == null) {
-            send("&b[ KarmaAPI &b]&7 Using custom console message sender");
+
+        if (onMessage != null) {
+            boolean isNew = messageActions.getOrDefault(src, null) == null;
+
+            messageActions.put(src, onMessage);
+            if (isNew) {
+                KarmaConfig config = new KarmaConfig();
+
+                if (config.debug(Level.INFO)) {
+                    send(StringUtils.formatString(src, "Using custom console message sender", Level.INFO));
+                }
+            }
+        } else {
+            messageActions.remove(src);
         }
 
-        messageActions.put(src, onMessage);
+        PlaceholderEngine global = new GlobalPlaceholderEngine(src);
+        Set<PlaceholderEngine> stored = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        stored.add(global);
+
+        engines.put(source, stored);
     }
 
     /**
@@ -84,6 +111,40 @@ public final class Console {
     }
 
     /**
+     * Add placeholder engine to parse automatically
+     * placeholders on the messages
+     *
+     * @param engine the engine to add
+     */
+    public void addEngine(final PlaceholderEngine engine) {
+        Set<PlaceholderEngine> stored = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        stored.add(engine);
+
+        engines.put(source, stored);
+    }
+
+    /**
+     * Remove a placeholder engine
+     *
+     * @param engine the placeholder engine to remove
+     */
+    public void removeEngine(final PlaceholderEngine engine) {
+        Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        added.remove(engine);
+
+        engines.put(source, added);
+    }
+
+    /**
+     * Get the placeholder engines of the console
+     *
+     * @return the placeholder engines of the console
+     */
+    public Set<PlaceholderEngine> getEngines() {
+        return engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+    }
+
+    /**
      * Send a message to the console
      *
      * @param message the message to send
@@ -91,10 +152,15 @@ public final class Console {
     public void send(final CharSequence message) {
         Consumer<String> messageAction = messageActions.getOrDefault(source, null);
 
+        String msg = String.valueOf(message);
+        Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        for (PlaceholderEngine engine : added)
+            msg = engine.parse(msg);
+
         if (messageAction == null) {
-            System.out.println("\033[0m" + StringUtils.toConsoleColor(message) + "\033[0m");
+            System.out.println("\033[0m" + StringUtils.toAnyOsColor(ConsoleColor.RESET.getCode() + msg + ConsoleColor.RESET.getCode()));
         } else {
-            messageAction.accept(String.valueOf(message));
+            messageAction.accept(msg);
         }
     }
 
@@ -113,8 +179,13 @@ public final class Console {
             String value = String.valueOf(replaces[i]);
             tmpMessage = tmpMessage.replace(placeholder, value);
         }
+
+        Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        for (PlaceholderEngine engine : added)
+            tmpMessage = engine.parse(tmpMessage);
+
         if (messageAction == null) {
-            System.out.println("\033[0m" + StringUtils.toConsoleColor(tmpMessage) + "\033[0m");
+            System.out.println("\033[0m" +  StringUtils.toAnyOsColor(ConsoleColor.RESET.getCode() + tmpMessage + ConsoleColor.RESET.getCode()));
         } else {
             messageAction.accept(tmpMessage);
         }
@@ -147,10 +218,14 @@ public final class Console {
                 break;
         }
         tmpMessage = StringUtils.stripColor(tmpMessage);
+        Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        for (PlaceholderEngine engine : added)
+            tmpMessage = engine.parse(tmpMessage);
+
         if (messageAction == null) {
             if (tmpMessage.contains("\n")) {
                 for (String msg : tmpMessage.split("\n"))
-                    send(msg);
+                    send( msg);
             } else {
                 send(prefix + tmpMessage);
             }
@@ -195,6 +270,10 @@ public final class Console {
             tmpMessage = tmpMessage.replace(placeholder, value);
         }
         tmpMessage = StringUtils.stripColor(tmpMessage);
+        Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        for (PlaceholderEngine engine : added)
+            tmpMessage = engine.parse(tmpMessage);
+
         if (messageAction == null) {
             if (tmpMessage.contains("\n")) {
                 for (String msg : tmpMessage.split("\n"))

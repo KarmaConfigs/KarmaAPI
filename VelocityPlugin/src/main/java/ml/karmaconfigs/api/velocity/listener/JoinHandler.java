@@ -5,8 +5,8 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.player.GameProfileRequestEvent;
 import com.velocitypowered.api.util.GameProfile;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.utils.UUIDUtil;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.uuid.UUIDUtil;
 
 public class JoinHandler {
 
@@ -27,11 +27,10 @@ public class JoinHandler {
                 UUIDUtil.registerMinecraftClient(original.getName());
             }
             if (!StringUtils.isNullOrEmpty(current)) {
-                UUIDUtil.fetchMinecraftUUID(current.getName());
+                UUIDUtil.registerMinecraftClient(current.getName());
             }
-
             if (!StringUtils.isNullOrEmpty(userName)) {
-                UUIDUtil.fetchMinecraftUUID(userName);
+                UUIDUtil.registerMinecraftClient(userName);
             }
         });
     }

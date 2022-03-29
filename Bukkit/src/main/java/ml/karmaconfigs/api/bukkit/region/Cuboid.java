@@ -25,17 +25,17 @@ package ml.karmaconfigs.api.bukkit.region;
  *  SOFTWARE.
  */
 
-import com.bergerkiller.bukkit.common.events.EntityMoveEvent;
 import ml.karmaconfigs.api.bukkit.KarmaPlugin;
 import ml.karmaconfigs.api.bukkit.region.corner.util.Corner;
+import ml.karmaconfigs.api.bukkit.region.dummy.BlockListener;
+import ml.karmaconfigs.api.bukkit.region.dummy.DummyListener;
 import ml.karmaconfigs.api.bukkit.region.wall.util.Wall;
 import ml.karmaconfigs.api.bukkit.region.wall.util.WallType;
 import ml.karmaconfigs.api.common.ResourceDownloader;
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.loader.BruteLoader;
-import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
-import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -48,8 +48,6 @@ import org.bukkit.plugin.PluginManager;
 
 import java.io.File;
 import java.io.Serializable;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -77,6 +75,7 @@ public abstract class Cuboid implements Serializable {
      * @param plugin the cuboid owner
      */
     public Cuboid(final KarmaPlugin plugin) {
+        KarmaConfig config = new KarmaConfig();
         KarmaSource source = KarmaAPI.source(false);
         PluginManager manager = plugin.getServer().getPluginManager();
 
@@ -90,7 +89,9 @@ public abstract class Cuboid implements Serializable {
             if (!manager.isPluginEnabled("BKCommonLib") && !tried) {
                 tried = true;
 
-                source.console().send("KarmaAPI region API needs BKCommonLib to work but we didn't found it. We will download it", Level.GRAVE);
+                if (config.debug(Level.GRAVE)) {
+                    source.console().send("KarmaAPI region API needs BKCommonLib to work but we didn't found it. We will download it", Level.GRAVE);
+                }
 
                 File pluginsFolder = new File(plugin.getServer().getWorldContainer(), "plugins");
                 File destination = new File(pluginsFolder, "BKCommonLib.jar");
@@ -102,9 +103,13 @@ public abstract class Cuboid implements Serializable {
                 try {
                     Plugin result = manager.loadPlugin(destination);
                     if (result != null) {
-                        source.console().send("&aDownloaded and enabled BKCommonLib");
+                        if (config.log(Level.OK)) {
+                            source.console().send("Downloaded and enabled BKCommonLib", Level.OK);
+                        }
                     } else {
-                        source.console().send("&cBKCommonLib has been downloaded but couldn't be enabled");
+                        if (config.debug(Level.WARNING)) {
+                            source.console().send("BKCommonLib has been downloaded but couldn't be enabled", Level.WARNING);
+                        }
                         proceed = false;
                     }
                 } catch (Throwable ex) {
@@ -114,25 +119,12 @@ public abstract class Cuboid implements Serializable {
             }
 
             if (proceed) {
-                /*source.console().send("KarmaAPI region API needs ClassGraph. We will download it if its not downloaded yet", Level.GRAVE);
-                BruteLoader loader = new BruteLoader((URLClassLoader) plugin.getClass().getClassLoader());
+                dummy = new DummyListener(plugin);
+                blocks = new BlockListener();
+                hooked = plugin;
 
-                URL url = URLUtils.getOrNull("https://repo1.maven.org/maven2/io/github/classgraph/classgraph/4.8.138/classgraph-4.8.138.jar");
-                if (url != null) {
-                    loader.downloadAndInject(
-                            url,
-                            NameComponent.forFile("ClassGraph", "jar")
-                    );*/
-
-                    dummy = new DummyListener(plugin);
-                    blocks = new BlockDummyListener(plugin);
-                    hooked = plugin;
-
-                    manager.registerEvents(dummy, plugin);
-                    manager.registerEvents(blocks, plugin);
-               /*} else {
-                    source.console().send("Failed to download ClassGraph because its download URL was null", Level.GRAVE);
-                }*/
+                manager.registerEvents(dummy, plugin);
+                manager.registerEvents(blocks, plugin);
             }
         }
 

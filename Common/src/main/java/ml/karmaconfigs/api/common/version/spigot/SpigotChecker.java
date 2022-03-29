@@ -29,7 +29,8 @@ import com.google.gson.*;
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
-import ml.karmaconfigs.api.common.utils.URLUtils;
+import ml.karmaconfigs.api.common.utils.url.HttpUtil;
+import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 import java.net.URL;
@@ -62,14 +63,18 @@ public final class SpigotChecker {
     public String getLatest() {
         try {
             URL url = new URL(StringUtils.formatString(fetch_version, resource_id));
+            HttpUtil utils = URLUtils.extraUtils(url);
 
-            String response = URLUtils.getResponse(url);
-            if (response != null) {
-                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
-                JsonObject object = gson.fromJson(response, JsonObject.class);
+            if (utils != null) {
+                String response = utils.getResponse();
 
-                if (object.has("current_version")) {
-                    return object.get("current_version").getAsString();
+                if (response != null) {
+                    Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+                    JsonObject object = gson.fromJson(response, JsonObject.class);
+
+                    if (object.has("current_version")) {
+                        return object.get("current_version").getAsString();
+                    }
                 }
             }
         } catch (Throwable ex) {
@@ -91,38 +96,54 @@ public final class SpigotChecker {
             try {
                 int page = 0;
                 URL url = new URL(StringUtils.formatString(fetch_update, resource_id, page));
+                HttpUtil utils = URLUtils.extraUtils(url);
 
-                String response = URLUtils.getResponse(url);
-                if (response != null) {
+                if (utils != null) {
+                    String response = utils.getResponse();
+
                     while (!response.equalsIgnoreCase("[]")) {
                         page++;
                         url = new URL(StringUtils.formatString(fetch_update, resource_id, page));
 
-                        response = URLUtils.getResponse(url);
+                        utils = URLUtils.extraUtils(url);
+                        if (utils != null) {
+                            response = utils.getResponse();
+                        } else {
+                            break;
+                        }
                     }
-                }
 
-                page--;
-                url = new URL(StringUtils.formatString(fetch_update, resource_id, page));
+                    page--;
+                    url = new URL(StringUtils.formatString(fetch_update, resource_id, page));
+                    utils = URLUtils.extraUtils(url);
 
-                response = URLUtils.getResponse(url);
+                    if (utils != null) {
+                        response = utils.getResponse();
 
-                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
-                JsonArray array = gson.fromJson(response, JsonArray.class);
+                        if (!response.equals("403 - Connection refused")) {
+                            Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+                            JsonArray array = gson.fromJson(response, JsonArray.class);
 
-                JsonElement last = array.get(array.size() - 1);
-                if (last.isJsonObject()) {
-                    JsonObject object = last.getAsJsonObject();
-                    if (object.has("id")) {
-                        int updateId = object.get("id").getAsInt();
+                            JsonElement last = array.get(array.size() - 1);
+                            if (last.isJsonObject()) {
+                                JsonObject object = last.getAsJsonObject();
+                                if (object.has("id")) {
+                                    int updateId = object.get("id").getAsInt();
 
-                        URL updateInfo = new URL(StringUtils.formatString(update_url, resource_id, updateId));
-                        result.complete(updateInfo, null);
+                                    URL updateInfo = new URL(StringUtils.formatString(update_url, resource_id, updateId));
+                                    result.complete(updateInfo, null);
+                                } else {
+                                    result.complete(null, new Exception("Failed to fetch last update id for project with id " + resource_id + " #001"));
+                                }
+                            } else {
+                                result.complete(null, new Exception("Failed to fetch last update for project with id " + resource_id + " #002"));
+                            }
+                        } else {
+                            result.complete(null, new Exception("Failed to fetch last update for project with id " + resource_id + " #003"));
+                        }
                     } else {
-                        result.complete(null, new Exception("Failed to fetch last update id for project with id " + resource_id));
+                        result.complete(null, new Exception("Failed to fetch last update for project with id " +resource_id + " #004"));
                     }
-                } else {
-                    result.complete(null, new Exception("Failed to fetch last update for project with id " + resource_id));
                 }
             } catch (Throwable ex) {
                 result.complete(null, ex);

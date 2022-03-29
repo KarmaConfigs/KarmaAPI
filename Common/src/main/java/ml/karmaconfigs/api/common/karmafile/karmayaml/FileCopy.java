@@ -26,14 +26,17 @@ package ml.karmaconfigs.api.common.karmafile.karmayaml;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.reader.BoundedBufferedReader;
+import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.jar.JarFile;
@@ -75,11 +78,6 @@ public final class FileCopy {
     private final Class<?> main;
 
     /**
-     * Enable debug
-     */
-    private boolean debug;
-
-    /**
      * Initialize the file copy
      *
      * @param source the source containing the file to export
@@ -87,30 +85,6 @@ public final class FileCopy {
      */
     public FileCopy(final KarmaSource source, final String name) {
         fileName = name;
-
-        /*source.console().send("Initializing file copy for source {0} ({1}) at file {2}", Level.INFO, source.name(), FileUtilities.getPrettyFile(source.getSourceFile()), fileName);
-        try {
-            JarFile jar = new JarFile(source.getSourceFile());
-            ZipEntry entry = jar.getEntry(name);
-            InputStream stream = jar.getInputStream(entry);
-            InputStreamReader ir = new InputStreamReader(stream, StandardCharsets.UTF_8);
-            BufferedReader reader = new BufferedReader(ir);
-
-            String line;
-            while ((line = reader.readLine()) != null)
-                source().console().send("&b{0}", line);
-
-            reader.close();
-            ir.close();
-            stream.close();
-            jar.close();
-
-            source().console().send("&7--------------------------------------------------------");
-            source().console().send(" ");
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }*/
-
         this.main = source.getClass();
     }
 
@@ -122,43 +96,173 @@ public final class FileCopy {
      */
     public FileCopy(final Class<?> main, final String name) {
         fileName = name;
-
-        /*File file = FileUtilities.getFixedFile(new File(main.getProtectionDomain().getCodeSource().getLocation().getFile()));
-        source().console().send("Initializing file copy from class \"{0}\"({1}) at file {2}", Level.INFO, main.getName(), FileUtilities.getPrettyFile(file), fileName);
-        try {
-            JarFile jar = new JarFile(file);
-            ZipEntry entry = jar.getEntry(name);
-            InputStream stream = jar.getInputStream(entry);
-            InputStreamReader ir = new InputStreamReader(stream, StandardCharsets.UTF_8);
-            BufferedReader reader = new BufferedReader(ir);
-
-            String line;
-            while ((line = reader.readLine()) != null)
-                source().console().send("&b{0}", line);
-
-            reader.close();
-            ir.close();
-            stream.close();
-            jar.close();
-
-            source().console().send("&7--------------------------------------------------------");
-            source().console().send(" ");
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }*/
-
         this.main = main;
     }
 
     /**
-     * Set debug status
+     * Copy the file
      *
-     * @param status the debug status
-     * @return this instance
+     * @param destFile the file destination
+     * @param inFile the input file to read from
+     * @throws IOException if something goes wrong
      */
-    public FileCopy withDebug(boolean status) {
-        this.debug = status;
-        return this;
+    public void copy(File destFile, final @NotNull InputStream inFile) throws IOException {
+        KarmaConfig config = new KarmaConfig();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        byte[] buffer = new byte[1024];
+        int len;
+        while ((len = inFile.read(buffer)) > -1 ) {
+            baos.write(buffer, 0, len);
+        }
+        baos.flush();
+
+        destFile = FileUtilities.getFixedFile(destFile);
+        if (this.main != null) {
+            if (destFile.exists()) {
+                InputStream clone = new ByteArrayInputStream(baos.toByteArray());
+
+                InputStreamReader inReader = new InputStreamReader(clone, StandardCharsets.UTF_8);
+                BoundedBufferedReader reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                String ext = FileUtilities.getExtension(destFile);
+                boolean yaml = (ext.equals("yml") || ext.equalsIgnoreCase("yaml"));
+                if (!yaml)
+                    try {
+                        Yaml yamlParser = new Yaml();
+                        Map<String, Object> tmpYaml = yamlParser.load(reader);
+                        yaml = (tmpYaml != null && !tmpYaml.isEmpty());
+                    } catch (Throwable ignored) {
+                    }
+                if (yaml) {
+                    InputStream clone1 = new ByteArrayInputStream(baos.toByteArray());
+
+                    fillKeySet(destFile, clone1);
+                    Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
+                    String last_section = "";
+                    if (config.fileDebug(Level.INFO))
+                        source(true).console().send("Preparing writer for file generation ( {0} )", Level.INFO, FileUtilities.getPrettyFile(destFile));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (!line.replaceAll("\\s", "").isEmpty()) {
+                            if (!line.replaceAll("\\s", "").startsWith("-")) {
+                                String key = getKey(line);
+
+                                if (line.startsWith("#") || this.keySet.getOrDefault(key, null) == null || this.keySet.get(key) instanceof KarmaYamlManager) {
+                                    if (config.fileDebug(Level.INFO))
+                                        source(true).console().send("Writing comment / section &e{0}", Level.INFO, key);
+
+                                    writer.write(line + "\n");
+                                    continue;
+                                }
+                                if (isRepeated(key)) {
+                                    int repeatedAmount = this.repeatedCount.getOrDefault(key, -1);
+                                    if (repeatedAmount != -1)
+                                        key = key + "_" + repeatedAmount;
+
+                                    repeatedAmount++;
+
+                                    this.repeatedCount.put(getKey(line), repeatedAmount);
+                                }
+                                if (isSectionRepeated(key)) {
+                                    last_section = key;
+
+                                    int repeatedAmount = this.repeatedCountSection.getOrDefault(key, -1);
+                                    if (repeatedAmount != -1)
+                                        key = key + "_" + repeatedAmount;
+
+                                    repeatedAmount++;
+
+                                    this.repeatedCountSection.put(getKey(line), repeatedAmount);
+                                }
+                                String path = line.split(":")[0];
+                                if (this.keySet.get(key) instanceof List) {
+                                    List<?> list = (List<?>) this.keySet.get(key);
+                                    if (!list.isEmpty()) {
+                                        writer.write(path + ":\n");
+                                        for (Object object : list) {
+                                            String space = getSpace(key);
+                                            writer.write(space + "- '" + object.toString().replace("'", "''") + "'\n");
+                                            if (config.fileDebug(Level.INFO))
+                                                source(true).console().send("Writing list value {0} of {1}", Level.INFO, object, key);
+                                        }
+                                        continue;
+                                    }
+                                    writer.write(path + ": []\n");
+                                    if (config.fileDebug(Level.INFO))
+                                        source(true).console().send("Written empty list {0}", Level.INFO, key);
+                                    continue;
+                                }
+                                String val = line.replace(path + ": ", "");
+                                if (this.keySet.get(key) instanceof String) {
+                                    writer.write(line.replace(": " + val, "") + ": '" + this.keySet.get(key).toString().replace("'", "''").replace("\"", "") + "'\n");
+                                } else {
+                                    writer.write(line.replace(": " + val, "") + ": " + this.keySet.get(key).toString().replace("'", "").replace("\"", "") + "\n");
+                                }
+                                if (config.fileDebug(Level.INFO))
+                                    source(true).console().send("Writing single value {0} of {1}", Level.INFO, val, key);
+                            }
+                            continue;
+                        }
+                        writer.write("\n");
+                    }
+                    writer.flush();
+                    writer.close();
+                } else {
+                    List<String> lines = Files.readAllLines(destFile.toPath());
+                    StringBuilder builder = new StringBuilder();
+                    for (String line : lines) {
+                        if (!line.replaceAll("\\s", "").isEmpty())
+                            builder.append(line);
+                    }
+
+                    if (builder.toString().replaceAll("\\s", "").isEmpty()) {
+                        source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
+                        InputStream clone2 = new ByteArrayInputStream(baos.toByteArray());
+
+                        inReader = new InputStreamReader(clone2, StandardCharsets.UTF_8);
+                        reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                        Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            if (config.fileDebug(Level.INFO)) {
+                                source(true).console().send("Writing raw text {0} to {1}", Level.INFO, line, FileUtilities.getPrettyFile(destFile));
+                            }
+                            writer.write(line + "\n");
+                        }
+                        writer.flush();
+                        writer.close();
+                    }
+                }
+
+                inReader.close();
+                reader.close();
+            } else {
+                if (!destFile.getParentFile().exists() && destFile.getParentFile().mkdirs()) {
+                    if (config.fileDebug(Level.INFO)) {
+                        source(true).console().send("Created directory {0}", Level.INFO, FileUtilities.getPrettyParentFile(destFile));
+                    }
+                }
+
+                if (destFile.createNewFile()) {
+                    if (config.fileDebug(Level.INFO)) {
+                        source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
+                    }
+
+                    InputStream clone2 = new ByteArrayInputStream(baos.toByteArray());
+
+                    InputStreamReader inReader = new InputStreamReader(clone2, StandardCharsets.UTF_8);
+                    BoundedBufferedReader reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                    Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
+                    String line;
+                    while ((line = reader.readLine()) != null)
+                        writer.write(line + "\n");
+
+                    writer.flush();
+                    writer.close();
+                }
+            }
+        }
     }
 
     /**
@@ -168,138 +272,157 @@ public final class FileCopy {
      * @throws IOException if something goes wrong
      */
     public void copy(File destFile) throws IOException {
+        KarmaConfig config = new KarmaConfig();
+
         destFile = FileUtilities.getFixedFile(destFile);
         if (this.main != null) {
             if (destFile.exists()) {
-                /*
-                For some reason, this loads always the same resource
-
-                InputStream inFile = main.getResourceAsStream("/" + fileName);
-
-                Let's use an alternative method
-                 */
                 File source = new File(main.getProtectionDomain().getCodeSource().getLocation().getFile());
-                JarFile jar = new JarFile(source);
-                ZipEntry entry = jar.getEntry(fileName);
-                InputStream inFile = jar.getInputStream(entry);
+                if (source.renameTo(source)) {
+                    JarFile jar = new JarFile(source);
+                    ZipEntry entry = jar.getEntry(fileName);
+                    InputStream inFile = jar.getInputStream(entry);
 
-                if (inFile != null) {
-                    InputStreamReader inReader = new InputStreamReader(inFile, StandardCharsets.UTF_8);
-                    BoundedBufferedReader reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
-                    String ext = FileUtilities.getExtension(destFile);
-                    boolean yaml = (ext.equals("yml") || ext.equalsIgnoreCase("yaml"));
-                    if (!yaml)
-                        try {
-                            Yaml yamlParser = new Yaml();
-                            Map<String, Object> tmpYaml = yamlParser.load(reader);
-                            yaml = (tmpYaml != null && !tmpYaml.isEmpty());
-                        } catch (Throwable ignored) {
+                    if (inFile != null) {
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        byte[] buffer = new byte[1024];
+                        int len;
+                        while ((len = inFile.read(buffer)) > -1) {
+                            baos.write(buffer, 0, len);
                         }
-                    if (yaml) {
-                        fillKeySet(destFile);
-                        Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
-                        String last_section = "";
-                        if (this.debug)
-                            source(true).console().send("Preparing writer for file generation ( {0} )", Level.INFO, FileUtilities.getPrettyFile(destFile));
+                        baos.flush();
 
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            if (!line.replaceAll("\\s", "").isEmpty()) {
-                                if (!line.replaceAll("\\s", "").startsWith("-")) {
-                                    String key = getKey(line);
+                        InputStream clone = new ByteArrayInputStream(baos.toByteArray());
 
-                                    if (line.startsWith("#") || this.keySet.getOrDefault(key, null) == null || this.keySet.get(key) instanceof KarmaYamlManager) {
-                                        if (this.debug)
-                                            source(true).console().send("Writing comment / section &e{0}", Level.INFO, key);
-
-                                        writer.write(line + "\n");
-                                        continue;
-                                    }
-                                    if (isRepeated(key)) {
-                                        int repeatedAmount = this.repeatedCount.getOrDefault(key, -1);
-                                        if (repeatedAmount != -1)
-                                            key = key + "_" + repeatedAmount;
-
-                                        repeatedAmount++;
-
-                                        this.repeatedCount.put(getKey(line), repeatedAmount);
-                                    }
-                                    if (isSectionRepeated(key)) {
-                                        last_section = key;
-
-                                        int repeatedAmount = this.repeatedCountSection.getOrDefault(key, -1);
-                                        if (repeatedAmount != -1)
-                                            key = key + "_" + repeatedAmount;
-
-                                        repeatedAmount++;
-
-                                        this.repeatedCountSection.put(getKey(line), repeatedAmount);
-                                    }
-                                    String path = line.split(":")[0];
-                                    if (this.keySet.get(key) instanceof List) {
-                                        List<?> list = (List<?>) this.keySet.get(key);
-                                        if (!list.isEmpty()) {
-                                            writer.write(path + ":\n");
-                                            for (Object object : list) {
-                                                String space = getSpace(last_section);
-                                                writer.write(space + "- '" + object.toString().replace("'", "''") + "'\n");
-                                                if (this.debug)
-                                                    source(true).console().send("Writing list value {0} of {1}", Level.INFO, object, key);
-                                            }
-                                            continue;
-                                        }
-                                        writer.write(path + ": []\n");
-                                        if (this.debug)
-                                            source(true).console().send("Written empty list {0}", Level.INFO, key);
-                                        continue;
-                                    }
-                                    String val = line.replace(path + ": ", "");
-                                    if (this.keySet.get(key) instanceof String) {
-                                        writer.write(line.replace(": " + val, "") + ": '" + this.keySet.get(key).toString().replace("'", "''").replace("\"", "") + "'\n");
-                                    } else {
-                                        writer.write(line.replace(": " + val, "") + ": " + this.keySet.get(key).toString().replace("'", "").replace("\"", "") + "\n");
-                                    }
-                                    if (this.debug)
-                                        source(true).console().send("Writing single value {0} of {1}", Level.INFO, val, key);
-                                }
-                                continue;
+                        InputStreamReader inReader = new InputStreamReader(clone, StandardCharsets.UTF_8);
+                        BoundedBufferedReader reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                        String ext = FileUtilities.getExtension(destFile);
+                        boolean yaml = (ext.equals("yml") || ext.equalsIgnoreCase("yaml"));
+                        if (!yaml)
+                            try {
+                                Yaml yamlParser = new Yaml();
+                                Map<String, Object> tmpYaml = yamlParser.load(reader);
+                                yaml = (tmpYaml != null && !tmpYaml.isEmpty());
+                            } catch (Throwable ignored) {
                             }
-                            writer.write("\n");
-                        }
-                        writer.flush();
-                        writer.close();
-                    } else {
-                        List<String> lines = Files.readAllLines(destFile.toPath());
-                        StringBuilder builder = new StringBuilder();
-                        for (String line : lines) {
-                            if (!line.replaceAll("\\s", "").isEmpty())
-                                builder.append(line);
-                        }
+                        if (yaml) {
+                            InputStream clone1 = new ByteArrayInputStream(baos.toByteArray());
 
-                        if (builder.toString().replaceAll("\\s", "").isEmpty()) {
-                            source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
-                            inReader = new InputStreamReader(inFile, StandardCharsets.UTF_8);
-                            reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                            fillKeySet(destFile, clone1);
                             Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
+                            String last_section = "";
+                            if (config.fileDebug(Level.INFO))
+                                source(true).console().send("Preparing writer for file generation ( {0} )", Level.INFO, FileUtilities.getPrettyFile(destFile));
+
                             String line;
                             while ((line = reader.readLine()) != null) {
-                                if (debug) {
-                                    source(true).console().send("Writing raw text {0} to {1}", Level.INFO, line, FileUtilities.getPrettyFile(destFile));
+                                if (!line.replaceAll("\\s", "").isEmpty()) {
+                                    if (!line.replaceAll("\\s", "").startsWith("-")) {
+                                        String key = getKey(line);
+
+                                        if (line.startsWith("#") || this.keySet.getOrDefault(key, null) == null || this.keySet.get(key) instanceof KarmaYamlManager) {
+                                            if (config.fileDebug(Level.INFO))
+                                                source(true).console().send("Writing comment / section &e{0}", Level.INFO, key);
+
+                                            writer.write(line + "\n");
+                                            continue;
+                                        }
+                                        if (isRepeated(key)) {
+                                            int repeatedAmount = this.repeatedCount.getOrDefault(key, -1);
+                                            if (repeatedAmount != -1)
+                                                key = key + "_" + repeatedAmount;
+
+                                            repeatedAmount++;
+
+                                            this.repeatedCount.put(getKey(line), repeatedAmount);
+                                        }
+                                        if (isSectionRepeated(key)) {
+                                            last_section = key;
+
+                                            int repeatedAmount = this.repeatedCountSection.getOrDefault(key, -1);
+                                            if (repeatedAmount != -1)
+                                                key = key + "_" + repeatedAmount;
+
+                                            repeatedAmount++;
+
+                                            this.repeatedCountSection.put(getKey(line), repeatedAmount);
+                                        }
+
+                                        String path = line.split(":")[0];
+                                        if (this.keySet.get(key) instanceof List) {
+                                            List<?> list = (List<?>) this.keySet.get(key);
+                                            if (!list.isEmpty()) {
+                                                writer.write(path + ":\n");
+                                                for (Object object : list) {
+                                                    String space = getSpace(last_section);
+                                                    writer.write(space + "- '" + object.toString().replace("'", "''") + "'\n");
+                                                    if (config.fileDebug(Level.INFO))
+                                                        source(true).console().send("Writing list value {0} of {1}", Level.INFO, object, key);
+                                                }
+                                                continue;
+                                            }
+                                            writer.write(path + ": []\n");
+                                            if (config.fileDebug(Level.INFO))
+                                                source(true).console().send("Written empty list {0}", Level.INFO, key);
+                                            continue;
+                                        }
+                                        String val = line.replace(path + ": ", "");
+                                        if (this.keySet.get(key) instanceof String) {
+                                            writer.write(line.replace(": " + val, "") + ": '" + this.keySet.get(key).toString().replace("'", "''").replace("\"", "") + "'\n");
+                                        } else {
+                                            writer.write(line.replace(": " + val, "") + ": " + this.keySet.get(key).toString().replace("'", "").replace("\"", "") + "\n");
+                                        }
+                                        if (config.fileDebug(Level.INFO))
+                                            source(true).console().send("Writing single value {0} of {1}", Level.INFO, val, key);
+                                    }
+                                    continue;
                                 }
-                                writer.write(line + "\n");
+                                writer.write("\n");
                             }
                             writer.flush();
                             writer.close();
+                        } else {
+                            List<String> lines = Files.readAllLines(destFile.toPath());
+                            StringBuilder builder = new StringBuilder();
+                            for (String line : lines) {
+                                if (!line.replaceAll("\\s", "").isEmpty())
+                                    builder.append(line);
+                            }
+
+                            if (builder.toString().replaceAll("\\s", "").isEmpty()) {
+                                source(true).console().send("Writing to {0} using in-jar file", Level.INFO, FileUtilities.getPrettyFile(destFile));
+                                InputStream clone2 = new ByteArrayInputStream(baos.toByteArray());
+
+                                inReader = new InputStreamReader(clone2, StandardCharsets.UTF_8);
+                                reader = new BoundedBufferedReader(inReader, 2147483647, 10240);
+                                Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(destFile), StandardCharsets.UTF_8));
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    if (config.fileDebug(Level.INFO)) {
+                                        source(true).console().send("Writing raw text {0} to {1}", Level.INFO, line, FileUtilities.getPrettyFile(destFile));
+                                    }
+                                    writer.write(line + "\n");
+                                }
+                                writer.flush();
+                                writer.close();
+                            }
                         }
+
+                        inReader.close();
+                        reader.close();
+                        jar.close();
                     }
 
-                    inReader.close();
-                    reader.close();
-                    jar.close();
-                }
-
-                if (inFile != null) {
-                    inFile.close();
+                    if (inFile != null) {
+                        inFile.close();
+                    }
+                } else {
+                    if (config.log(Level.GRAVE)) {
+                        source(false).logger().scheduleLog(Level.GRAVE, "Failed to copy file {0} because its source ( {1} ) seems to be open", fileName, FileUtilities.getPrettyFile(source));
+                    }
+                    if (config.fileDebug(Level.GRAVE)) {
+                        source(true).console().send("Failed to open stream {0} because the file is open by another process", Level.GRAVE, FileUtilities.getPrettyFile(source));
+                    }
                 }
             } else {
                 if (!destFile.getParentFile().exists() && destFile.getParentFile().mkdirs())
@@ -330,6 +453,27 @@ public final class FileCopy {
                 }
             }
         }
+    }
+
+    /**
+     * Copy the file
+     *
+     * @param destFile the file destination
+     * @param inFile the input file to read from
+     * @throws IOException if something goes wrong
+     */
+    public void copy(final Path destFile, final InputStream inFile) throws IOException {
+        copy(destFile.toFile(), inFile);
+    }
+
+    /**
+     * Copy the file
+     *
+     * @param destFile the file destination
+     * @throws IOException if something goes wrong
+     */
+    public void copy(final Path destFile) throws IOException {
+        copy(destFile.toFile());
     }
 
     /**
@@ -394,14 +538,8 @@ public final class FileCopy {
      * Fill key set for yaml copy
      *
      * @param destFile the dest file
-     * @throws IOException if something goes wrong
      */
-    private void fillKeySet(final File destFile) throws IOException {
-        File source = new File(main.getProtectionDomain().getCodeSource().getLocation().getFile());
-        JarFile jar = new JarFile(source);
-        ZipEntry entry = jar.getEntry(fileName);
-        InputStream inFile = jar.getInputStream(entry);
-
+    private void fillKeySet(final File destFile, final InputStream inFile) {
         KarmaYamlManager out = new KarmaYamlManager(FileUtilities.getFixedFile(destFile));
         KarmaYamlManager in = new KarmaYamlManager(inFile);
         for (String key : in.getKeySet()) {
@@ -410,24 +548,22 @@ public final class FileCopy {
                 KarmaYamlManager outSection = out.getSection(key, inSection);
                 fillKeySet(0, inSection, outSection);
                 putSection(key, 0);
-                continue;
-            }
-            if (out.isSet(key)) {
-                Object outValue = out.get(key);
-                if (outValue != null) {
-                    if (in.matchesWith(key, outValue.getClass())) {
-                        putKey(key, outValue);
-                        continue;
+                //continue;
+            } else {
+                putSection(key, 1);
+                if (out.isSet(key)) {
+                    Object outValue = out.get(key);
+                    if (outValue != null) {
+                        if (in.matchesWith(key, outValue.getClass())) {
+                            putKey(key, outValue);
+                            continue;
+                        }
                     }
                 }
-                putKey(key, in.get(key));
-                continue;
-            }
-            putKey(key, in.get(key));
-        }
 
-        inFile.close();
-        jar.close();
+                putKey(key, in.get(key));
+            }
+        }
     }
 
     /**
@@ -442,20 +578,30 @@ public final class FileCopy {
             if (inSection.isSection(key)) {
                 fillKeySet(++tree, inSection.getSection(key), outSection.getSection(key, inSection.getSection(key)));
                 putSection(key, ++tree);
-                continue;
-            }
-            if (outSection.isSet(key)) {
-                Object outValue = outSection.get(key);
-                if (outValue != null) {
-                    if (inSection.matchesWith(key, outValue.getClass())) {
-                        putKey(key, outValue);
-                        continue;
-                    }
+                //continue;
+            } else {
+                int indent = 0;
+                KarmaYamlManager parent = inSection.getParent();
+                while (parent != null) {
+                    indent++;
+                    parent = parent.getParent();
                 }
+
+                putSection(key, indent);
+                if (outSection.isSet(key)) {
+                    Object outValue = outSection.get(key);
+                    if (outValue != null) {
+                        if (inSection.matchesWith(key, outValue.getClass())) {
+                            putKey(key, outValue);
+                            continue;
+                        }
+                    }
+                    //continue;
+                }
+
                 putKey(key, inSection.get(key));
-                continue;
             }
-            putKey(key, inSection.get(key));
+            //putKey(key, inSection.get(key));
         }
     }
 
@@ -480,6 +626,12 @@ public final class FileCopy {
      * @param tree the key tree
      */
     private void putSection(final String key, final int tree) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.fileDebug(Level.INFO)) {
+            source(true).console().send("Added key {0} to section number {1}", Level.INFO, key, tree);
+        }
+
         if (this.keySection.containsKey(key)) {
             this.keySection.put(key + "_" + repeatedSection(key), tree);
         } else {
@@ -506,8 +658,23 @@ public final class FileCopy {
      * @return the line indent
      */
     private String getSpace(String line) {
-        line = line.replaceAll("[^0-9]", "").replaceAll("[0-9]", "");
-        return line + "  ";
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.fileDebug(Level.INFO)) {
+            source(true).console().send("Getting spaces amount for {0}", Level.INFO, line);
+        }
+
+        int spaces = keySection.getOrDefault(line, 0);
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < spaces; i++)
+            builder.append("  ");
+
+        if (config.fileDebug(Level.INFO)) {
+            source(true).console().send("Spaces for {0}: {1} ({2})", Level.INFO, line, spaces, builder);
+        }
+
+        return builder.append("  ").toString();
     }
 
     /**

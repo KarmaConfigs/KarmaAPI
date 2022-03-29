@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.bukkit.util;
+package ml.karmaconfigs.api.common.karmafile.karma.error;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,36 +25,22 @@ package ml.karmaconfigs.api.bukkit.util;
  *  SOFTWARE.
  */
 
-import org.jetbrains.annotations.Nullable;
+import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 
-import java.util.UUID;
+import java.io.File;
 
 /**
- * Karma UUID fetcher
- *
- * @deprecated Use {@link ml.karmaconfigs.api.common.utils.UUIDUtil instead}
+ * No karma file exception. Thrown when a KmFile is tried
+ * to be instantiated with a non karma file file
  */
-@Deprecated
-public final class UUIDUtil {
+public class NotKmFileException extends RuntimeException {
 
     /**
-     * Fetch the UUID
+     * Initialize the exception
      *
-     * @param name the player name
-     * @return the name UUID
+     * @param target the file that is being used
      */
-    public static UUID fetchUUID(final String name) {
-        return ml.karmaconfigs.api.common.utils.UUIDUtil.fetchMinecraftUUID(name);
-    }
-
-    /**
-     * Get a UUID from a trimmed UUID
-     *
-     * @param id the trimmed UUID
-     * @return the full UUID
-     */
-    @Nullable
-    public static UUID fromTrimmed(final String id) {
-        return ml.karmaconfigs.api.common.utils.UUIDUtil.fromTrimmed(id);
+    public NotKmFileException(final File target) {
+        super("Couldn't open file " + FileUtilities.getPrettyFile(target) + " as a karma file ( .kmf )");
     }
 }

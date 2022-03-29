@@ -31,6 +31,7 @@ import ml.karmaconfigs.api.bukkit.reflection.TitleMessage;
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class BukkitClient extends Client {
         plugin = owner;
         player = client;
     }
-    
+
     /**
      * Send a message to the client
      *
@@ -77,6 +78,15 @@ public class BukkitClient extends Client {
         }
         
         player.sendMessage(StringUtils.toColor(message));
+    }
+
+    /**
+     * Send a message to the client
+     *
+     * @param component the message
+     */
+    public void sendMessage(final TextComponent component) {
+        player.spigot().sendMessage(component);
     }
 
     /**

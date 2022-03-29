@@ -26,21 +26,20 @@ package ml.karmaconfigs.api.bukkit.region.event.block;
  */
 
 import ml.karmaconfigs.api.bukkit.region.Cuboid;
+import org.bukkit.block.Block;
 import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.block.BlockEvent;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Generic block listener ( listen for all block events )
+ * Generic block listener
  */
-public class GenericBlockEvent extends Event implements Cancellable {
+public class BlockPropagationAtRegionEvent extends BlockEvent implements Cancellable {
 
     private final static HandlerList HANDLER_LIST = new HandlerList();
 
-    private final Event main;
-    private final BlockAction action;
+    private final Block source;
     private final Cuboid region;
 
     private boolean cancelled = false;
@@ -48,38 +47,24 @@ public class GenericBlockEvent extends Event implements Cancellable {
     /**
      * Initialize the generic block event
      *
-     * @param act the block action
-     * @param eventMain the main event
+     * @param bl the block
+     * @param src the block source
      * @param rg the region
      */
-    public GenericBlockEvent(final BlockAction act, final Event eventMain, final Cuboid rg) {
-        action = act;
-        main = eventMain;
+    public BlockPropagationAtRegionEvent(final Block bl, final Block src, final Cuboid rg) {
+        super(bl);
+        source = src;
         region = rg;
     }
 
     /**
-     * Get the block
+     * Get the block that started the
+     * propagation
      *
-     * @return the event block
+     * @return the block source
      */
-    public BlockAction getAction() {
-        return action;
-    }
-
-    /**
-     * Get the main event
-     *
-     * @param type the event type
-     * @return the main event
-     */
-    @Nullable
-    public @SuppressWarnings("unchecked") <T> T getEvent(final Class<T> type) {
-        if (type.isInstance(main)) {
-            return (T) main;
-        } else {
-            return null;
-        }
+    public Block getSource() {
+        return source;
     }
 
     /**

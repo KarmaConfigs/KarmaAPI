@@ -27,6 +27,7 @@ package ml.karmaconfigs.api.common.timer;
 
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.IllegalTimerAccess;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.TimerAlreadyStarted;
@@ -221,7 +222,9 @@ public final class SourceSecondsTimer extends SimpleScheduler {
      */
     @Override
     public void start() throws TimerAlreadyStarted {
+        KarmaConfig config = new KarmaConfig();
         Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+
         if (!ids.contains(id)) {
             Timer timer = new Timer();
             timer.schedule(new TimerTask() {
@@ -292,7 +295,10 @@ public final class SourceSecondsTimer extends SimpleScheduler {
                         temp_restart = false;
 
                         timer.cancel();
-                        source(true).console().send("Timer task with ID {0} has been cancelled because its source {1} has been unloaded", Level.INFO, id, source.name());
+
+                        if (config.debug(Level.INFO)) {
+                            source(true).console().send("Timer task with ID {0} has been cancelled because its source {1} has been unloaded", Level.INFO, id, source.name());
+                        }
                     }
                 }
             }, 0L, period);

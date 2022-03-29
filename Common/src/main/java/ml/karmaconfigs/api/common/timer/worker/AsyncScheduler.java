@@ -1,12 +1,10 @@
 package ml.karmaconfigs.api.common.timer.worker;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.timer.SourceSecondsTimer;
 import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
-import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -16,95 +14,90 @@ import java.util.function.Consumer;
  */
 public class AsyncScheduler<T extends KarmaSource> extends Scheduler {
 
-    private static final Map<KarmaSource, SchedulerData> tasks = new ConcurrentHashMap<>();
+    private final static Map<KarmaSource, Consumer<Integer>> taskStart = new HashMap<>();
+    private final static Map<KarmaSource, Consumer<Integer>> taskComplete = new HashMap<>();
+    private final static Map<Integer, Runnable> tasks = new HashMap<>();
 
-    private final T instance;
+    private final KarmaSource source;
 
-    /**
-     * Initialize the scheduler
-     *
-     * @param source the scheduler owner
-     */
-    public AsyncScheduler(final T source) {
-        instance = source;
-        SchedulerData tmpData = tasks.getOrDefault(source, null);
-        if (tmpData == null) {
-            tmpData = new SchedulerData();
-            tasks.put(source, tmpData);
-        }
+    private static Thread runner;
+    private static int taskId = 0;
+    private static int current_task = 0;
 
-        SchedulerData data = tmpData;
-        if (data.getScheduler() == null) {
-            SimpleScheduler scheduler = new SourceSecondsTimer(source, 0, true).cancelUnloaded(false).multiThreading(true);
-            scheduler.restartAction(() -> {
-                int next = data.getCurrentId() + 1;
+    public AsyncScheduler(final T src) {
+        source = src;
 
-                Runnable runnable = data.getTask(next);
-                if (runnable != null) {
-                    if (data.onTaskStart() != null)
-                        data.onTaskStart().accept(next);
+        if (runner == null) {
+            runner = new Thread(() -> {
+                while (!runner.isInterrupted()) {
+                    int random = 1000 + (int) ( Math.random() * ((2500 - 1000) + 1) );
+                    int taskId = current_task;
 
-                    runnable.run();
-                    data.updateId(next);
+                    if (tasks.containsKey(taskId)) {
+                        Runnable task = tasks.remove(taskId);
+                        if (task != null) {
+                            Consumer<Integer> start = taskStart.getOrDefault(source, null);
+                            Consumer<Integer> complete = taskComplete.getOrDefault(source, null);
 
-                    if (data.onTaskEnd() != null)
-                        data.onTaskEnd().accept(next);
+                            if (start != null) start.accept(taskId);
+                            new Thread(() -> {
+                                task.run();
+                                if (complete != null) complete.accept(taskId);
+                            }).start();
+                        }
+
+                        current_task++;
+                    }
+
+                    try {
+                        synchronized (this) {
+                            wait(random);
+                        }
+                    } catch (Throwable ex) {
+                        ex.printStackTrace();
+                    }
                 }
-            }).start();
+            });
 
-            data.updateScheduler(scheduler);
+            runner.setName("AsyncScheduler");
         }
+
+        if (!runner.isAlive() || runner.isInterrupted())
+            runner.start();
     }
 
     /**
      * Action to perform when a task has been
      * started
      *
-     * @param taskId the action to perform
+     * @param paramConsumer the action to perform
      */
     @Override
-    public final void onTaskStart(final Consumer<Integer> taskId) {
-        SchedulerData data = tasks.getOrDefault(instance, null);
-        if (data == null) {
-            data = new SchedulerData();
-            tasks.put(instance, data);
-        }
-
-        data.taskStart = taskId;
+    public void onTaskStart(final Consumer<Integer> paramConsumer) {
+        taskStart.put(source, paramConsumer);
     }
 
     /**
      * Action to perform when a task has been
      * completed
      *
-     * @param taskId the action to perform
+     * @param paramConsumer the action to perform
      */
     @Override
-    public final void onTaskComplete(final Consumer<Integer> taskId) {
-        SchedulerData data = tasks.getOrDefault(instance, null);
-        if (data == null) {
-            data = new SchedulerData();
-            tasks.put(instance, data);
-        }
-
-        data.taskEnd = taskId;
+    public void onTaskComplete(final Consumer<Integer> paramConsumer) {
+        taskComplete.put(source, paramConsumer);
     }
 
     /**
      * Queue another task to the scheduler
      *
-     * @param task the task to perform
+     * @param paramRunnable the task to perform
      * @return the task id
      */
     @Override
-    public final int queue(final Runnable task) {
-        SchedulerData data = tasks.getOrDefault(instance, null);
-        if (data == null) {
-            data = new SchedulerData();
-            tasks.put(instance, data);
-        }
-
-        return data.addTask(task);
+    public int queue(final Runnable paramRunnable) {
+        tasks.put(taskId++, paramRunnable);
+        return taskId - 1;
     }
 
     /**
@@ -113,28 +106,7 @@ public class AsyncScheduler<T extends KarmaSource> extends Scheduler {
      * @return the current task id
      */
     @Override
-    public final int currentTask() {
-        SchedulerData data = tasks.getOrDefault(instance, null);
-        if (data == null) {
-            data = new SchedulerData();
-            tasks.put(instance, data);
-        }
-
-        return data.getCurrentId();
-    }
-
-    /**
-     * Get if the scheduler has more tasks
-     *
-     * @return if the scheduler has more tasks
-     */
-    public final boolean hasMoreTasks() {
-        SchedulerData data = tasks.getOrDefault(instance, null);
-        if (data == null) {
-            data = new SchedulerData();
-            tasks.put(instance, data);
-        }
-
-        return data.hasNext();
+    public int currentTask() {
+        return current_task;
     }
 }

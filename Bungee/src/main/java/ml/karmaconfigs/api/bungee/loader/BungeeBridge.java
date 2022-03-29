@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.bungee.loader;
  */
 
 import ml.karmaconfigs.api.bungee.KarmaPlugin;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.karmafile.karmayaml.KarmaYamlManager;
 import ml.karmaconfigs.api.common.utils.BridgeLoader;
 import ml.karmaconfigs.api.common.utils.enums.Level;
@@ -67,13 +68,18 @@ public class BungeeBridge extends BridgeLoader<KarmaPlugin> {
      */
     @Override
     public void start() throws IOException {
+        KarmaConfig config = new KarmaConfig();
         Path plugins = PathUtilities.getProjectParent();
 
         //In fact that's not needed, but just to be sure everything is in the same loader so
         //everyone can read from everywhere
-        instance.console().send("Initializing Bungee <-> KarmaAPI bridge", Level.INFO);
+        if (config.debug(Level.INFO)) {
+            instance.console().send("Initializing Bungee <-> KarmaAPI bridge", Level.INFO);
+        }
         connect(instance.getSourceFile());
-        instance.console().send("Bungee <-> KarmaAPI bridge made successfully", Level.INFO);
+        if (config.debug(Level.INFO)) {
+            instance.console().send("Bungee <-> KarmaAPI bridge made successfully", Level.INFO);
+        }
 
         /*
         Basically we list all the files inside
@@ -100,7 +106,9 @@ public class BungeeBridge extends BridgeLoader<KarmaPlugin> {
                                 dependencies.addAll(yaml.getStringList("depends"));
 
                                 if (dependencies.stream().anyMatch((s -> s.equalsIgnoreCase("AnotherBarelyCodedKarmaPlugin")))) {
-                                    instance.console().send("Plugin {0} added to Bungee <-> KarmaAPI bridge", Level.INFO, name);
+                                    if (config.debug(Level.INFO)) {
+                                        instance.console().send("Plugin {0} added to Bungee <-> KarmaAPI bridge", Level.INFO, name);
+                                    }
                                     if (!load_target.containsKey(name)) {
                                         load_target.put(name, sub.toFile());
                                     } else {
@@ -136,9 +144,13 @@ public class BungeeBridge extends BridgeLoader<KarmaPlugin> {
                 } catch (Throwable ignored) {}
             }
 
-            instance.console().send("Creating bridge between Bungee and KarmaAPI for {0}", Level.INFO, name);
+            if (config.debug(Level.INFO)) {
+                instance.console().send("Creating bridge between Bungee and KarmaAPI for {0}", Level.INFO, name);
+            }
             connect(file);
-            instance.console().send("Bridge between Bungee and KarmaAPI created successfully for {0}", Level.OK, name);
+            if (config.debug(Level.OK)) {
+                instance.console().send("Bridge between Bungee and KarmaAPI created successfully for {0}", Level.OK, name);
+            }
         }
     }
 
@@ -147,7 +159,10 @@ public class BungeeBridge extends BridgeLoader<KarmaPlugin> {
      */
     @Override
     public void stop() {
-        instance.console().send("Closing Bungee <-> KarmaAPI bridge, please wait...", Level.INFO);
+        KarmaConfig config = new KarmaConfig();
+        if (config.debug(Level.INFO)) {
+            instance.console().send("Closing Bungee <-> KarmaAPI bridge, please wait...", Level.INFO);
+        }
     }
 
     /**

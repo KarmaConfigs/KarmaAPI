@@ -49,6 +49,7 @@ public final class Forensics {
      *
      * @param k the killer
      * @param b another killer reason
+     * @param i the item that caused the death
      * @param c the damage cause
      * @param d the damage amount
      */

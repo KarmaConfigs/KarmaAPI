@@ -1,7 +1,7 @@
 package ml.karmaconfigs.api.bungee.listener;
 
 import ml.karmaconfigs.api.bungee.KarmaPlugin;
-import ml.karmaconfigs.api.common.utils.UUIDUtil;
+import ml.karmaconfigs.api.common.utils.uuid.UUIDUtil;
 import net.md_5.bungee.api.event.PreLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;

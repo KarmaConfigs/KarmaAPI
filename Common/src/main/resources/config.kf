@@ -1,0 +1,155 @@
+(
+    */Enable console debug
+    'debug' -> false
+
+    */Enable logging
+    'logging' -> true
+
+    */Enable debugging for file copy, for example
+    */when a project generates a yaml file from an internal
+    */file
+    'file_copy_debug' -> false
+
+    */Enable debugging for file utilities, for example
+    */when a file is created with its parent directories
+    'file_util_debug' -> true
+
+    */The async and sync scheduler maximum time to wait for the
+    */next task to run. This helps the thread to not be overloaded.
+    */The minimum value is a fixed 1000 ms ( 1 second )
+    */THE VALUE MUST BE IN MS
+    'task_wait_max' -> 2500
+
+    *(
+        Console default OK prefix
+        - Please note leaving this value
+          empty will use the internal default
+
+        Placeholders:
+            - %project% = Project name ( defined in KarmaSource )
+            - %version% = Project version ( defined in KarmaSource )
+            - %author% = Project author ( defined in KarmaSource )
+            - %level% = Current level ( For example: WARNING )
+            - &x = Color ( For example: &a is lime, &c is red )
+    )*
+    'ok_prefix' -> "&b[ &3%project% &b| &2OK &b] >> &9"
+
+    *(
+        Console default INFO prefix
+        - Please note leaving this value
+          empty will use the internal default
+
+        Placeholders:
+            - %project% = Project name ( defined in KarmaSource )
+            - %version% = Project version ( defined in KarmaSource )
+            - %author% = Project author ( defined in KarmaSource )
+            - %level% = Current level ( For example: WARNING )
+            - &x = Color ( For example: &a is lime, &c is red )
+    )*
+    'info_prefix' -> "&b[ &3%project% &b| &7INFO &b] >> &9"
+
+    *(
+        Console default WARNING prefix
+        - Please note leaving this value
+          empty will use the internal default
+
+        Placeholders:
+            - %project% = Project name ( defined in KarmaSource )
+            - %version% = Project version ( defined in KarmaSource )
+            - %author% = Project author ( defined in KarmaSource )
+            - %level% = Current level ( For example: WARNING )
+            - &x = Color ( For example: &a is lime, &c is red )
+    )*
+    'warning_prefix' -> "&b[ &3%project% &b| &6WARNING &b] >> &9"
+
+    *(
+        Console default GRAVE prefix
+        - Please note leaving this value
+          empty will use the internal default
+
+        Placeholders:
+            - %project% = Project name ( defined in KarmaSource )
+            - %version% = Project version ( defined in KarmaSource )
+            - %author% = Project author ( defined in KarmaSource )
+            - %level% = Current level ( For example: WARNING )
+            - &x = Color ( For example: &a is lime, &c is red )
+    )*
+    'grave_prefix' -> "&b[ &3%project% &b| &cGRAVE &b] >> &9"
+
+    *(
+        The debug levels that will be console debugged.
+
+        The only available levels are:
+        - OK
+        - INFO
+        - WARNING
+        - GRAVE
+    )*
+    'debug_levels' -> {
+        'OK'
+        'INFO'
+        'WARNING'
+        'GRAVE'
+    }
+
+    *(
+        The debug levels that will be logged.
+
+        The only available levels are:
+        - OK
+        - INFO
+        - WARNING
+        - GRAVE
+    )*
+    'logging_levels' -> {
+        'OK'
+        'INFO'
+        'WARNING'
+        'GRAVE'
+    }
+
+    *(
+        The debug levels that will be console debugged when
+        copying a file
+
+        The only available leves are:
+        - OK
+        - INFO
+        - WARNING
+        - GRAVE
+    )*
+    'file_copy_levels' -> {
+        'WARNING'
+        'GRAVE'
+    }
+
+    *(
+        The debug levels that will be console debugged when
+        doing something to a file
+
+        The only available leves are:
+        - OK
+        - INFO
+        - WARNING
+        - GRAVE
+    )*
+    'file_util_levels' -> {
+        'OK'
+        'INFO'
+        'WARNING'
+        'GRAVE'
+    }
+
+    *(
+        The authentication credentials used for 
+        OKA ( Online KarmaAPI ).
+
+        Please note leaving empty any of these values will
+        make the credentials to not be used
+    )*
+    ("credentials"
+        'user' -> ""
+        'password' -> ""
+        'token' -> ""
+    )
+)

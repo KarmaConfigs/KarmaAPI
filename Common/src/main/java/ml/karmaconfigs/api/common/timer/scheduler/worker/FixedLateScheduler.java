@@ -75,6 +75,11 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
     private A typeA = null;
 
     /**
+     * The scheduler error
+     */
+    private Throwable typeE = null;
+
+    /**
      * Set the complete action
      *
      * @param action the action to perform
@@ -83,8 +88,12 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
      */
     @Override
     public LateScheduler<A> whenComplete(final Runnable action) {
-        if (!this.cancelled && !this.completed)
-            this.whenCompleteRunner = action;
+        whenCompleteRunner = action;
+
+        if (completed) {
+            whenCompleteRunner.run();
+        }
+
         return this;
     }
 
@@ -97,8 +106,12 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
      */
     @Override
     public LateScheduler<A> whenComplete(final Consumer<A> action) {
-        if (!this.cancelled && !this.completed)
-            this.whenComplete = action;
+        whenComplete = action;
+
+        if (completed) {
+            whenComplete.accept(typeA);
+        }
+
         return this;
     }
 
@@ -111,8 +124,12 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
      */
     @Override
     public LateScheduler<A> whenComplete(final BiConsumer<A, Throwable> caughtAction) {
-        if (!this.cancelled && !this.completed)
-            this.whenCompleteWithError = caughtAction;
+        whenCompleteWithError = caughtAction;
+
+        if (completed) {
+            whenCompleteWithError.accept(typeA, typeE);
+        }
+
         return this;
     }
 
@@ -146,7 +163,7 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(true).sync().queue(() -> {
+            source(false).sync().queue(() -> {
                 if (this.whenComplete != null)
                     this.whenComplete.accept(target);
                 if (this.whenCompleteWithError != null)
@@ -173,7 +190,7 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(true).sync().queue(() -> {
+            source(false).sync().queue(() -> {
                 if (this.whenCompleteWithError != null)
                     this.whenCompleteWithError.accept(target, error);
                 if (this.whenComplete != null)
@@ -182,6 +199,7 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
                     this.whenCompleteRunner.run();
 
                 typeA = target;
+                typeE = error;
             });
             this.completed = true;
         } catch (Throwable ex) {

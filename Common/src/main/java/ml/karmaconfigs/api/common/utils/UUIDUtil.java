@@ -26,7 +26,11 @@ package ml.karmaconfigs.api.common.utils;
  */
 
 import com.google.gson.*;
+import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import ml.karmaconfigs.api.common.utils.url.HttpUtil;
+import ml.karmaconfigs.api.common.utils.url.URLUtils;
+import ml.karmaconfigs.api.common.utils.uuid.UUIDType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -39,15 +43,24 @@ import java.util.UUID;
 
 /**
  * Karma UUID fetcher
+ *
+ * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil} instead
  */
+@Deprecated
 public final class UUIDUtil {
+
+    static {
+        KarmaAPI.install();
+    }
 
     /**
      * Register a minecraft client into the karma UUID
      * engine database API
      *
      * @param name the client name
+     * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil#registerMinecraftClient(String)} instead
      */
+    @Deprecated
     public static void registerMinecraftClient(final String name) {
         URL first = URLUtils.getOrNull("https://karmadev.es/?nick=" + name);
         URL second = URLUtils.getOrNull("https://karmarepo.000webhostapp.com/api/?nick=" + name);
@@ -56,14 +69,22 @@ public final class UUIDUtil {
             int response_code = URLUtils.getResponseCode("https://karmadev.es");
 
             if (response_code == HttpURLConnection.HTTP_OK) {
-                URLUtils.fastConnect(first);
+                HttpUtil utils = URLUtils.extraUtils(first);
+
+                if (utils != null) {
+                    utils.push();
+                }
             }
         }
         if (second != null) {
             int response_code = URLUtils.getResponseCode("https://karmarepo.000webhostapp.com");
 
             if (response_code == HttpURLConnection.HTTP_OK) {
-                URLUtils.fastConnect(second);
+                HttpUtil utils = URLUtils.extraUtils(second);
+
+                if (utils != null) {
+                    utils.push();
+                }
             }
         }
     }
@@ -73,7 +94,9 @@ public final class UUIDUtil {
      *
      * @param name the player name
      * @return the name UUID
+     * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil#fetch(String, UUIDType)} instead
      */
+    @Deprecated
     public static UUID fetchMinecraftUUID(final String name) {
         try {
             URL url = URLUtils.getOrBackup(
@@ -139,7 +162,9 @@ public final class UUIDUtil {
      *
      * @param name the client name
      * @return the name UUID
+     * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil#fetch(String, UUIDType)} instead
      */
+    @Deprecated
     public static UUID forceMinecraftOffline(final String name) {
         return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes());
     }
@@ -150,7 +175,10 @@ public final class UUIDUtil {
      * @param uuid the UUID to search for
      * @return the nick or null if not available
      * in karma UUID engine database API
+     *
+     * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil#fetchNick(UUID)} instead
      */
+    @Deprecated
     public static String fetchNick(final UUID uuid) {
         String result = null;
         try {
@@ -159,21 +187,26 @@ public final class UUIDUtil {
                     "https://karmarepo.000webhostapp.com/api/?fetch=" + uuid);
 
             if (url != null) {
-                String response = URLUtils.getResponse(url);
+                HttpUtil utils = URLUtils.extraUtils(url);
+                if (utils != null) {
+                    String response = utils.getResponse();
 
-                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
-                JsonObject json = gson.fromJson(response, JsonObject.class);
+                    if (!StringUtils.isNullOrEmpty(response)) {
+                        Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+                        JsonObject json = gson.fromJson(response, JsonObject.class);
 
-                if (json.has("name")) {
-                    JsonElement element = json.get("name");
-                    if (element.isJsonPrimitive()) {
-                        JsonPrimitive primitive = element.getAsJsonPrimitive();
-                        if (primitive.isString()) {
-                            result = primitive.getAsString();
+                        if (json.has("name")) {
+                            JsonElement element = json.get("name");
+                            if (element.isJsonPrimitive()) {
+                                JsonPrimitive primitive = element.getAsJsonPrimitive();
+                                if (primitive.isString()) {
+                                    result = primitive.getAsString();
 
-                            //There's a player named "Unknown", the error query is unknown, not Unknown, so we must make sure the result is unknown and not Unknown
-                            if (result.equals("unknown"))
-                                result = null;
+                                    //There's a player named "Unknown", the error query is unknown, not Unknown, so we must make sure the result is unknown and not Unknown
+                                    if (result.equals("unknown"))
+                                        result = null;
+                                }
+                            }
                         }
                     }
                 }
@@ -190,9 +223,11 @@ public final class UUIDUtil {
      *
      * @param id the trimmed UUID
      * @return the full UUID
+     *
+     * @deprecated Use {@link ml.karmaconfigs.api.common.utils.uuid.UUIDUtil#fromTrimmed(String)} instead
      */
     @Nullable
-    public static UUID fromTrimmed(final String id) {
+    public @Deprecated static UUID fromTrimmed(final String id) {
         UUID result;
         if (!StringUtils.isNullOrEmpty(id)) {
             if (!id.contains("-")) {

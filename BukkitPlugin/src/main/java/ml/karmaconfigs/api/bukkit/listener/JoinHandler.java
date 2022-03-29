@@ -1,7 +1,7 @@
 package ml.karmaconfigs.api.bukkit.listener;
 
 import ml.karmaconfigs.api.bukkit.KarmaPlugin;
-import ml.karmaconfigs.api.common.utils.UUIDUtil;
+import ml.karmaconfigs.api.common.utils.uuid.UUIDUtil;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;

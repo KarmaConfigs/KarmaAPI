@@ -26,6 +26,8 @@ package ml.karmaconfigs.api.common.utils;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +38,8 @@ import java.util.HashMap;
  * Karma console prefix data
  */
 public final class PrefixConsoleData implements Serializable {
+
+    private final KarmaConfig config = new KarmaConfig();
 
     /**
      * Map containing source => ok prefix
@@ -74,7 +78,7 @@ public final class PrefixConsoleData implements Serializable {
      * @param prefix the prefix
      */
     public void setOkPrefix(final @NotNull String prefix) {
-        okPrefix.put(this.source, StringUtils.toConsoleColor(prefix));
+        okPrefix.put(this.source, StringUtils.toAnyOsColor(prefix));
     }
 
     /**
@@ -83,7 +87,7 @@ public final class PrefixConsoleData implements Serializable {
      * @param prefix the prefix
      */
     public void setInfoPrefix(final @NotNull String prefix) {
-        infoPrefix.put(this.source, StringUtils.toConsoleColor(prefix));
+        infoPrefix.put(this.source, StringUtils.toAnyOsColor(prefix));
     }
 
     /**
@@ -92,7 +96,7 @@ public final class PrefixConsoleData implements Serializable {
      * @param prefix the prefix
      */
     public void setWarnPrefix(final @NotNull String prefix) {
-        warnPrefix.put(this.source, StringUtils.toConsoleColor(prefix));
+        warnPrefix.put(this.source, StringUtils.toAnyOsColor(prefix));
     }
 
     /**
@@ -101,7 +105,7 @@ public final class PrefixConsoleData implements Serializable {
      * @param prefix the prefix
      */
     public void setGravePrefix(final @NotNull String prefix) {
-        gravPrefix.put(this.source, StringUtils.toConsoleColor(prefix));
+        gravPrefix.put(this.source, StringUtils.toAnyOsColor(prefix));
     }
 
     /**
@@ -110,7 +114,7 @@ public final class PrefixConsoleData implements Serializable {
      * @return the prefix
      */
     public String getOkPrefix() {
-        return okPrefix.getOrDefault(this.source, StringUtils.toConsoleColor("&b[ &3" + source.name() + " &b| &2OK &b] >> &9"));
+        return okPrefix.getOrDefault(this.source, StringUtils.toAnyOsColor(config.consolePrefix(source, Level.OK)));
     }
 
     /**
@@ -119,7 +123,7 @@ public final class PrefixConsoleData implements Serializable {
      * @return the info prefix
      */
     public String getInfoPrefix() {
-        return infoPrefix.getOrDefault(this.source, StringUtils.toConsoleColor("&b[ &3" + source.name() + " &b| &7INFO &b] >> &9"));
+        return infoPrefix.getOrDefault(this.source, StringUtils.toAnyOsColor(config.consolePrefix(source, Level.INFO)));
     }
 
     /**
@@ -128,7 +132,7 @@ public final class PrefixConsoleData implements Serializable {
      * @return the warning prefix
      */
     public String getWarningPrefix() {
-        return warnPrefix.getOrDefault(this.source, StringUtils.toConsoleColor("&b[ &3" + source.name() + " &b| &6WARNING &b] >> &9"));
+        return warnPrefix.getOrDefault(this.source, StringUtils.toAnyOsColor(config.consolePrefix(source, Level.WARNING)));
     }
 
     /**
@@ -137,6 +141,6 @@ public final class PrefixConsoleData implements Serializable {
      * @return the grave prefix
      */
     public String getGravePrefix() {
-        return gravPrefix.getOrDefault(this.source, StringUtils.toConsoleColor("&b[ &3" + source.name() + " &b| &cGRAVE &b] >> &9"));
+        return gravPrefix.getOrDefault(this.source, StringUtils.toAnyOsColor(config.consolePrefix(source, Level.GRAVE)));
     }
 }

@@ -28,6 +28,7 @@ package ml.karmaconfigs.api.velocity.loader;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.proxy.ProxyServer;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.BridgeLoader;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 
@@ -60,12 +61,18 @@ public class VelocityBridge extends BridgeLoader<KarmaSource> {
      */
     @Override
     public void start() {
+        KarmaConfig config = new KarmaConfig();
+
         plugin.getInstance().ifPresent((pluginI) -> {
             //In fact that's not needed, but just to be sure everything is in the same loader so
             //everyone can read from everywhere
-            instance.console().send("Initializing Velocity <-> KarmaAPI bridge", Level.INFO);
+            if (config.debug(Level.INFO)) {
+                instance.console().send("Initializing Velocity <-> KarmaAPI bridge", Level.INFO);
+            }
             connect(instance.getSourceFile());
-            instance.console().send("Velocity <-> KarmaAPI bridge made successfully", Level.INFO);
+            if (config.debug(Level.INFO)) {
+                instance.console().send("Velocity <-> KarmaAPI bridge made successfully", Level.INFO);
+            }
 
             try {
                 for (PluginContainer container : server.getPluginManager().getPlugins()) {
@@ -86,7 +93,11 @@ public class VelocityBridge extends BridgeLoader<KarmaSource> {
      */
     @Override
     public void stop() {
-        instance.console().send("Closing Velocity <-> KarmaAPI bridge, please wait...", Level.INFO);
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.debug(Level.INFO)) {
+            instance.console().send("Closing Velocity <-> KarmaAPI bridge, please wait...", Level.INFO);
+        }
     }
 
     /**

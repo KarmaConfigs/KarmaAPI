@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.common.timer.scheduler;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.TimerAlreadyStarted;
 import ml.karmaconfigs.api.common.utils.enums.Level;
@@ -80,10 +81,15 @@ public abstract class SimpleScheduler {
      * @param owner the scheduler source
      */
     public static void cancelFor(final KarmaSource owner) {
+        KarmaConfig config = new KarmaConfig();
+
         for (int id : id_instance.keySet()) {
             SimpleScheduler scheduler = id_instance.getOrDefault(id, null);
             if (scheduler != null && scheduler.source == null) {
-                source(true).console().send("Cancelling timer with id {0} because its source is not valid", Level.GRAVE, id);
+                if (config.debug(Level.GRAVE)) {
+                    source(true).console().send("Cancelling timer with id {0} because its source is not valid", Level.GRAVE, id);
+                }
+
                 scheduler.cancel();
                 continue;
             }

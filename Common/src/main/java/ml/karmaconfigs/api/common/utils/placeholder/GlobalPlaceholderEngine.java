@@ -58,6 +58,17 @@ public final class GlobalPlaceholderEngine extends PlaceholderEngine {
      */
     public GlobalPlaceholderEngine(final KarmaSource owner) {
         source = owner;
+
+        Set<Placeholder<?>> registered = sourcePlaceholders.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        SimplePlaceholder<String> java = new SimplePlaceholder<>("karma java", KarmaAPI.getCompilerVersion());
+        SimplePlaceholder<String> version = new SimplePlaceholder<>("karma version", KarmaAPI.getVersion());
+        SimplePlaceholder<String> build = new SimplePlaceholder<>("karma build", KarmaAPI.getBuildDate());
+
+        registered.add(java);
+        registered.add(version);
+        registered.add(build);
+
+        sourcePlaceholders.put(source, registered);
     }
 
     /**
@@ -102,32 +113,8 @@ public final class GlobalPlaceholderEngine extends PlaceholderEngine {
      *
      * @param placeholders the placeholders to register
      */
-    @SafeVarargs
     @Override
-    public final <T> void register(final Placeholder<T>... placeholders) {
-        Set<Placeholder<?>> registered = sourcePlaceholders.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-        Set<String> keys = new HashSet<>();
-        registered.forEach(placeholder -> keys.add(placeholder.getKey()));
-
-        for (Placeholder<T> placeholder : placeholders) {
-            if (placeholder != null) {
-                if (!keys.contains(placeholder.getKey())) {
-                    registered.add(placeholder);
-                }
-            }
-        }
-
-        sourcePlaceholders.put(source, registered);
-    }
-
-    /**
-     * Register placeholders indiscriminately
-     *
-     * @param placeholders the placeholders to register
-     */
-    @Override
-    @Unstable(reason = "The normal register method should be used instead as this method may register non desired placeholders")
-    public void registerUnsafe(Placeholder<?>... placeholders) {
+    public void register(Placeholder<?>... placeholders) {
         Set<Placeholder<?>> registered = sourcePlaceholders.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         Set<String> keys = new HashSet<>();
         registered.forEach(placeholder -> keys.add(placeholder.getKey()));
@@ -148,10 +135,9 @@ public final class GlobalPlaceholderEngine extends PlaceholderEngine {
      *
      * @param placeholders the placeholders to register
      */
-    @SafeVarargs
     @Override
     @Unstable(reason = "Using this method may register null placeholders which can cause more issues in the future")
-    public final <T> void forceRegister(final Placeholder<T>... placeholders) {
+    public void forceRegister(final Placeholder<?>... placeholders) {
         if (!protect.contains(source)) {
             Set<Placeholder<?>> registered = sourcePlaceholders.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
 
@@ -189,12 +175,11 @@ public final class GlobalPlaceholderEngine extends PlaceholderEngine {
      *
      * @param placeholders the placeholders to unregister
      */
-    @SafeVarargs
     @Override
-    public final <T> void unregister(final Placeholder<T>... placeholders) {
+    public void unregister(final Placeholder<?>... placeholders) {
         if (!protect.contains(source)) {
             Set<Placeholder<?>> registered = sourcePlaceholders.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-            Set<Placeholder<T>> unregister = new HashSet<>(Arrays.asList(placeholders));
+            Set<Placeholder<?>> unregister = new HashSet<>(Arrays.asList(placeholders));
 
             registered.removeAll(unregister);
 

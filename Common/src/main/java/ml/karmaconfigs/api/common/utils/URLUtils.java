@@ -25,24 +25,18 @@ package ml.karmaconfigs.api.common.utils;
  *  SOFTWARE.
  */
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import ml.karmaconfigs.api.common.utils.url.HttpUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Scanner;
 
 /**
  * Karma URL utilities
+ *
+ * @deprecated This has been moved to {@link ml.karmaconfigs.api.common.utils.url.URLUtils}
  */
+@Deprecated
 public final class URLUtils {
 
     /**
@@ -53,10 +47,9 @@ public final class URLUtils {
      * @param url the url to connect
      */
     public static void fastConnect(final URL url) {
-        try(CloseableHttpClient httpclient = HttpClients.createDefault()) {
-            HttpGet httpget = new HttpGet(url.toURI());
-            httpclient.execute(httpget);
-        } catch (Throwable ignored) {}
+        HttpUtil utils = ml.karmaconfigs.api.common.utils.url.URLUtils.extraUtils(url);
+        if (utils != null)
+            utils.push();
     }
 
     /**
@@ -131,41 +124,10 @@ public final class URLUtils {
      * @return the web response or empty
      */
     public static String getResponse(final URL url) {
-        String response = "";
+        HttpUtil utils = ml.karmaconfigs.api.common.utils.url.URLUtils.extraUtils(url);
+        if (utils != null)
+            return utils.getResponse();
 
-        try {
-            CloseableHttpClient httpclient = HttpClients.createDefault();
-            HttpGet httpget = new HttpGet(url.toURI());
-
-            HttpResponse httpresponse = httpclient.execute(httpget);
-            Header[] contentType = httpresponse.getHeaders("Content-type");
-            boolean json = false;
-            for (Header header : contentType) {
-                if (header.getValue().equalsIgnoreCase("application/json")) {
-                    json = true;
-                    break;
-                }
-            }
-            Scanner sc = new Scanner(httpresponse.getEntity().getContent());
-
-            StringBuilder sb = new StringBuilder();
-            while(sc.hasNext()) {
-                sb.append(sc.next());
-            }
-
-            response = sb.toString();
-
-            if (json) {
-                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
-                JsonElement object = gson.fromJson(response, JsonElement.class);
-
-                //Set json to pretty print
-                response = gson.toJson(object);
-            }
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }
-
-        return response;
+        return null;
     }
 }

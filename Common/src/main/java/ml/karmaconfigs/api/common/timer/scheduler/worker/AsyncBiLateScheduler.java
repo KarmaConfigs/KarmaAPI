@@ -80,6 +80,11 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
     private B typeB = null;
 
     /**
+     * The scheduler error
+     */
+    private Throwable typeE = null;
+
+    /**
      * Set the complete action
      *
      * @param action the action to perform
@@ -88,8 +93,12 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
      */
     @Override
     public BiLateScheduler<A, B> whenComplete(final Runnable action) {
-        if (!this.cancelled && !this.completed)
-            this.whenCompleteRunner = action;
+        whenCompleteRunner = action;
+
+        if (completed) {
+            whenCompleteRunner.run();
+        }
+
         return this;
     }
 
@@ -102,8 +111,12 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
      */
     @Override
     public BiLateScheduler<A, B> whenComplete(final BiConsumer<A, B> action) {
-        if (!this.cancelled && !this.completed)
-            this.whenComplete = action;
+        whenComplete = action;
+
+        if (completed) {
+            whenComplete.accept(typeA, typeB);
+        }
+
         return this;
     }
 
@@ -116,8 +129,12 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
      */
     @Override
     public BiLateScheduler<A, B> whenComplete(final TriConsumer<A, B, Throwable> caughtAction) {
-        if (!this.cancelled && !this.completed)
-            this.whenCompleteWithError = caughtAction;
+        whenCompleteWithError = caughtAction;
+
+        if (completed) {
+            whenCompleteWithError.accept(typeA, typeB, typeE);
+        }
+
         return this;
     }
 
@@ -162,7 +179,7 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(true).async().queue(() -> {
+            new Thread(() -> {
                 if (this.whenComplete != null)
                     this.whenComplete.accept(target, subTarget);
                 if (this.whenCompleteWithError != null)
@@ -172,7 +189,8 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
 
                 typeA = target;
                 typeB = subTarget;
-            });
+            }).start();
+
             this.completed = true;
         } catch (Throwable ex) {
             ex.printStackTrace();
@@ -191,7 +209,7 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(true).async().queue(() -> {
+            new Thread(() -> {
                 if (this.whenCompleteWithError != null)
                     this.whenCompleteWithError.accept(target, subTarget, error);
                 if (this.whenComplete != null)
@@ -201,7 +219,9 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
 
                 typeA = target;
                 typeB = subTarget;
-            });
+                typeE = error;
+            }).start();
+
             this.completed = true;
         } catch (Throwable ex) {
             ex.printStackTrace();
@@ -218,6 +238,11 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
     @Override
     public CancellableScheduler whenCancelled(final Runnable action) {
         this.onCancel = action;
+
+        if (cancelled) {
+            action.run();
+        }
+
         return this;
     }
 

@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.utils.string;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.JavaVM;
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
@@ -32,6 +33,8 @@ import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
 import ml.karmaconfigs.api.common.utils.placeholder.SimplePlaceholder;
 import ml.karmaconfigs.api.common.utils.placeholder.util.Placeholder;
+import ml.karmaconfigs.api.common.utils.string.color.ConsoleColor;
+import ml.karmaconfigs.api.common.utils.string.util.SplitIndex;
 import ml.karmaconfigs.api.common.utils.string.util.time.CleanTimeBuilder;
 import ml.karmaconfigs.api.common.utils.string.util.time.TimeName;
 import org.jetbrains.annotations.Nullable;
@@ -40,11 +43,129 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Karma string utilities
  */
 public final class StringUtils {
+
+    /**
+     * Single color identifier character
+     */
+    public static char SINGLE_COLOR_IDENTIFIER = '&';
+
+    /**
+     * Color letters
+     */
+    private final static List<Character> COLOR_LETTERS = Arrays.asList('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'r', 'k', 'l', 'm', 'n', 'o');
+
+    /**
+     * Map containing Pattern => Non windows color replacement
+     */
+    private final static Map<Pattern, String> NON_WINDOWS_REPLACEMENT = new ConcurrentHashMap<>();
+
+    /**
+     * Map containing Pattern => Windows color replacement
+     */
+    private final static Map<Pattern, String> WINDOWS_REPLACEMENT = new ConcurrentHashMap<>();
+
+    static {
+        for (Character character : COLOR_LETTERS) {
+            Pattern pattern = Pattern.compile(String.valueOf(SINGLE_COLOR_IDENTIFIER) + character);
+            switch (character) {
+                case '0':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;0;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[30m");
+                    break;
+                case '1':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;0;128m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[94m");
+                    break;
+                case '2':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;128;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[92m");
+                    break;
+                case '3':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;128;128m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[96m");
+                    break;
+                case '4':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;128;0;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[91m");
+                    break;
+                case '5':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;128;0;128m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[95m");
+                    break;
+                case '6':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;128;128;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[93m");
+                    break;
+                case '7':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;192;192;192m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[90m");
+                    break;
+                case '8':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;128;128;128m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[97m");
+                    break;
+                case '9':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;95;255m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[34m");
+                    break;
+                case 'a':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;255;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[32m");
+                    break;
+                case 'b':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;0;255;255m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[36m");
+                    break;
+                case 'c':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;255;0;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[31m");
+                    break;
+                case 'd':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;255;0;255m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[35m");
+                    break;
+                case 'e':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;255;255;0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[33m");
+                    break;
+                case 'f':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;38;2;255;255;255m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[37m");
+                    break;
+                case 'r':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[0m");
+                    break;
+                case 'l':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;1m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[1m");
+                    break;
+                case 'n':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[4m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[4m");
+                    break;
+                case 'o':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[3m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[3m");
+                    break;
+                case 'm':
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[9m");
+                    WINDOWS_REPLACEMENT.put(pattern, "\u001B[9m");
+                    break;
+                case 'k':
+                default:
+                    break;
+            }
+        }
+    }
 
     /**
      * Replace the last regex in the text
@@ -78,7 +199,7 @@ public final class StringUtils {
      * @param period the amount of characters
      * @return the formatted text
      */
-    public static String insetInEach(final String text, final String insert, final int period) {
+    public static String insertInEach(final String text, final String insert, final int period) {
         StringBuilder builder = new StringBuilder(text.length() + insert.length() * (text.length()/period)+1);
 
         int index = 0;
@@ -111,6 +232,45 @@ public final class StringUtils {
         }
 
         return StringUtils.replaceLast(fixed.toString(), insert, "");
+    }
+
+    /**
+     * Replace the max amount of characters starting from
+     * the specified index
+     *
+     * @param text the text to replace
+     * @param replacement the character to replace with
+     * @param start the beginning index of scan
+     * @param max the max index to scan
+     * @param ignored the ignored characters
+     * @return the replaced text
+     */
+    public static String smartReplace(final String text, final char replacement, final int start, final int max, char... ignored) {
+        StringBuilder builder;
+        if (max == 0) {
+            builder = new StringBuilder();
+        } else {
+            builder = new StringBuilder(text.substring(0, start));
+        }
+
+        Set<Character> charIgnored = new HashSet<>();
+        for (char character : ignored) {
+            charIgnored.add(character);
+        }
+
+        for (int i = start; i < max; i++) {
+            char character = text.charAt(i);
+            System.out.println(character);
+            if (!charIgnored.contains(character)) {
+                builder.append(replacement);
+            } else {
+                builder.append(character);
+            }
+        }
+        if (max != text.length())
+            builder.append(text.substring(max));
+
+        return builder.toString();
     }
 
     /**
@@ -149,10 +309,10 @@ public final class StringUtils {
      *
      * @param text the original text
      * @param period the amount of characters
-     * @return the splitted text
+     * @return the split text
      */
     public static String[] splitInEach(final String text, final int period) {
-        String result = insetInEach(text, "\n", period);
+        String result = insertInEach(text, "\n", period);
         if (result.contains("\n"))
             return result.split("\n");
 
@@ -167,7 +327,7 @@ public final class StringUtils {
      * @param period the amount of characters
      * @param replaceSpace replace the empty
      *                     character with the insert
-     * @return the splitted text
+     * @return the split text
      */
     public static String[] splitInEachSpace(final String text, final int period, final boolean replaceSpace) {
         String result = insertInEachSpace(text, "\n", period, replaceSpace);
@@ -175,6 +335,105 @@ public final class StringUtils {
             return result.split("\n");
 
         return new String[]{result};
+    }
+
+    /**
+     * Split a text between the specified indexes
+     *
+     * @param text the text to split
+     * @param start the start index
+     * @param end the end index
+     * @return the split text
+     */
+    public static String[] splitBetween(final String text, final int start, final int end) {
+        String before;
+        String then;
+        String extra;
+        if (start != 0) {
+            before = text.substring(0, start);
+            then = text.substring(start, end);
+            if (end != text.length()) {
+                extra = text.substring(end);
+            } else {
+                extra = null;
+            }
+        } else {
+            before = text.substring(start, end);
+            if (end != text.length()) {
+                then = text.substring(end);
+            } else {
+                then = null;
+            }
+
+            extra = null;
+        }
+
+        return new String[]{before, then, extra};
+    }
+
+    /**
+     * Split a text between the specified indexes
+     *
+     * @param text the text to split
+     * @param indexes the indexes
+     * @return the split text
+     */
+    public static String[] splitBetween(final String text, SplitIndex... indexes) {
+        List<String> sliced = new ArrayList<>();
+
+        if (indexes.length > 0) {
+            for (int i = 0; i < indexes.length; i++) {
+                SplitIndex index = indexes[i];
+                SplitIndex next = null;
+                if (i + 1 != indexes.length) {
+                    next = indexes[i + 1];
+                }
+
+                int start = index.getStart();
+                int end = index.getEnd();
+
+                if (start != 0 && i == 0) {
+                    String result = text.substring(0, start);
+
+                    sliced.add(result);
+                }
+
+                String tmpResult = text.substring(start, end);
+                sliced.add(tmpResult);
+
+                if (end != text.length() && i == (indexes.length - 1)) {
+                    String result = text.substring(end);
+                    sliced.add(result);
+                } else {
+                    if (i != (indexes.length - 1) && next != null) {
+                        int nextStart = next.getStart();
+
+                        if (nextStart != end) {
+                            String result = text.substring(end, nextStart);
+                            sliced.add(result);
+                        }
+                    }
+                }
+            }
+        } else {
+            sliced.add(text);
+        }
+
+        return sliced.toArray(new String[0]);
+    }
+
+    /**
+     * Glue an array of strings
+     *
+     * @param array the string array
+     * @return the array of strings together
+     */
+    public static String glue(final String... array) {
+        StringBuilder builder = new StringBuilder();
+        for (String str : array)
+            builder.append(str);
+
+        return builder.toString();
     }
 
     /**
@@ -207,7 +466,10 @@ public final class StringUtils {
      *
      * @param text the text to translate
      * @return the translated text
+     * @deprecated The new function {@link StringUtils#toAnyOsColor(CharSequence)} is more efficient and
+     * should work on any OS. This method won't work on Windows terminal and/or other
      */
+    @Deprecated
     public static String toConsoleColor(final CharSequence text) {
         String str = String.valueOf(text);
         HashSet<String> color_codes = new HashSet<>();
@@ -281,6 +543,70 @@ public final class StringUtils {
     }
 
     /**
+     * Parse the string to any type of color at any OS
+     *
+     * @param text the text to parse colors
+     * @return the colored text
+     */
+    public static String toAnyOsColor(final CharSequence text) {
+        String str = text.toString().replace("\u00a7", "&");
+
+        switch (JavaVM.getSystem()) {
+            case WINDOWS:
+                for (Pattern pattern : WINDOWS_REPLACEMENT.keySet()) {
+                    Matcher matcher = pattern.matcher(str);
+                    str = matcher.replaceAll(WINDOWS_REPLACEMENT.get(pattern));
+                }
+                break;
+            case MAC:
+            case LINUX:
+            case OTHER:
+            default:
+                for (Pattern pattern : NON_WINDOWS_REPLACEMENT.keySet()) {
+                    Matcher matcher = pattern.matcher(str);
+                    str = matcher.replaceAll(NON_WINDOWS_REPLACEMENT.get(pattern));
+                }
+                break;
+        }
+
+        return str;
+    }
+
+    /**
+     * Get the text replacing any os color with a single color character
+     *
+     * @param text the console text
+     * @return the text with single color character instead of os color character
+     */
+    public static String fromAnyOsColor(final CharSequence text) {
+        String str = text.toString().replace("\u00a7", "&");
+
+        switch (JavaVM.getSystem()) {
+            case WINDOWS:
+                for (Pattern pattern : WINDOWS_REPLACEMENT.keySet()) {
+                    String replacement = WINDOWS_REPLACEMENT.getOrDefault(pattern, null);
+                    if (replacement != null) {
+                        str = str.replace(replacement, pattern.pattern());
+                    }
+                }
+                break;
+            case MAC:
+            case LINUX:
+            case OTHER:
+            default:
+                for (Pattern pattern : NON_WINDOWS_REPLACEMENT.keySet()) {
+                    String replacement = NON_WINDOWS_REPLACEMENT.getOrDefault(pattern, null);
+                    if (replacement != null) {
+                        str = str.replace(replacement, pattern.pattern());
+                    }
+                }
+                break;
+        }
+
+        return str;
+    }
+
+    /**
      * Transform the list of text to a colored
      * list of text
      *
@@ -335,7 +661,8 @@ public final class StringUtils {
      * @return the text colors
      */
     public static String getLastColor(final String text) {
-        List<String> color_codes = new ArrayList<>();
+        String color = "";
+
         for (int i = 0; i < text.length(); i++) {
             char curr = text.charAt(i);
             char next = Character.MIN_VALUE;
@@ -343,17 +670,10 @@ public final class StringUtils {
                 next = text.charAt(i + 1);
             if (next != '\000' && !Character.isSpaceChar(next) && (
                     curr == '&' || curr == '\u00A7'))
-                color_codes.add(String.valueOf(curr) + next);
+                color = String.valueOf(curr) + next;
         }
-        try {
-            return color_codes.get(color_codes.size() - 1);
-        } catch (Throwable ex) {
-            try {
-                return color_codes.get(0);
-            } catch (Throwable exc) {
-                return "";
-            }
-        }
+
+        return color;
     }
 
     /**
@@ -365,7 +685,8 @@ public final class StringUtils {
      * @return the texts last color
      */
     public static String getLastColor(final List<String> texts, final int index) {
-        List<String> color_codes = new ArrayList<>();
+        String color = "";
+
         int tmpIndex = index;
         if (index == texts.size())
             tmpIndex--;
@@ -377,22 +698,92 @@ public final class StringUtils {
                     char next = Character.MIN_VALUE;
                     if (i + 1 != text.length())
                         next = text.charAt(i + 1);
-                    if (next != '\000' && !Character.isSpaceChar(next) && (
+                    if (next != '\u0000' && !Character.isSpaceChar(next) && (
                             curr == '&' || curr == '\u00A7'))
-                        color_codes.add(String.valueOf(curr) + next);
-                }
-                try {
-                    return color_codes.get(color_codes.size() - 1);
-                } catch (Throwable ex) {
-                    try {
-                        return color_codes.get(0);
-                    } catch (Throwable exc) {
-                        return "";
-                    }
+                        color = String.valueOf(curr) + next;
                 }
             } catch (Throwable ignored) {
             }
-        return "";
+
+        return color;
+    }
+
+    /**
+     * Get a set of colors present in
+     * the text
+     *
+     * @param text the text to read from
+     * @return the text colors
+     */
+    public static Set<Character> getCharColors(final String text) {
+        Set<Character> color_codes = new LinkedHashSet<>();
+
+        for (int i = 0; i < text.length(); i++) {
+            char curr = text.charAt(i);
+            char next = Character.MIN_VALUE;
+            if (i + 1 != text.length())
+                next = text.charAt(i + 1);
+            if (next != '\u0000' && !Character.isSpaceChar(next) &&
+                    curr == '&')
+                color_codes.add(next);
+        }
+
+        return color_codes;
+    }
+
+    /**
+     * Get the last color present on a text
+     *
+     * @param text the text to read from
+     * @return the text colors
+     */
+    public static char getLastCharColor(final String text) {
+        char color = '\u0000';
+
+        for (int i = 0; i < text.length(); i++) {
+            char curr = text.charAt(i);
+            char next = Character.MIN_VALUE;
+            if (i + 1 != text.length())
+                next = text.charAt(i + 1);
+            if (next != '\u0000' && !Character.isSpaceChar(next) && (
+                    curr == '&' || curr == '\u00A7'))
+                color = next;
+        }
+
+        return color;
+    }
+
+    /**
+     * Get the last color from a list of
+     * texts
+     *
+     * @param texts the list of texts
+     * @param index the text index
+     * @return the texts last color
+     */
+    public static char getLastCharColor(final List<String> texts, final int index) {
+        char color = '\u0000';
+
+        int tmpIndex = index;
+        if (index == texts.size())
+            tmpIndex--;
+
+        if (texts.size() > tmpIndex)
+            try {
+                String text = texts.get(tmpIndex);
+                for (int i = 0; i < text.length(); i++) {
+                    char curr = text.charAt(i);
+                    char next = Character.MIN_VALUE;
+                    if (i + 1 != text.length())
+                        next = text.charAt(i + 1);
+                    if (next != '\u0000' && !Character.isSpaceChar(next) && (
+                            curr == '&' || curr == '\u00A7'))
+                        color = next;
+                }
+            } catch (Throwable ignored) {
+            }
+
+        return color;
     }
 
     /**
@@ -409,7 +800,7 @@ public final class StringUtils {
             char next = Character.MIN_VALUE;
             if (i + 1 != str.length())
                 next = str.charAt(i + 1);
-            if (next != '\000' && !Character.isSpaceChar(next) && (
+            if (next != '\u0000' && !Character.isSpaceChar(next) && (
                     curr == '&' || curr == '\u00A7'))
                 color_codes.add(String.valueOf(curr) + next);
         }
@@ -433,7 +824,7 @@ public final class StringUtils {
                 char next = Character.MIN_VALUE;
                 if (x + 1 != text.length())
                     next = text.charAt(x + 1);
-                if (next != '\000' && !Character.isSpaceChar(next) && (
+                if (next != '\u0000' && !Character.isSpaceChar(next) && (
                         curr == '&' || curr == '\u00A7'))
                     color_codes.add(String.valueOf(curr) + next);
             }
@@ -469,11 +860,16 @@ public final class StringUtils {
      * @return a random color
      */
     public static String randomColor() {
-        char[] valid_colors = {
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                'a', 'b', 'c', 'd', 'e', 'f'};
-        int random = (new Random()).nextInt(valid_colors.length);
-        return "\u00A7" + valid_colors[random];
+        ConsoleColor[] colors = ConsoleColor.values();
+        int random = new Random().nextInt(colors.length);
+        if (random == colors.length)
+            random--;
+
+        ConsoleColor color = colors[random];
+        if (color.isCustom())
+            color = ConsoleColor.customColor("k");
+
+        return color.getCode();
     }
 
     /**
@@ -770,10 +1166,29 @@ public final class StringUtils {
      * @return if the object is null or empty
      */
     public static boolean isNullOrEmpty(final Object check) {
-        if (check != null) {
-            return String.valueOf(check).replaceAll("\\s", "").isEmpty() || check.toString().replaceAll("\\s", "").isEmpty();
+        if (check instanceof Object[]) {
+            Object[] array = (Object[]) check;
+            return array.length <= 0;
         } else {
-            return true;
+            if (check instanceof Iterable<?>) {
+                Iterable<?> collection = (Iterable<?>) check;
+                boolean parsed = false;
+                for (Object obj : collection) {
+                    if (String.valueOf(obj).replaceAll("\\s", "").isEmpty() || obj.toString().replaceAll("\\s", "").isEmpty()) {
+                        return true;
+                    }
+
+                    parsed = true;
+                }
+
+                return !parsed;
+            } else {
+                if (check != null) {
+                    return String.valueOf(check).replaceAll("\\s", "").isEmpty() || check.toString().replaceAll("\\s", "").isEmpty();
+                } else {
+                    return true;
+                }
+            }
         }
     }
 
@@ -786,17 +1201,164 @@ public final class StringUtils {
     public static boolean areNullOrEmpty(final Object... checks) {
         for (Object check : checks) {
             if (check != null) {
-                if (!String.valueOf(check).replaceAll("\\s", "").isEmpty()) {
-                    if (check.toString().replaceAll("\\s", "").isEmpty()) {
+                if (check instanceof Object[]) {
+                    Object[] array = (Object[]) check;
+                    if (array.length <= 0)
                         return true;
-                    }
                 } else {
-                    return true;
+                    if (check instanceof Iterable<?>) {
+                        Iterable<?> collection = (Iterable<?>) check;
+                        for (Object obj : collection) {
+                            if (StringUtils.isNullOrEmpty(obj)) {
+                                return true;
+                            }
+                        }
+                    } else {
+                        if (String.valueOf(check).replaceAll("\\s", "").isEmpty() || check.toString().replaceAll("\\s", "").isEmpty()) {
+                            return true;
+                        }
+                    }
                 }
+            } else {
+                return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Get if the objects are null or empty
+     *
+     * @param checkAll if false, it will return true as soon
+     *                 as any of the objects, are null or empty
+     * @param checks the objects to check
+     * @return if the objects are null or empty
+     */
+    public static boolean areNullOrEmpty(final boolean checkAll, final Object... checks) {
+        int nullOrEmpty = 0;
+
+        for (Object check : checks) {
+            if (check != null) {
+                if (check instanceof Object[]) {
+                    Object[] array = (Object[]) check;
+                    if (array.length <= 0) {
+                        if (!checkAll) {
+                            return true;
+                        } else {
+                            nullOrEmpty++;
+                        }
+                    }
+                } else {
+                    if (check instanceof Iterable<?>) {
+                        Iterable<?> collection = (Iterable<?>) check;
+                        for (Object obj : collection) {
+                            if (StringUtils.isNullOrEmpty(obj)) {
+                                if (checkAll) {
+                                    return true;
+                                } else {
+                                    nullOrEmpty++;
+                                }
+                            }
+                        }
+                    } else {
+                        if (String.valueOf(check).replaceAll("\\s", "").isEmpty() || check.toString().replaceAll("\\s", "").isEmpty()) {
+                            if (!checkAll) {
+                                return true;
+                            } else {
+                                nullOrEmpty++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (!checkAll) {
+                    return true;
+                } else {
+                    nullOrEmpty++;
+                }
+            }
+        }
+
+        return nullOrEmpty == checks.length;
+    }
+
+    /**
+     * Get if the string is equals the other
+     *
+     * @param str1 the string
+     * @param str2 the other string
+     * @return if both strings are the same
+     */
+    public static boolean equals(final String str1, final String str2) {
+        byte[] sum1 = str1.getBytes(StandardCharsets.UTF_8);
+        byte[] sum2 = str2.getBytes(StandardCharsets.UTF_8);
+
+        int high = sum1.length;
+        if (sum1.length < sum2.length) {
+            high = sum2.length;
+
+            int diff = high - sum1.length;
+            List<Byte> bytes = new ArrayList<>();
+            for (int i = 0; i < diff; i++) {
+                bytes.add((byte) 0);
+            }
+            for (byte b : sum1)
+                bytes.add(b);
+
+            byte[] tmp = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++)
+                tmp[i] = bytes.get(i);
+
+            sum1 = tmp;
+        } else {
+            int diff = high - sum2.length;
+            List<Byte> bytes = new ArrayList<>();
+            for (int i = 0; i < diff; i++) {
+                bytes.add((byte) 0);
+            }
+            for (byte b : sum2)
+                bytes.add(b);
+
+            byte[] tmp = new byte[bytes.size()];
+            for (int i = 0; i < bytes.size(); i++)
+                tmp[i] = bytes.get(i);
+
+            sum2 = tmp;
+        }
+
+        for (int i = 0; i < high; i++) {
+            byte b1 = sum1[i];
+            byte b2 = sum2[i];
+
+            String bin1 = Integer.toBinaryString(b1);
+            String bin2 = Integer.toBinaryString(b2);
+
+            int max = bin1.length();
+            if (bin1.length() < bin2.length()) {
+                max = bin2.length();
+                bin1 = String.format("%0" + max + "d", Integer.parseInt(bin1));
+            } else {
+                bin2 = String.format("%0" + max + "d", Integer.parseInt(bin2));
+            }
+
+            for (int x = 0; x < max; x++) {
+                char b1char = bin1.charAt(x);
+                char b2char = bin2.charAt(x);
+
+                String b1str = String.valueOf(b1char);
+                String b2str = String.valueOf(b2char);
+
+                int s1 = Integer.parseInt(b1str);
+                int s2 = Integer.parseInt(b2str);
+
+                if (s1 != s2) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -822,6 +1384,7 @@ public final class StringUtils {
             if (!Character.isDigit(character))
                 builder.append(character);
         }
+
         return builder.toString();
     }
 
@@ -885,65 +1448,6 @@ public final class StringUtils {
      * @return the time in seconds
      */
     public static String timeToString(final long milliseconds) {
-        /*
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
-        long hours = TimeUnit.MILLISECONDS.toHours(milliseconds);
-        long days = TimeUnit.MILLISECONDS.toDays(milliseconds);
-        long weeks = days / 7;
-        long months = weeks / 4;
-        long years = months / 12;
-
-        StringBuilder builder = new StringBuilder();
-        if (years >= 1 && Math.round(years) == years) {
-            builder.append(Math.round(years)).append(" year(s)").append(", ")
-                    .append(Math.abs(years * 12 - months)).append(" month(s)").append(", ")
-                    .append(Math.abs(months * 4 - weeks)).append(" week(s)").append(", ")
-                    .append(Math.abs(weeks * 7 - days)).append(" day(s)").append(", ")
-                    .append(Math.abs(days * 24 - hours)).append(" hour(s)").append(", ")
-                    .append(Math.abs(hours * 60 - minutes)).append(" minute(s)").append(" and ")
-                    .append(Math.abs(minutes * 60 - seconds)).append(" second(s)");
-        } else {
-            if (months >= 1 && Math.round(months) == months) {
-                builder.append(Math.round(months)).append(" month(s)").append(", ")
-                        .append(Math.abs(months * 4 - weeks)).append(" week(s)").append(", ")
-                        .append(Math.abs(weeks * 7 - days)).append(" day(s)").append(", ")
-                        .append(Math.abs(days * 24 - hours)).append(" hour(s)").append(", ")
-                        .append(Math.abs(hours * 60 - minutes)).append(" minute(s)").append(" and ")
-                        .append(Math.abs(minutes * 60 - seconds)).append(" second(s)");
-            } else {
-                if (weeks >= 1 && Math.round(weeks) == weeks) {
-                    builder.append(Math.round(weeks)).append(" week(s)").append(", ")
-                            .append(Math.abs(weeks * 7 - days)).append(" day(s)").append(", ")
-                            .append(Math.abs(days * 24 - hours)).append(" hour(s)").append(", ")
-                            .append(Math.abs(hours * 60 - minutes)).append(" minute(s)").append(" and ")
-                            .append(Math.abs(minutes * 60 - seconds)).append(" second(s)");
-                } else {
-                    if (days >= 1) {
-                        builder.append(Math.round(days)).append(" day(s)").append(", ")
-                                .append(Math.abs((days * 24 - hours))).append(" hour(s)").append(", ")
-                                .append(Math.abs((hours * 60 - minutes))).append(" minute(s)").append(" and ")
-                                .append(Math.abs((minutes * 60 - seconds))).append(" second(s)");
-                    } else {
-                        if (hours >= 1) {
-                            builder.append(Math.round(hours)).append(" hour(s)").append(", ")
-                                    .append(Math.abs((hours * 60 - minutes))).append(" minute(s)").append(" and ")
-                                    .append(Math.abs((minutes * 60 - seconds))).append(" second(s)");
-                        } else {
-                            if (minutes >= 1) {
-                                builder.append(Math.round(minutes)).append(" minute(s)").append(" and ")
-                                        .append(Math.abs((minutes * 60 - seconds))).append(" second(s)");
-                            } else {
-                                builder.append(Math.round(seconds)).append(" second(s)");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return builder.toString();*/
-
         CleanTimeBuilder builder = new CleanTimeBuilder(TimeName.create(), milliseconds);
         return builder.create();
     }
@@ -957,72 +1461,6 @@ public final class StringUtils {
      * @return the time in seconds
      */
     public static String timeToString(final long milliseconds, final TimeName name) {
-        /*
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds);
-        long hours = TimeUnit.MILLISECONDS.toHours(milliseconds);
-        long days = TimeUnit.MILLISECONDS.toDays(milliseconds);
-        long weeks = days / 7;
-        long months = weeks / 4;
-        long years = months / 12;
-
-        int month = (int) Math.abs(years * 12 - months);
-        int week = (int) Math.abs(months * 4 - weeks);
-        int day = (int) Math.abs(weeks * 7 - days);
-        int hour = (int) Math.abs(days * 24 - hours);
-        int minute = (int) Math.abs(hours * 60 - minutes);
-        int second = (int) Math.abs(minutes * 60 - seconds);
-
-        StringBuilder builder = new StringBuilder();
-        if (years >= 1 && Math.round(years) == years) {
-            builder.append(Math.round(years)).append(" ").append((Math.round(years) > 1 ? name.get(YEARS) : name.get(YEAR))).append(", ")
-                    .append(month).append(" ").append((month > 1 ? name.get(MONTHS) : name.get(MONTH))).append(", ")
-                    .append(week).append(" ").append((week > 1 ? name.get(WEEKS) : name.get(WEEK))).append(", ")
-                    .append(day).append(" ").append((day > 1 ? name.get(DAYS) : name.get(DAY))).append(", ")
-                    .append(hour).append(" ").append((hour > 1 ? name.get(HOURS) : name.get(HOUR))).append(", ")
-                    .append(minute).append(" ").append((minute > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                    .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-        } else {
-            if (months >= 1 && Math.round(months) == months) {
-                builder.append(Math.round(month)).append(" ").append((Math.round(month) > 1 ? name.get(MONTHS) : name.get(MONTH))).append(", ")
-                        .append(week).append(" ").append((week > 1 ? name.get(WEEKS) : name.get(WEEK))).append(", ")
-                        .append(day).append(" ").append((day > 1 ? name.get(DAYS) : name.get(DAY))).append(", ")
-                        .append(hour).append(" ").append((hour > 1 ? name.get(HOURS) : name.get(HOUR))).append(", ")
-                        .append(minute).append(" ").append((minute > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                        .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-            } else {
-                if (weeks >= 1 && Math.round(weeks) == weeks) {
-                    builder.append(Math.round(weeks)).append(" ").append((Math.round(weeks) > 1 ? name.get(WEEKS) : name.get(WEEK))).append(", ")
-                            .append(day).append(" ").append((day > 1 ? name.get(DAYS) : name.get(DAY))).append(", ")
-                            .append(hour).append(" ").append((hour > 1 ? name.get(HOURS) : name.get(HOUR))).append(", ")
-                            .append(minute).append(" ").append((minute > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                            .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-                } else {
-                    if (days >= 1) {
-                        builder.append(Math.round(days)).append(" ").append((Math.round(days) > 1 ? name.get(DAYS) : name.get(DAY))).append(", ")
-                                .append(hour).append(" ").append((hour > 1 ? name.get(HOURS) : name.get(HOUR))).append(", ")
-                                .append(minute).append(" ").append((minute > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                                .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-                    } else {
-                        if (hours >= 1) {
-                            builder.append(Math.round(hours)).append(" ").append((Math.round(hours) > 1 ? name.get(HOURS) : name.get(HOUR))).append(", ")
-                                    .append(minute).append(" ").append((minute > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                                    .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-                        } else {
-                            if (minutes >= 1) {
-                                builder.append(Math.round(minutes)).append(" ").append((Math.round(minutes) > 1 ? name.get(MINUTES) : name.get(MINUTE))).append(" and ")
-                                        .append(second).append(" ").append((second > 1 ? name.get(SECONDS) : name.get(SECOND)));
-                            } else {
-                                builder.append(Math.round(seconds)).append(" ").append((Math.round(seconds) > 1 ? name.get(SECONDS) : name.get(SECOND)));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return builder.toString();*/
-
         CleanTimeBuilder builder = new CleanTimeBuilder(name, milliseconds);
         return builder.create();
     }

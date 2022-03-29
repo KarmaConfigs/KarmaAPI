@@ -25,8 +25,6 @@ package ml.karmaconfigs.api.bungee;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.bungee.scheduler.BungeeAsyncScheduler;
-import ml.karmaconfigs.api.bungee.scheduler.BungeeSyncScheduler;
 import ml.karmaconfigs.api.common.Console;
 import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.karma.APISource;
@@ -38,6 +36,7 @@ import ml.karmaconfigs.api.common.timer.worker.SyncScheduler;
 import ml.karmaconfigs.api.common.utils.KarmaLogger;
 import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
 import ml.karmaconfigs.api.common.utils.placeholder.util.Placeholder;
+import ml.karmaconfigs.api.common.utils.placeholder.util.PlaceholderEngine;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -61,30 +60,19 @@ public abstract class KarmaPlugin extends Plugin implements KarmaSource {
     /**
      * The plugin logger
      */
-    private KarmaLogger logger;
-
-    /**
-     * Plugin async scheduler
-     */
-    private Scheduler async;
-
-    /**
-     * Plugin sync scheduler
-     */
-    private Scheduler sync;
+    private final KarmaLogger logger;
 
     /**
      * Initialize the KarmaPlugin
      */
     public KarmaPlugin() {
-        console = new Console(this, (msg) -> ProxyServer.getInstance().getConsole().sendMessage(TextComponent.fromLegacyText(StringUtils.toColor(msg))));
-
-        async = new AsyncScheduler<>(this);
-        sync = new SyncScheduler<>(this);
-
         if (!APISource.hasProvider(name())) {
             APISource.addProvider(this);
         }
+
+        console = new Console(this, (msg) -> ProxyServer.getInstance().getConsole().sendMessage(TextComponent.fromLegacyText(StringUtils.toColor(StringUtils.fromAnyOsColor(msg)))));
+
+        logger = new Logger(this);
     }
 
     /**
@@ -96,17 +84,16 @@ public abstract class KarmaPlugin extends Plugin implements KarmaSource {
      * set
      */
     public KarmaPlugin(final boolean defineDefault) throws SecurityException {
-        console = new Console(this, (msg) -> ProxyServer.getInstance().getConsole().sendMessage(TextComponent.fromLegacyText(StringUtils.toColor(msg))));
-
-        async = new AsyncScheduler<>(this);
-        sync = new SyncScheduler<>(this);
-
         if (!APISource.hasProvider(name())) {
             APISource.addProvider(this);
             if (defineDefault) {
                 APISource.defineDefault(this);
             }
         }
+
+        console = new Console(this, (msg) -> ProxyServer.getInstance().getConsole().sendMessage(TextComponent.fromLegacyText(StringUtils.toColor(StringUtils.fromAnyOsColor(msg)))));
+
+        logger = new Logger(this);
     }
 
     /**
@@ -119,32 +106,10 @@ public abstract class KarmaPlugin extends Plugin implements KarmaSource {
      */
     @Override
     public final void onEnable() {
-        async = new BungeeAsyncScheduler<>(this);
-        sync = new BungeeSyncScheduler<>(this);
+        /*async = new BungeeAsyncScheduler<>(this);
+        sync = new BungeeSyncScheduler<>(this);*/
 
         enable();
-
-        logger = new Logger(this);
-    }
-
-    /**
-     * Get the source async scheduler
-     *
-     * @return the source async scheduler
-     */
-    @Override
-    public Scheduler async() {
-        return async;
-    }
-
-    /**
-     * Get the source sync scheduler
-     *
-     * @return the source sync scheduler
-     */
-    @Override
-    public Scheduler sync() {
-        return sync;
     }
 
     /**
@@ -344,9 +309,9 @@ public abstract class KarmaPlugin extends Plugin implements KarmaSource {
      * @param placeholders the player placeholder
      */
     public static void registerPlayerPlaceholder(final Placeholder<?>... placeholders) {
-        GlobalPlaceholderEngine engine = new GlobalPlaceholderEngine(KarmaAPI.source(false));
+        PlaceholderEngine engine = new GlobalPlaceholderEngine(KarmaAPI.source(false));
         engine.protect();
 
-        engine.registerUnsafe(placeholders);
+        engine.register(placeholders);
     }
 }

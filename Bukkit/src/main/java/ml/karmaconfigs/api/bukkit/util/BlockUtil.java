@@ -32,6 +32,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -138,5 +139,63 @@ public final class BlockUtil {
         }
 
         return block;
+    }
+
+    /**
+     * Get if the blocks are the same
+     *
+     * @param block1 the first block
+     * @param block2 the second block
+     * @return if both blocks are the same based on its location
+     */
+    public static boolean equals(final Block block1, final Block block2) {
+        Location loc1 = block1.getLocation();
+        final Location other = block2.getLocation();
+
+        World world = (loc1.getWorld() == null) ? null : loc1.getWorld();
+        World otherWorld = (other.getWorld() == null) ? null : other.getWorld();
+        if (!Objects.equals(world, otherWorld)) {
+            return false;
+        }
+        if (Double.doubleToLongBits(loc1.getX()) != Double.doubleToLongBits(other.getX())) {
+            return false;
+        }
+        if (Double.doubleToLongBits(loc1.getY()) != Double.doubleToLongBits(other.getY())) {
+            return false;
+        }
+
+        return Double.doubleToLongBits(loc1.getZ()) == Double.doubleToLongBits(other.getZ());
+    }
+
+    /**
+     * Get if the blocks are the same
+     *
+     * @param block1 the first block
+     * @param block2 the second block
+     * @return if both blocks are the same based on its location, pitch and yaw
+     */
+    public static boolean strictEquals(final Block block1, final Block block2) {
+        Location loc1 = block1.getLocation();
+        final Location other = block2.getLocation();
+
+        World world = (loc1.getWorld() == null) ? null : loc1.getWorld();
+        World otherWorld = (other.getWorld() == null) ? null : other.getWorld();
+        if (!Objects.equals(world, otherWorld)) {
+            return false;
+        }
+        if (Double.doubleToLongBits(loc1.getX()) != Double.doubleToLongBits(other.getX())) {
+            return false;
+        }
+        if (Double.doubleToLongBits(loc1.getY()) != Double.doubleToLongBits(other.getY())) {
+            return false;
+        }
+        if (Double.doubleToLongBits(loc1.getZ()) != Double.doubleToLongBits(other.getZ())) {
+            return false;
+        }
+        if (Float.floatToIntBits(loc1.getPitch()) != Float.floatToIntBits(other.getPitch())) {
+            return false;
+        }
+
+        return Float.floatToIntBits(loc1.getYaw()) == Float.floatToIntBits(other.getYaw());
     }
 }

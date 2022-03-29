@@ -27,9 +27,9 @@ package ml.karmaconfigs.api.common.utils.file;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -66,6 +66,36 @@ public final class PathUtilities {
      */
     public static boolean createWithResults(final @NotNull Path file) {
         return FileUtilities.createWithResults(file.toFile());
+    }
+
+    /**
+     * Create a file
+     *
+     * @param file the file to create
+     */
+    public static void createDirectory(final @NotNull Path file) {
+        FileUtilities.createDirectory(file.toFile());
+    }
+
+    /**
+     * Create a file and catch any exception
+     *
+     * @param file the file to create
+     * @throws IOException any exception
+     */
+    public static void createDirectoryWithException(final @NotNull Path file) throws IOException {
+        FileUtilities.createDirectoryWithException(file.toFile());
+    }
+
+    /**
+     * Create a file and return if the file
+     * could be created
+     *
+     * @param file the file to create
+     * @return if the file could be created
+     */
+    public static boolean createDirectoryWithResults(final @NotNull Path file) {
+        return FileUtilities.createDirectoryWithResults(file.toFile());
     }
 
     /**
@@ -119,6 +149,26 @@ public final class PathUtilities {
     }
 
     /**
+     * Get if the path is a compressed file
+     *
+     * @param file the path to check
+     * @return if the file is a compressed file
+     */
+    public static boolean isCompressedFile(final Path file) {
+        return FileUtilities.isCompressedFile(file.toFile());
+    }
+
+    /**
+     * Read the path bytes
+     *
+     * @param file the path to read
+     * @return the path bytes
+     */
+    public static byte[] readPath(final Path file) {
+        return FileUtilities.readFile(file.toFile());
+    }
+
+    /**
      * Get if the file is a valid file
      *
      * @param file the file
@@ -154,7 +204,7 @@ public final class PathUtilities {
      * @param file the file
      * @return the pretty file path
      */
-    public static String getPrettyFile(final Path file) {
+    public static String getPrettyPath(final Path file) {
         return FileUtilities.getPrettyFile(file.toFile());
     }
 
@@ -219,6 +269,17 @@ public final class PathUtilities {
      */
     public static String getPathCompleteType(final Path file) {
         return FileUtilities.getFileCompleteType(file.toFile());
+    }
+
+    /**
+     * Get the path compression
+     *
+     * @param file the path to check
+     * @return the path compression or null if none
+     */
+    @Nullable
+    public static String getPathCompression(final Path file) {
+        return FileUtilities.getFileCompression(file.toFile());
     }
 
     /**

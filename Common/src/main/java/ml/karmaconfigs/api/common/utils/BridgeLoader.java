@@ -27,6 +27,7 @@ package ml.karmaconfigs.api.common.utils;
 
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.karma.loader.BruteLoader;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 
@@ -57,10 +58,13 @@ public abstract class BridgeLoader<T extends KarmaSource> {
      * @throws IllegalStateException if another bridge is already running
      */
     public BridgeLoader(final String connection, final T instance) throws IllegalStateException {
+        KarmaConfig config = new KarmaConfig();
         KarmaAPI.install();
 
         if (!hooked || loader == null) {
-            instance.console().send("Initializing {0} <-> KarmaAPI bridge for KarmaAPI modules", Level.INFO, connection);
+            if (config.debug(Level.INFO)) {
+                instance.console().send("Initializing {0} <-> KarmaAPI bridge for KarmaAPI modules", Level.INFO, connection);
+            }
 
             loader = new BruteLoader((URLClassLoader) instance.getClass().getClassLoader());
 
@@ -70,7 +74,9 @@ public abstract class BridgeLoader<T extends KarmaSource> {
             loader.add(KarmaAPI.source(true).getSourceFile());
             hooked = true;
 
-            instance.console().send("Created a bridge for {0} and KarmaAPI", Level.INFO, connection);
+            if (config.debug(Level.INFO)) {
+                instance.console().send("Created a bridge for {0} and KarmaAPI", Level.INFO, connection);
+            }
         } else {
             throw new IllegalStateException("Tried to setup a KarmaAPI bridge but a bridge is already built");
         }

@@ -28,6 +28,8 @@ package ml.karmaconfigs.api.common.utils.string;
 import ml.karmaconfigs.api.common.utils.string.util.TextContent;
 import ml.karmaconfigs.api.common.utils.string.util.TextType;
 
+import java.util.Random;
+
 /**
  * Karma string generator options builder
  */
@@ -36,7 +38,7 @@ public class OptionsBuilder {
     /**
      * The text size
      */
-    private int size = (int) Math.min(Math.random(), 20.0D);
+    private int size = new Random().nextInt(20);
 
     /**
      * The text content
