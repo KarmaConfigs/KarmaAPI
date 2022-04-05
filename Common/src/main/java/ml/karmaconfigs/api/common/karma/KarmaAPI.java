@@ -34,7 +34,6 @@ import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 import java.io.InputStream;
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -122,9 +121,12 @@ public interface KarmaAPI extends Serializable {
         } catch (Throwable ex) {
             status = true;
         } finally {
-            try {
-                Files.deleteIfExists(destJar);
-            } catch (Throwable ignored) {}
+            if (destJar != null) {
+                try {
+                    Files.deleteIfExists(destJar);
+                } catch (Throwable ignored) {
+                }
+            }
         }
 
         return status;
@@ -153,7 +155,6 @@ public interface KarmaAPI extends Serializable {
             try {
                 loader = new BruteLoader((URLClassLoader) Thread.currentThread().getContextClassLoader());
             } catch (Throwable exc) {
-                boolean send = true;
                 if (config.debug(Level.GRAVE)) {
                     source(false).console().send("Failed to install KarmaAPI dependencies because of {0}", Level.GRAVE, ex.fillInStackTrace());
 

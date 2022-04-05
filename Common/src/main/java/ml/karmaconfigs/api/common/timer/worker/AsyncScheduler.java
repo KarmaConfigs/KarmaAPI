@@ -3,8 +3,12 @@ package ml.karmaconfigs.api.common.timer.worker;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -20,50 +24,55 @@ public class AsyncScheduler<T extends KarmaSource> extends Scheduler {
 
     private final KarmaSource source;
 
-    private static Thread runner;
+    private static ScheduledExecutorService runner;
     private static int taskId = 0;
     private static int current_task = 0;
 
     public AsyncScheduler(final T src) {
         source = src;
+        boolean initialize = false;
 
         if (runner == null) {
-            runner = new Thread(() -> {
-                while (!runner.isInterrupted()) {
-                    int random = 1000 + (int) ( Math.random() * ((2500 - 1000) + 1) );
-                    int taskId = current_task;
+            //We will use the half of processors to have the best performance without using all CPU
+            int threadCount = Math.abs(Runtime.getRuntime().availableProcessors() / 2);
+            if (threadCount <= 0)
+                threadCount = 1;
 
-                    if (tasks.containsKey(taskId)) {
-                        Runnable task = tasks.remove(taskId);
-                        if (task != null) {
-                            Consumer<Integer> start = taskStart.getOrDefault(source, null);
-                            Consumer<Integer> complete = taskComplete.getOrDefault(source, null);
-
-                            if (start != null) start.accept(taskId);
-                            new Thread(() -> {
-                                task.run();
-                                if (complete != null) complete.accept(taskId);
-                            }).start();
-                        }
-
-                        current_task++;
-                    }
-
-                    try {
-                        synchronized (this) {
-                            wait(random);
-                        }
-                    } catch (Throwable ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-
-            runner.setName("AsyncScheduler");
+            runner = Executors.newScheduledThreadPool(threadCount);
+            initialize = true;
         }
 
-        if (!runner.isAlive() || runner.isInterrupted())
-            runner.start();
+        if (!runner.isShutdown() || runner.isTerminated()) {
+            //We will use the half of processors to have the best performance without using all CPU
+            int threadCount = Math.abs(Runtime.getRuntime().availableProcessors() / 2);
+            if (threadCount <= 0)
+                threadCount = 1;
+
+            runner = Executors.newScheduledThreadPool(threadCount);
+            initialize = true;
+        }
+
+        if (initialize) {
+            runner.scheduleAtFixedRate(() -> {
+                Integer[] ids = tasks.keySet().toArray(new Integer[0]);
+                Arrays.sort(ids);
+
+                current_task = ids[0];
+                if (tasks.containsKey(current_task)) {
+                    Runnable task = tasks.remove(current_task);
+                    if (task != null) {
+                        Consumer<Integer> start = taskStart.getOrDefault(source, null);
+                        Consumer<Integer> complete = taskComplete.getOrDefault(source, null);
+
+                        runner.execute(() -> {
+                            if (start != null) start.accept(current_task);
+                            task.run();
+                            if (complete != null) complete.accept(current_task);
+                        });
+                    }
+                }
+            }, 0, 1, TimeUnit.SECONDS);
+        }
     }
 
     /**

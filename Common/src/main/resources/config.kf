@@ -14,12 +14,6 @@
     */when a file is created with its parent directories
     'file_util_debug' -> true
 
-    */The async and sync scheduler maximum time to wait for the
-    */next task to run. This helps the thread to not be overloaded.
-    */The minimum value is a fixed 1000 ms ( 1 second )
-    */THE VALUE MUST BE IN MS
-    'task_wait_max' -> 2500
-
     *(
         Console default OK prefix
         - Please note leaving this value

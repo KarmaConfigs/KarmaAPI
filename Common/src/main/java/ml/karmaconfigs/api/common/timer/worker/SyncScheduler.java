@@ -4,8 +4,12 @@ import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
 
 import javax.swing.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -21,52 +25,45 @@ public class SyncScheduler<T extends KarmaSource> extends Scheduler {
 
     private final KarmaSource source;
 
-    private static Thread runner;
+    private static ScheduledExecutorService runner;
     private static int taskId = 0;
     private static int current_task = 0;
 
     public SyncScheduler(final T src) {
         source = src;
+        boolean initialize = false;
 
         if (runner == null) {
-            runner = new Thread(() -> {
-                while (!runner.isInterrupted()) {
-                    int random = 1000 + (int) ( Math.random() * ((2500 - 1000) + 1) );
-                    int taskId = current_task;
-
-                    if (tasks.containsKey(taskId)) {
-                        Runnable task = tasks.remove(taskId);
-                        if (task != null) {
-                            Consumer<Integer> start = taskStart.getOrDefault(source, null);
-                            Consumer<Integer> complete = taskComplete.getOrDefault(source, null);
-
-                            SwingUtilities.invokeLater(() -> {
-                                if (start != null) start.accept(taskId);
-                                task.run();
-                                if (complete != null) complete.accept(taskId);
-
-                                current_task++;
-                            });
-                        } else {
-                            current_task++;
-                        }
-                    }
-
-                    try {
-                        synchronized (this) {
-                            wait(random);
-                        }
-                    } catch (Throwable ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-
-            runner.setName("SyncScheduler");
+            runner = Executors.newSingleThreadScheduledExecutor();
+            initialize = true;
         }
 
-        if (!runner.isAlive() || runner.isInterrupted())
-            runner.start();
+        if (!runner.isShutdown() || runner.isTerminated()) {
+            runner = Executors.newSingleThreadScheduledExecutor();
+            initialize = true;
+        }
+
+        if (initialize) {
+            runner.scheduleAtFixedRate(() -> {
+                Integer[] ids = tasks.keySet().toArray(new Integer[0]);
+                Arrays.sort(ids);
+
+                current_task = ids[0];
+                if (tasks.containsKey(current_task)) {
+                    Runnable task = tasks.remove(current_task);
+                    if (task != null) {
+                        Consumer<Integer> start = taskStart.getOrDefault(source, null);
+                        Consumer<Integer> complete = taskComplete.getOrDefault(source, null);
+
+                        SwingUtilities.invokeLater(() -> {
+                            if (start != null) start.accept(current_task);
+                            task.run();
+                            if (complete != null) complete.accept(current_task);
+                        });
+                    }
+                }
+            }, 0, 1, TimeUnit.SECONDS);
+        }
     }
 
     /**
