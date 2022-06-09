@@ -38,7 +38,10 @@ import java.util.*;
 /**
  * Karma file only for input stream and used only
  * to read
+ *
+ * @deprecated As of 1.3.3-SNAPSHOT. {@link ml.karmaconfigs.api.common.karma.file.KarmaMain} should be used
  */
+@Deprecated
 public final class KarmaInputFile implements Serializable {
 
     /**

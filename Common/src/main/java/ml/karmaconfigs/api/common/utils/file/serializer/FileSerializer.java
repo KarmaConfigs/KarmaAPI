@@ -5,21 +5,20 @@ import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.file.PathFilter;
 import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A tool to store a complete file in
@@ -31,7 +30,7 @@ public final class FileSerializer implements Serializable {
      * If the file is a directory, this will contain all the
      * directory files recursively
      */
-    private final transient Set<FileSerializer> subFiles = new HashSet<>();
+    private final transient Set<FileSerializer> subFiles = new LinkedHashSet<>();
 
     /**
      * This defines if the file is a directory
@@ -146,7 +145,7 @@ public final class FileSerializer implements Serializable {
      * @return this instance
      */
     public FileSerializer withPath(final String relative) {
-        name = relative + (relative.endsWith("/") ? name : "/" + name);
+        name = relative + (relative.endsWith(File.separator) ? name : File.separator + name);
         return this;
     }
 
@@ -158,42 +157,25 @@ public final class FileSerializer implements Serializable {
      * @return a late scheduler for when
      * the action will be complete
      */
-    public LateScheduler<Void> parse(final @Nullable FileFilter filter) {
+    public LateScheduler<Void> parse(final @Nullable PathFilter filter) {
         LateScheduler<Void> result = new AsyncLateScheduler<>();
 
         KarmaSource tmp = KarmaAPI.source(false);
-        tmp.async().queue(() -> {
+        tmp.async().queue("async_file_serialize", () -> {
             if (directory) {
-                StringBuilder source = new StringBuilder(name);
-                try {
-                    Stream<Path> sub = Files.list(file);
-                    Set<Path> paths = sub.collect(Collectors.toSet());
-
-                    for (Path file : paths) {
-                        if (!Files.isDirectory(file)) {
-                            boolean process = true;
-                            if (filter != null)
-                                process = filter.accept(file.toFile());
-
-                            if (process) {
-                                FileSerializer serializer = new FileSerializer(file).withPath(name);
-                                subFiles.add(serializer);
-                            }
-                        } else {
-                            source.append("/").append(PathUtilities.getName(file, true));
-                            Set<FileSerializer> secondary = list(source.toString(), file, filter);
-                            subFiles.addAll(secondary);
-                            source = new StringBuilder(name);
-                        }
-                    }
-
-                    result.complete(null, null);
-                } catch (Throwable ex) {
-                    result.complete(null, ex);
-                }
+                processFile(file, filter, name);
             } else {
-                result.complete(null, null);
+                String path = PathUtilities.getParentPath(file);
+                String name = PathUtilities.getName(file, false);
+                String extension = PathUtilities.getExtension(file);
+
+                if (filter == null || filter.accept(path, name, extension)) {
+                    FileSerializer serializer = new FileSerializer(file);
+                    subFiles.add(serializer);
+                }
             }
+
+            result.complete(null, null);
         });
 
         return result;
@@ -208,9 +190,8 @@ public final class FileSerializer implements Serializable {
         StringBuilder builder = new StringBuilder();
 
         if (!subFiles.isEmpty()) {
-            subFiles.forEach((sub) -> {
-                builder.append(StringUtils.serialize(sub)).append(";");
-            });
+
+            subFiles.forEach((sub) -> builder.append(StringUtils.serialize(sub)).append(";"));
         } else {
             builder.append(StringUtils.serialize(this));
         }
@@ -241,51 +222,60 @@ public final class FileSerializer implements Serializable {
     public Set<SerializedFile> getFiles() {
         Set<SerializedFile> files = new HashSet<>();
 
-        SerializedFile local = new SerializedFile(directory, name, data);
-        files.add(local);
+        if (!directory) {
+            SerializedFile local = new SerializedFile(false, name, data);
+            files.add(local);
+        }
 
-        subFiles.forEach((sub) -> {
-            files.add(sub.getFile());
-        });
+        subFiles.forEach((sub) -> files.add(sub.getFile()));
 
         return files;
     }
 
     /**
-     * List the files in the folder
+     * Process all the files and sub files
      *
-     * @param name the folder
-     * @param source the source path folder
-     * @param filter the file filter
-     * @return the folder files as file serializers
+     * @param source the start directory
+     * @param filter the filter
      */
-    private Set<FileSerializer> list(final String name, final Path source, final FileFilter filter) {
-        Set<FileSerializer> serializers = new HashSet<>();
-
+    private void processFile(final Path source, final @Nullable PathFilter filter, final String dir) {
         try {
-            Stream<Path> sub = Files.list(source);
-            Set<Path> paths = sub.collect(Collectors.toSet());
+            if (Files.isDirectory(source)) {
+                Files.list(source).forEachOrdered((file) -> {
+                    if (Files.isDirectory(file)) {
+                        String subDir = dir + File.separator + PathUtilities.getName(file, true);
+                        processFile(file, filter, subDir);
+                    } else {
+                        String path = PathUtilities.getParentPath(file);
+                        String name = PathUtilities.getName(file, false);
+                        String extension = PathUtilities.getExtension(file);
 
-            for (Path file : paths) {
-                if (!Files.isDirectory(file)) {
-                    boolean process = true;
-                    if (filter != null)
-                        process = filter.accept(file.toFile());
+                        if (filter == null || filter.accept(path, name, extension)) {
+                            //System.out.println(file);
+                            FileSerializer serializer = new FileSerializer(file).withPath(dir);
+                            subFiles.add(serializer);
 
-                    if (process) {
-                        FileSerializer serializer = new FileSerializer(file).withPath(name);
-                        serializers.add(serializer);
+                            if (serializer.name.equalsIgnoreCase(name + File.separator) || serializer.name.equalsIgnoreCase(name))
+                                subFiles.remove(serializer);
+                        }
                     }
-                } else {
-                    String tmpName = name + "/" + PathUtilities.getName(file, true);
+                });
+            } else {
+                String path = PathUtilities.getParentPath(source);
+                String name = PathUtilities.getName(source, false);
+                String extension = PathUtilities.getExtension(source);
 
-                    Set<FileSerializer> secondary = list(tmpName, file, filter);
-                    serializers.addAll(secondary);
+                if (filter == null || filter.accept(path, name, extension)) {
+                    FileSerializer serializer = new FileSerializer(file).withPath(dir);
+                    subFiles.add(serializer);
+
+                    if (serializer.name.equalsIgnoreCase(name + File.separator) || serializer.name.equalsIgnoreCase(name))
+                        subFiles.remove(serializer);
                 }
             }
-        } catch (Throwable ignored) {}
-
-        return serializers;
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
     }
 
     /**
@@ -324,7 +314,7 @@ public final class FileSerializer implements Serializable {
      */
     public static FileSerializer load(final File startSource, final String serialized) {
         FileUtilities.destroy(startSource);
-        FileUtilities.create(startSource);
+        FileUtilities.createDirectory(startSource);
 
         String decoded = new String(Base64.getDecoder().decode(serialized.getBytes()), StandardCharsets.UTF_8);
         FileSerializer serializer = null;
@@ -364,7 +354,7 @@ public final class FileSerializer implements Serializable {
     @Nullable
     public static FileSerializer load(final Path startSource, final String serialized) {
         PathUtilities.destroy(startSource);
-        PathUtilities.create(startSource);
+        PathUtilities.createDirectory(startSource);
 
         String decoded = new String(Base64.getDecoder().decode(serialized.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
         FileSerializer serializer = null;

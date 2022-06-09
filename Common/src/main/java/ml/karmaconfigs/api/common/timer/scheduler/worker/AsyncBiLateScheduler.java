@@ -25,13 +25,12 @@ package ml.karmaconfigs.api.common.timer.scheduler.worker;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.timer.scheduler.BiLateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.CancellableScheduler;
 import ml.karmaconfigs.api.common.utils.TriConsumer;
 
 import java.util.function.BiConsumer;
-
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * This scheduler will run a task when X is completed
@@ -96,7 +95,9 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenCompleteRunner = action;
 
         if (completed) {
-            whenCompleteRunner.run();
+            if (whenCompleteRunner != null) {
+                whenCompleteRunner.run();
+            }
         }
 
         return this;
@@ -114,7 +115,9 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenComplete = action;
 
         if (completed) {
-            whenComplete.accept(typeA, typeB);
+            if (whenComplete != null) {
+                whenComplete.accept(typeA, typeB);
+            }
         }
 
         return this;
@@ -132,7 +135,9 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenCompleteWithError = caughtAction;
 
         if (completed) {
-            whenCompleteWithError.accept(typeA, typeB, typeE);
+            if (whenCompleteWithError != null) {
+                whenCompleteWithError.accept(typeA, typeB, typeE);
+            }
         }
 
         return this;
@@ -179,17 +184,23 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            new Thread(() -> {
-                if (this.whenComplete != null)
-                    this.whenComplete.accept(target, subTarget);
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, subTarget, null);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
+            typeA = target;
+            typeB = subTarget;
 
-                typeA = target;
-                typeB = subTarget;
-            }).start();
+            TriConsumer<A, B, Throwable> cachedError = whenCompleteWithError;
+            BiConsumer<A, B> cachedComplete = whenComplete;
+            Runnable cachedRunner = whenCompleteRunner;
+
+            APISource.getOriginal(false).async().queue("late_scheduler", () -> {
+                if (cachedError != null)
+                    cachedError.accept(target, subTarget, typeE);
+
+                if (cachedComplete != null)
+                    cachedComplete.accept(target, subTarget);
+
+                if (cachedRunner != null)
+                    cachedRunner.run();
+            });
 
             this.completed = true;
         } catch (Throwable ex) {
@@ -209,18 +220,24 @@ public final class AsyncBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            new Thread(() -> {
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, subTarget, error);
-                if (this.whenComplete != null)
-                    this.whenComplete.accept((A) target, (B) subTarget);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
+            typeA = target;
+            typeB = subTarget;
+            typeE = error;
 
-                typeA = target;
-                typeB = subTarget;
-                typeE = error;
-            }).start();
+            TriConsumer<A, B, Throwable> cachedError = whenCompleteWithError;
+            BiConsumer<A, B> cachedComplete = whenComplete;
+            Runnable cachedRunner = whenCompleteRunner;
+
+            APISource.getOriginal(false).async().queue("late_scheduler", () -> {
+                if (cachedError != null)
+                    cachedError.accept(target, subTarget, error);
+
+                if (cachedComplete != null)
+                    cachedComplete.accept(target, subTarget);
+
+                if (cachedRunner != null)
+                    cachedRunner.run();
+            });
 
             this.completed = true;
         } catch (Throwable ex) {

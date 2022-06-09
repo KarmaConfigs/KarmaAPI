@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.karmafile;
+package ml.karmaconfigs.api.common.timer.worker.event;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,54 +25,52 @@ package ml.karmaconfigs.api.common.karmafile;
  *  SOFTWARE.
  */
 
-import java.io.Serializable;
+import ml.karmaconfigs.api.common.timer.worker.ScheduledTask;
 
 /**
- * Karma files key
- *
- * @deprecated As of 1.3.3-SNAPSHOT. KarmaAPI does not longer use deprecated KarmaFile as
- * it was too simple. The new {@link ml.karmaconfigs.api.common.karma.file.KarmaMain} is
- * better and is human read-able with even a <a href="https://marketplace.visualstudio.com/items?itemName=eskdev.karma-lang">visual studio code extension</a>
+ * Task listener
  */
-@Deprecated
-public final class Key implements Serializable {
+public interface TaskListener {
 
     /**
-     * The key path
-     */
-    private final String path;
-
-    /**
-     * The key value
-     */
-    private final Object value;
-
-    /**
-     * Initialize the karma key
+     * When any async task is queued
      *
-     * @param keyPath the path
-     * @param keyValue the value
+     * @param task the task to run
      */
-    public Key(String keyPath, Object keyValue) {
-        this.path = keyPath;
-        this.value = keyValue;
-    }
+    void onAsyncTaskSchedule(final ScheduledTask task);
 
     /**
-     * Get the key path
+     * When any async task is started
      *
-     * @return the key path
+     * @param task the task that is being run
      */
-    public String getPath() {
-        return this.path;
-    }
+    void onAsyncTaskStart(final ScheduledTask task);
 
     /**
-     * Get the key value
+     * When any async task is completed
      *
-     * @return the key value
+     * @param task the task that has been completed
      */
-    public Object getValue() {
-        return this.value;
-    }
+    void onAsyncTaskComplete(final ScheduledTask task);
+
+    /**
+     * When any sync task is completed
+     *
+     * @param task the task to run
+     */
+    void onSyncTaskSchedule(final ScheduledTask task);
+
+    /**
+     * When any async task is started
+     *
+     * @param task the task that is being run
+     */
+    void onSyncTaskStart(final ScheduledTask task);
+
+    /**
+     * When any sync task is completed
+     *
+     * @param task the task that has been completed
+     */
+    void onSyncTaskComplete(final ScheduledTask task);
 }

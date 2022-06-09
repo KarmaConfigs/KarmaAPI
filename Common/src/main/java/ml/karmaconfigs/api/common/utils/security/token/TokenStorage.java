@@ -26,7 +26,9 @@ package ml.karmaconfigs.api.common.utils.security.token;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karmafile.KarmaFile;
+import ml.karmaconfigs.api.common.karma.file.KarmaMain;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaObject;
 import ml.karmaconfigs.api.common.utils.security.data.PBECryptoAPI;
 import ml.karmaconfigs.api.common.utils.security.token.exception.TokenExpiredException;
 import ml.karmaconfigs.api.common.utils.security.token.exception.TokenIncorrectPasswordException;
@@ -40,6 +42,7 @@ import java.util.UUID;
 /**
  * Karma token storage
  */
+@SuppressWarnings("unused")
 public final class TokenStorage {
 
     /**
@@ -63,16 +66,20 @@ public final class TokenStorage {
      * @param password the token password
      */
     public void destroy(final UUID tokenID, final String password) {
-        KarmaFile tokenFile = new KarmaFile(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
-        if (tokenFile.exists() && tokenFile.isSet("TOKEN") && tokenFile.isSet("SALT")) {
-            String storedToken = tokenFile.getString("TOKEN", "");
-            byte[] salt = Base64.getUrlDecoder().decode(tokenFile.getString("SALT", ""));
-            if (!StringUtils.isNullOrEmpty(storedToken)) {
-                PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(storedToken));
-                try {
-                    api.decrypt(salt);
-                    tokenFile.delete();
-                } catch (Throwable ignored) {
+        KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
+        if (tokenFile.exists() && tokenFile.isSet("token") && tokenFile.isSet("salt")) {
+            KarmaElement storedToken = tokenFile.get("token");
+            KarmaElement storedSalt = tokenFile.get("salt");
+
+            if (storedToken.isString() && storedSalt.isString()) {
+                byte[] salt = Base64.getUrlDecoder().decode(tokenFile.get("salt").getObjet().getString());
+                if (!StringUtils.isNullOrEmpty(storedToken.getObjet().getString())) {
+                    PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(storedToken.getObjet().getString()));
+                    try {
+                        api.decrypt(salt);
+                        tokenFile.delete();
+                    } catch (Throwable ignored) {
+                    }
                 }
             }
         }
@@ -88,20 +95,19 @@ public final class TokenStorage {
      */
     public UUID store(final String token, final String password, final Instant expiration) {
         UUID tokenID = UUID.nameUUIDFromBytes(Base64.getUrlDecoder().decode(token));
-        KarmaFile tokenFile = new KarmaFile(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
-        tokenFile.create();
+        KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
         PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(token));
         byte[] salt = api.generateSALT();
-        tokenFile.set("SALT", new String(Base64.getUrlEncoder().encode(salt)));
+        tokenFile.set("salt", new KarmaObject(new String(Base64.getUrlEncoder().encode(salt))));
         try {
-            tokenFile.set("TOKEN", new String(Base64.getUrlEncoder().encode(api.encrypt(salt))));
+            tokenFile.set("token", new KarmaObject(new String(Base64.getUrlEncoder().encode(api.encrypt(salt)))));
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
         if (expiration != null) {
-            tokenFile.set("EXPIRATION", expiration.toString());
+            tokenFile.set("expiration", new KarmaObject(expiration.toString()));
         } else {
-            tokenFile.set("EXPIRATION", "N/A");
+            tokenFile.set("expiration", new KarmaObject("N/A"));
         }
         return tokenID;
     }
@@ -118,23 +124,29 @@ public final class TokenStorage {
      * @throws TokenIncorrectPasswordException if the token password's is incorrect
      */
     public String load(final UUID tokenID, final String password) throws TokenNotFoundException, TokenExpiredException, TokenIncorrectPasswordException {
-        KarmaFile tokenFile = new KarmaFile(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
+        KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
         String token = null;
         Instant expiration = null;
-        if (tokenFile.exists() && tokenFile.isSet("TOKEN") && tokenFile.isSet("SALT")) {
-            String storedToken = tokenFile.getString("TOKEN", "");
-            byte[] salt = Base64.getUrlDecoder().decode(tokenFile.getString("SALT", ""));
-            if (!StringUtils.isNullOrEmpty(storedToken)) {
-                PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(storedToken));
-                try {
-                    String tmp_token = new String(api.decrypt(salt));
-                    String instant = tokenFile.getString("EXPIRATION", "N/A");
-                    if (!instant.equalsIgnoreCase("N/A")) {
-                        expiration = Instant.parse(instant);
-                        token = tmp_token;
+        if (tokenFile.exists() && tokenFile.isSet("token") && tokenFile.isSet("salt")) {
+            KarmaElement storedToken = tokenFile.get("token");
+            KarmaElement storedSalt = tokenFile.get("salt");
+
+            if (storedToken.isString() && storedSalt.isString()) {
+                byte[] salt = Base64.getUrlDecoder().decode(storedSalt.getObjet().getString());
+                if (!StringUtils.isNullOrEmpty(storedToken)) {
+                    PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(storedToken.getObjet().getString()));
+                    try {
+                        String tmp_token = new String(api.decrypt(salt));
+                        if (tokenFile.isSet("expiration")) {
+                            KarmaElement instant = tokenFile.get("expiration");
+                            if (!instant.getObjet().getString().equalsIgnoreCase("N/A")) {
+                                expiration = Instant.parse(instant.getObjet().getString());
+                                token = tmp_token;
+                            }
+                        }
+                    } catch (Throwable ex) {
+                        throw new TokenIncorrectPasswordException(tokenID);
                     }
-                } catch (Throwable ex) {
-                    throw new TokenIncorrectPasswordException(tokenID);
                 }
             }
         }
@@ -153,10 +165,14 @@ public final class TokenStorage {
      * @return the token expiration date
      */
     public Instant expiration(final UUID tokenID) {
-        KarmaFile tokenFile = new KarmaFile(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
-        String instant = tokenFile.getString("EXPIRATION", "N/A");
-        if (!instant.equalsIgnoreCase("N/A"))
-            return Instant.parse(instant);
+        KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
+        if (tokenFile.exists() && tokenFile.isSet("expiration")) {
+            KarmaElement instant = tokenFile.get("expiration");
+            if (instant.isString()) {
+                if (!instant.getObjet().getString().equals("N/A"))
+                    return Instant.parse(instant.getObjet().getString());
+            }
+        }
 
         return null;
     }

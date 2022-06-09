@@ -31,8 +31,6 @@ import ml.karmaconfigs.api.common.utils.TriConsumer;
 
 import java.util.function.BiConsumer;
 
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
-
 /**
  * This scheduler will run a task when X is completed
  *
@@ -96,7 +94,9 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenCompleteRunner = action;
 
         if (completed) {
-            whenCompleteRunner.run();
+            if (whenCompleteRunner != null) {
+                whenCompleteRunner.run();
+            }
         }
 
         return this;
@@ -114,7 +114,9 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenComplete = action;
 
         if (completed) {
-            whenComplete.accept(typeA, typeB);
+            if (whenComplete != null) {
+                whenComplete.accept(typeA, typeB);
+            }
         }
 
         return this;
@@ -132,7 +134,9 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         whenCompleteWithError = caughtAction;
 
         if (completed) {
-            whenCompleteWithError.accept(typeA, typeB, typeE);
+            if (whenCompleteWithError != null) {
+                whenCompleteWithError.accept(typeA, typeB, typeE);
+            }
         }
 
         return this;
@@ -179,15 +183,17 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            if (this.whenComplete != null)
-                this.whenComplete.accept(target, subTarget);
-            if (this.whenCompleteWithError != null)
-                this.whenCompleteWithError.accept(target, subTarget, null);
-            if (this.whenCompleteRunner != null)
-                this.whenCompleteRunner.run();
-
             typeA = target;
             typeB = subTarget;
+
+            if (this.whenComplete != null)
+                this.whenComplete.accept(target, subTarget);
+
+            if (this.whenCompleteWithError != null)
+                this.whenCompleteWithError.accept(target, subTarget, null);
+
+            if (this.whenCompleteRunner != null)
+                this.whenCompleteRunner.run();
 
             this.completed = true;
         } catch (Throwable ex) {
@@ -207,16 +213,18 @@ public final class FixedBiLateScheduler<A, B> implements BiLateScheduler<A, B> {
         if (this.cancelled || this.completed)
             return;
         try {
-            if (this.whenCompleteWithError != null)
-                this.whenCompleteWithError.accept(target, subTarget, error);
-            if (this.whenComplete != null)
-                this.whenComplete.accept((A) target, (B) subTarget);
-            if (this.whenCompleteRunner != null)
-                this.whenCompleteRunner.run();
-
             typeA = target;
             typeB = subTarget;
             typeE = error;
+
+            if (this.whenCompleteWithError != null)
+                this.whenCompleteWithError.accept(target, subTarget, error);
+
+            if (this.whenComplete != null)
+                this.whenComplete.accept(target, subTarget);
+
+            if (this.whenCompleteRunner != null)
+                this.whenCompleteRunner.run();
 
             this.completed = true;
         } catch (Throwable ex) {

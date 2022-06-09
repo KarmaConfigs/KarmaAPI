@@ -28,7 +28,8 @@ package ml.karmaconfigs.api.velocity.makeiteasy;
 import com.velocitypowered.api.proxy.Player;
 import ml.karmaconfigs.api.common.boss.*;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.timer.SourceSecondsTimer;
+import ml.karmaconfigs.api.common.timer.SchedulerUnit;
+import ml.karmaconfigs.api.common.timer.SourceScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.kyori.adventure.bossbar.BossBar;
@@ -219,7 +220,7 @@ public final class BossMessage extends BossProvider<Player> {
             player.showBossBar(bar);
 
         bar_objects.put(id, bar);
-        bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
+        bar_timer = new SourceScheduler(plugin, live_time, SchedulerUnit.SECOND, false).cancelUnloaded(false);
 
         bar_timer.endAction(() -> {
             for (Player player : fixed) {
@@ -241,8 +242,8 @@ public final class BossMessage extends BossProvider<Player> {
             bars--;
         }).start();
 
-        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
-        hp_timer.secondChangeAction(second -> {
+        SimpleScheduler hp_timer = new SourceScheduler(plugin, live_time - 1.0, SchedulerUnit.SECOND, false).cancelUnloaded(false);
+        hp_timer.changeAction(second -> {
             if (!cancelled) {
                 try {
                     bar.color(BossBar.Color.valueOf(color.name()));
@@ -289,8 +290,8 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
-        timer.periodChangeAction(milli -> {
+        SimpleScheduler timer = new SourceScheduler(plugin, 1, SchedulerUnit.SECOND, false).cancelUnloaded(false).multiThreading(true);
+        timer.changeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
                 boss.displayBar(players);
@@ -309,8 +310,8 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
-        timer.periodChangeAction(milli -> {
+        SimpleScheduler timer = new SourceScheduler(plugin, 1, SchedulerUnit.SECOND, false).cancelUnloaded(false).multiThreading(true);
+        timer.changeAction(milli -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
                 boss.displayBar(Collections.singleton(player));
@@ -426,6 +427,7 @@ public final class BossMessage extends BossProvider<Player> {
     /**
      * Boss bar getters
      */
+    @SuppressWarnings("unused")
     public interface getters {
 
         /**

@@ -25,6 +25,9 @@ package ml.karmaconfigs.api.common.timer.scheduler;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.timer.worker.ScheduledTask;
+import ml.karmaconfigs.api.common.timer.worker.event.TaskListener;
+
 import java.util.function.Consumer;
 
 /**
@@ -33,11 +36,27 @@ import java.util.function.Consumer;
 public abstract class Scheduler {
 
     /**
+     * Add a task listener
+     *
+     * @param listener the task listener
+     */
+    public abstract void addTaskListener(final TaskListener listener);
+
+    /**
+     * Remove a task listener
+     *
+     * @param listener the listener to remove
+     */
+    public abstract void removeTaskListener(final TaskListener listener);
+
+    /**
      * Action to perform when a task has been
      * started
      *
      * @param paramConsumer the action to perform
+     * @deprecated Use {@link Scheduler#addTaskListener(TaskListener)} instead
      */
+    @Deprecated
     public abstract void onTaskStart(final Consumer<Integer> paramConsumer);
 
     /**
@@ -45,7 +64,9 @@ public abstract class Scheduler {
      * completed
      *
      * @param paramConsumer the action to perform
+     * @deprecated Use {@link Scheduler#addTaskListener(TaskListener)} instead
      */
+    @Deprecated
     public abstract void onTaskComplete(final Consumer<Integer> paramConsumer);
 
     /**
@@ -53,8 +74,34 @@ public abstract class Scheduler {
      *
      * @param paramRunnable the task to perform
      * @return the task id
+     * @deprecated Use {@link Scheduler#queue(String, Runnable)} instead
      */
+    @Deprecated
     public abstract int queue(final Runnable paramRunnable);
+
+    /**
+     * Queue another task to the scheduler
+     *
+     * @param name the task name
+     * @param paramRunnable the task to perform
+     */
+    public abstract void queue(final String name, final Runnable paramRunnable);
+
+    /**
+     * Get a scheduled task by name
+     *
+     * @param name the task name
+     * @return the task
+     */
+    public abstract ScheduledTask[] getByName(final String name);
+
+    /**
+     * Get a scheduled task by id
+     *
+     * @param id the task id
+     * @return the task
+     */
+    public abstract ScheduledTask getById(final int id);
 
     /**
      * Get the current task id

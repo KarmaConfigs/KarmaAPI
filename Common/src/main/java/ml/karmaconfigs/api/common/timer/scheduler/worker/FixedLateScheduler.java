@@ -31,8 +31,6 @@ import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
-
 /**
  * This scheduler will run a task when X is completed
  *
@@ -91,7 +89,9 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         whenCompleteRunner = action;
 
         if (completed) {
-            whenCompleteRunner.run();
+            if (whenCompleteRunner != null) {
+                whenCompleteRunner.run();
+            }
         }
 
         return this;
@@ -109,7 +109,9 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         whenComplete = action;
 
         if (completed) {
-            whenComplete.accept(typeA);
+            if (whenComplete != null) {
+                whenComplete.accept(typeA);
+            }
         }
 
         return this;
@@ -127,7 +129,9 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         whenCompleteWithError = caughtAction;
 
         if (completed) {
-            whenCompleteWithError.accept(typeA, typeE);
+            if (whenCompleteWithError != null) {
+                whenCompleteWithError.accept(typeA, typeE);
+            }
         }
 
         return this;
@@ -163,16 +167,17 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(false).sync().queue(() -> {
-                if (this.whenComplete != null)
-                    this.whenComplete.accept(target);
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, null);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
+            typeA = target;
 
-                typeA = target;
-            });
+            if (this.whenComplete != null)
+                this.whenComplete.accept(target);
+
+            if (this.whenCompleteWithError != null)
+                this.whenCompleteWithError.accept(target, null);
+
+            if (this.whenCompleteRunner != null)
+                this.whenCompleteRunner.run();
+
             this.completed = true;
         } catch (Throwable ex) {
             ex.printStackTrace();
@@ -190,17 +195,18 @@ public final class FixedLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed)
             return;
         try {
-            source(false).sync().queue(() -> {
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, error);
-                if (this.whenComplete != null)
-                    this.whenComplete.accept(target);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
+            typeA = target;
+            typeE = error;
 
-                typeA = target;
-                typeE = error;
-            });
+            if (this.whenCompleteWithError != null)
+                this.whenCompleteWithError.accept(target, error);
+
+            if (this.whenComplete != null)
+                this.whenComplete.accept(target);
+
+            if (this.whenCompleteRunner != null)
+                this.whenCompleteRunner.run();
+
             this.completed = true;
         } catch (Throwable ex) {
             ex.printStackTrace();

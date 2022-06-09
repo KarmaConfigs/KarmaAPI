@@ -36,6 +36,8 @@ import ml.karmaconfigs.api.common.utils.enums.Level;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -43,8 +45,11 @@ import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * Karma seconds scheduler
+ *
+ * @deprecated Use {@link SourceScheduler} instead
  */
-public final class SourceSecondsTimer extends SimpleScheduler {
+@Deprecated
+public final class SecondsScheduler extends SimpleScheduler {
 
     /**
      * A map containing id => scheduler
@@ -103,7 +108,7 @@ public final class SourceSecondsTimer extends SimpleScheduler {
     /**
      * The scheduler period
      */
-    private long period = TimeUnit.SECONDS.toMillis(1L);
+    private long period = 1;
 
     /**
      * Send a warning to the console when the timer is
@@ -148,10 +153,12 @@ public final class SourceSecondsTimer extends SimpleScheduler {
      * @param autoRestart if the scheduler should auto-restart
      *                    when it ends
      */
-    public SourceSecondsTimer(final KarmaSource owner, final Number time, final boolean autoRestart) {
-        super(owner);
+    public SecondsScheduler(final KarmaSource owner, final Number time, final boolean autoRestart) {
+        super(owner, SchedulerUnit.SECOND);
+
         source = owner;
         restart = autoRestart;
+
         original = (int) time.longValue();
         back = original;
         id = getId();
@@ -167,8 +174,10 @@ public final class SourceSecondsTimer extends SimpleScheduler {
      * @throws IllegalTimerAccess if the scheduler owner does not match with
      * provided
      */
-    public SourceSecondsTimer(final KarmaSource owner, final int builtId) throws TimerNotFound, IllegalTimerAccess {
-        super(owner);
+    @SuppressWarnings("unused")
+    public SecondsScheduler(final KarmaSource owner, final int builtId) throws TimerNotFound, IllegalTimerAccess {
+        super(owner, SchedulerUnit.SECOND);
+
         SimpleScheduler built = timersData.getOrDefault(builtId, null);
         if (built != null) {
             if (built.getSource().isSource(owner)) {
@@ -223,85 +232,83 @@ public final class SourceSecondsTimer extends SimpleScheduler {
     @Override
     public void start() throws TimerAlreadyStarted {
         KarmaConfig config = new KarmaConfig();
-        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        Set<Integer> running = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+        if (!running.contains(id)) {
+            ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
-        if (!ids.contains(id)) {
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                public void run() {
-                    boolean run = (!cancelUnloaded || KarmaAPI.isLoaded(source));
-                    
-                    if (run) {
-                        if (!pause) {
-                            if (cancel || temp_restart) {
-                                if (!temp_restart) {
+            timer.scheduleAtFixedRate(() -> {
+                //boolean run = (!cancelUnloaded || KarmaAPI.isLoaded(source));
+
+                //if (run) {
+                    if (!pause) {
+                        if (cancel || temp_restart) {
+                            if (!temp_restart) {
+                                timersData.remove(id);
+                                Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                                ids.remove(id);
+
+                                runningTimers.put(source, ids);
+                                if (cancelAction != null)
+                                    runSecondsLongWithThread(cancelAction);
+
+                                cancel = false;
+                                pause = false;
+                                temp_restart = false;
+
+                                timer.shutdown();
+                            } else {
+                                back = original;
+                                onRestartTasks.forEach(this::runTaskWithThread);
+                                temp_restart = false;
+                            }
+                        } else {
+                            executeTasks();
+
+                            if (back == 0) {
+                                back = original;
+                                if (restart) {
+                                    onRestartTasks.forEach(this::runTaskWithThread);
+                                    back = original;
+                                } else {
+                                    onEndTasks.forEach(this::runTaskWithThread);
+
                                     timersData.remove(id);
                                     Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
                                     ids.remove(id);
 
                                     runningTimers.put(source, ids);
-                                    if (cancelAction != null)
-                                        runSecondsLongWithThread(cancelAction);
 
                                     cancel = false;
                                     pause = false;
                                     temp_restart = false;
 
-                                    timer.cancel();
-                                } else {
-                                    back = original;
-                                    onRestartTasks.forEach(task -> runTaskWithThread(task));
-                                    temp_restart = false;
-                                }
-                            } else {
-                                executeTasks();
-
-                                if (back > 0) {
-                                    back--;
-                                } else {
-                                    back = original;
-                                    if (restart) {
-                                        onRestartTasks.forEach(task -> runTaskWithThread(task));
-                                        back = original;
-                                    } else {
-                                        onEndTasks.forEach(task -> runTaskWithThread(task));
-
-                                        timersData.remove(id);
-                                        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-                                        ids.remove(id);
-
-                                        runningTimers.put(source, ids);
-
-                                        cancel = false;
-                                        pause = false;
-                                        temp_restart = false;
-
-                                        timer.cancel();
-                                    }
+                                    timer.shutdown();
                                 }
                             }
-                        }
-                    } else {
-                        timersData.remove(id);
-                        Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-                        ids.remove(id);
 
-                        runningTimers.put(source, ids);
-                        if (cancelAction != null)
-                            runSecondsLongWithThread(cancelAction);
-
-                        cancel = false;
-                        pause = false;
-                        temp_restart = false;
-
-                        timer.cancel();
-
-                        if (config.debug(Level.INFO)) {
-                            source(true).console().send("Timer task with ID {0} has been cancelled because its source {1} has been unloaded", Level.INFO, id, source.name());
+                            back--;
                         }
                     }
-                }
-            }, 0L, period);
+                /*} else {
+                    timersData.remove(id);
+                    Set<Integer> ids = runningTimers.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                    ids.remove(id);
+
+                    runningTimers.put(source, ids);
+                    if (cancelAction != null)
+                        runSecondsLongWithThread(cancelAction);
+
+                    cancel = false;
+                    pause = false;
+                    temp_restart = false;
+
+                    timer.shutdown();
+
+                    if (config.debug(Level.INFO)) {
+                        source(true).console().send("Timer task with ID {0} has been cancelled because its source {1} has been unloaded", Level.INFO, id, source.name());
+                    }
+                }*/
+            }, 0, period, TimeUnit.SECONDS);
         } else {
             throw new TimerAlreadyStarted(this);
         }
@@ -336,25 +343,11 @@ public final class SourceSecondsTimer extends SimpleScheduler {
      */
     @Override
     public SimpleScheduler withPeriod(final Number time) {
-        int seconds;
-        String value = time.toString();
-        int milli = 0;
-        if (value.contains(".")) {
-            String[] data = value.split("\\.");
-            String first = data[0];
-            String millis = value.replaceFirst(first + ".", "");
-            seconds = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(first));
-            if (millis.length() != 2) {
-                if (millis.length() < 2)
-                    millis = millis + "000";
-                milli = Integer.parseInt(millis.substring(0, 2));
-            } else {
-                milli = Integer.parseInt(millis);
-            }
-        } else {
-            seconds = (int) TimeUnit.SECONDS.toMillis(time.intValue());
+        long seconds = time.longValue();
+        if (seconds >= 1000) {
+            period = TimeUnit.MILLISECONDS.toSeconds(time.longValue());
         }
-        period = (seconds + milli);
+
         return this;
     }
 
@@ -368,6 +361,45 @@ public final class SourceSecondsTimer extends SimpleScheduler {
     public SimpleScheduler multiThreading(final boolean status) {
         thread = status;
         return this;
+    }
+
+    /**
+     * Add an action to perform when the timer reaches
+     * the specified time
+     *
+     * @param paramInt      the time
+     * @param paramRunnable the action to perform
+     * @return this instance
+     */
+    @Override
+    public SimpleScheduler exactAction(long paramInt, Runnable paramRunnable) {
+        return null;
+    }
+
+    /**
+     * Add an action when the timer passes a time
+     *
+     * @param paramConsumer the action to perform
+     * @return this instance
+     */
+    @Override
+    public SimpleScheduler changeAction(Consumer<Long> paramConsumer) {
+        return null;
+    }
+
+    /**
+     * Add an action when the timer passes a time
+     * <p>
+     * This will add a specific action when a specific time unit changes. This won't work with milliseconds
+     * and or seconds, only with minutes, hours and days.
+     *
+     * @param paramConsumer the action to perform
+     * @param paramUnit     the time unit
+     * @return this instance
+     */
+    @Override
+    public SimpleScheduler changeSpecificAction(Consumer<Integer> paramConsumer, SchedulerUnit paramUnit) {
+        return null;
     }
 
     /**
@@ -495,6 +527,20 @@ public final class SourceSecondsTimer extends SimpleScheduler {
     public SimpleScheduler restartAction(final Runnable task) {
         onRestartTasks.add(task);
         return this;
+    }
+
+    /**
+     * Add a conditional action
+     *
+     * @param paramTimeCondition the condition that the timer
+     *                           must complete
+     * @param paramInt           the time
+     * @param paramConsumer      the action to perform
+     * @return this instance
+     */
+    @Override
+    public SimpleScheduler condition(TimeCondition paramTimeCondition, long paramInt, Consumer<Long> paramConsumer) {
+        return null;
     }
 
     /**
@@ -665,6 +711,7 @@ public final class SourceSecondsTimer extends SimpleScheduler {
         Set<Consumer<Integer>> secondConsumers = secondsConsumer.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         Set<Consumer<Long>> secondLongConsumers = secondsLongConsumer.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         Set<Runnable> actions = secondsActions.getOrDefault(back, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+
         for (Consumer<Integer> consumer : secondConsumers)
             runSecondsWithThread(consumer);
         for (Consumer<Long> consumer : secondLongConsumers)

@@ -343,8 +343,6 @@ public final class UUIDUtil {
                                     }
                                 }
                             } else {
-                                System.out.println(gson.toJson(json));
-
                                 if (json.has("name")) {
                                     String nick = json.get("name").getAsString();
                                     UUID off = null;
@@ -386,8 +384,7 @@ public final class UUIDUtil {
      */
     @Nullable
     public static OKAResponse fetchOKAID(final UUID id) {
-        String nick = fetchNick(id);
-        return fetchOKA(nick);
+        return fetchOKA(id.toString().replace("-", ""));
     }
 
     /**
@@ -397,7 +394,7 @@ public final class UUIDUtil {
      */
     public static LateScheduler<Integer> getStored() {
         LateScheduler<Integer> result = new AsyncLateScheduler<>();
-        KarmaAPI.source(false).async().queue(() -> {
+        KarmaAPI.source(false).async().queue("oka_fetch_accounts", () -> {
             int stored = -1;
             Throwable error = null;
 
@@ -447,7 +444,7 @@ public final class UUIDUtil {
     public static LateScheduler<Set<OKAResponse>> fetchAll() {
         LateScheduler<Set<OKAResponse>> result = new AsyncLateScheduler<>();
 
-        KarmaAPI.source(false).async().queue(() -> {
+        KarmaAPI.source(false).async().queue("oka_fetch_clients", () -> {
             Set<OKAResponse> okaData = new HashSet<>();
 
             try {

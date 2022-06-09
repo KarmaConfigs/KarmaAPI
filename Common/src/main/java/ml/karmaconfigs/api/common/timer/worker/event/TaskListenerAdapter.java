@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.karma.loader;
+package ml.karmaconfigs.api.common.timer.worker.event;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,41 +25,70 @@ package ml.karmaconfigs.api.common.karma.loader;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-
-import java.net.URL;
+import ml.karmaconfigs.api.common.timer.worker.ScheduledTask;
 
 /**
- * Karma bootstrap
- *
- * @deprecated Read {@link BruteLoader#add(URL)} notice at {@link KarmaAppender}
+ * Simple task adapter
  */
-@Deprecated
-public interface SourceBootstrap {
+public abstract class TaskListenerAdapter implements TaskListener {
 
     /**
-     * When the bootstrap is enabled
-     */
-    void enable();
-
-    /**
-     * When the bootstrap is disabled
-     */
-    void disable();
-
-    /**
-     * Get the bootstrap appender
+     * When any async task is queued
      *
-     * @return the bootstrap appender
+     * @param task the task to run
      */
-    default KarmaAppender getAppender() {
-        return new KarmaSourceInjector(getClass().getClassLoader());
+    @Override
+    public void onAsyncTaskSchedule(ScheduledTask task) {
+
     }
 
     /**
-     * Get the bootstrap source
+     * When any async task is started
      *
-     * @return the bootstrap source
+     * @param task the task that is being run
      */
-    KarmaSource getSource();
+    @Override
+    public void onAsyncTaskStart(ScheduledTask task) {
+
+    }
+
+    /**
+     * When any async task is completed
+     *
+     * @param task the task that has been completed
+     */
+    @Override
+    public void onAsyncTaskComplete(ScheduledTask task) {
+
+    }
+
+    /**
+     * When any sync task is completed
+     *
+     * @param task the task to run
+     */
+    @Override
+    public void onSyncTaskSchedule(ScheduledTask task) {
+
+    }
+
+    /**
+     * When any async task is started
+     *
+     * @param task the task that is being run
+     */
+    @Override
+    public void onSyncTaskStart(ScheduledTask task) {
+
+    }
+
+    /**
+     * When any sync task is completed
+     *
+     * @param task the task that has been completed
+     */
+    @Override
+    public void onSyncTaskComplete(ScheduledTask task) {
+
+    }
 }

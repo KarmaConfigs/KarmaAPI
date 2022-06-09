@@ -139,7 +139,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void scheduleLog(final @NotNull Level level, final @NotNull CharSequence info, final @NotNull Object... replaces) {
-        source.async().queue(() -> logInfo(level, printInfo(), info, replaces));
+        source.async().queue("asynchronous_log", () -> logInfo(level, printInfo(), info, replaces));
     }
 
     /**
@@ -151,7 +151,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void scheduleLog(final @NotNull Level level, final @NotNull Throwable error) {
-        source.async().queue(() -> logError(level, printError(), error));
+        source.async().queue("asynchronous_log", () -> logError(level, printError(), error));
     }
 
     /**
@@ -165,7 +165,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void scheduleLogOption(final Level level, final boolean print, final CharSequence info, final Object... replaces) {
-        source.async().queue(() -> logInfo(level, print, info, replaces));
+        source.async().queue("asynchronous_log", () -> logInfo(level, print, info, replaces));
     }
 
     /**
@@ -178,7 +178,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void scheduleLogOption(final Level level, final boolean print, final Throwable error) {
-        source.async().queue(() -> logError(level, print, error));
+        source.async().queue("asynchronous_log", () -> logError(level, print, error));
     }
 
     /**
@@ -191,7 +191,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void syncedLog(final Level level, final CharSequence info, final Object... replaces) {
-        source.sync().queue(() -> logInfo(level, printInfo(), info, replaces));
+        source.sync().queue("synchronous_log", () -> logInfo(level, printInfo(), info, replaces));
     }
 
     /**
@@ -203,7 +203,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void syncedLog(final Level level, final Throwable error) {
-        source.sync().queue(() -> logError(level, printError(), error));
+        source.sync().queue("synchronous_log", () -> logError(level, printError(), error));
     }
 
     /**
@@ -217,7 +217,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void syncedLogOption(final Level level, final boolean print, final CharSequence info, final Object... replaces) {
-        source.sync().queue(() -> logInfo(level, print, info, replaces));
+        source.sync().queue("synchronous_log", () -> logInfo(level, print, info, replaces));
     }
 
     /**
@@ -230,7 +230,7 @@ public final class Logger extends KarmaLogger implements Serializable {
      */
     @Override
     public void syncedLogOption(final Level level, final boolean print, final Throwable error) {
-        source.sync().queue(() -> logError(level, print, error));
+        source.sync().queue("synchronous_log", () -> logError(level, print, error));
     }
 
     /**
@@ -314,7 +314,7 @@ public final class Logger extends KarmaLogger implements Serializable {
     @Override
     public synchronized void clearLog() throws IllegalStateException {
         locked.put(source, true);
-        source.async().queue(() -> {
+        source.async().queue("clear_log", () -> {
             Path logFile = getLoggerFile(ext_type.getOrDefault(source, LogExtension.MARKDOWN));
 
             try {

@@ -110,7 +110,7 @@ public final class LegacyVersionUpdater extends VersionUpdater {
 
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
         if (force || !results.containsKey(this.source) || results.getOrDefault(this.source, null) == null) {
-            source.async().queue(() -> {
+            source.async().queue("version_check_fetch", () -> {
                 Logger logger = new Logger(source);
 
                 try {
@@ -184,7 +184,7 @@ public final class LegacyVersionUpdater extends VersionUpdater {
      */
     public LateScheduler<VersionFetchResult> get() {
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
-        source.async().queue(() -> {
+        source.async().queue("version_check_retrieve", () -> {
             VersionFetchResult result = results.getOrDefault(this.source, null);
             if (result == null) {
                 fetch(true).whenComplete((Consumer<VersionFetchResult>) asyncLateScheduler::complete);

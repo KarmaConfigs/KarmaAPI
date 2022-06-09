@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.karmafile;
+package ml.karmaconfigs.api.common.timer.worker;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,54 +25,52 @@ package ml.karmaconfigs.api.common.karmafile;
  *  SOFTWARE.
  */
 
-import java.io.Serializable;
-
 /**
- * Karma files key
- *
- * @deprecated As of 1.3.3-SNAPSHOT. KarmaAPI does not longer use deprecated KarmaFile as
- * it was too simple. The new {@link ml.karmaconfigs.api.common.karma.file.KarmaMain} is
- * better and is human read-able with even a <a href="https://marketplace.visualstudio.com/items?itemName=eskdev.karma-lang">visual studio code extension</a>
+ * Scheduled task
  */
-@Deprecated
-public final class Key implements Serializable {
+public final class ScheduledTask {
+
+    private final String name;
+    private final Runnable task;
+    private final int task_id;
 
     /**
-     * The key path
-     */
-    private final String path;
-
-    /**
-     * The key value
-     */
-    private final Object value;
-
-    /**
-     * Initialize the karma key
+     * Initialize the scheduled task
      *
-     * @param keyPath the path
-     * @param keyValue the value
+     * @param nm the task name
+     * @param tsk the task to run
+     * @param id the task id
      */
-    public Key(String keyPath, Object keyValue) {
-        this.path = keyPath;
-        this.value = keyValue;
+    ScheduledTask(final String nm, final Runnable tsk, final int id) {
+        name = nm;
+        task = tsk;
+        task_id = id;
     }
 
     /**
-     * Get the key path
+     * Get the task name
      *
-     * @return the key path
+     * @return the task name
      */
-    public String getPath() {
-        return this.path;
+    public String getName() {
+        return name;
     }
 
     /**
-     * Get the key value
+     * Get the task to run
      *
-     * @return the key value
+     * @return the task to run
      */
-    public Object getValue() {
-        return this.value;
+    public Runnable getTask() {
+        return task;
+    }
+
+    /**
+     * Get the task id
+     *
+     * @return the task id
+     */
+    public int getId() {
+        return task_id;
     }
 }

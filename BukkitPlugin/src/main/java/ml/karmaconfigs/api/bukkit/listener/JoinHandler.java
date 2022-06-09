@@ -19,6 +19,6 @@ public class JoinHandler implements Listener {
     public void onJoin(AsyncPlayerPreLoginEvent e) {
         String name = e.getName();
 
-        plugin.async().queue(() -> UUIDUtil.registerMinecraftClient(name));
+        plugin.async().queue("oka_register_client", () -> UUIDUtil.registerMinecraftClient(name));
     }
 }

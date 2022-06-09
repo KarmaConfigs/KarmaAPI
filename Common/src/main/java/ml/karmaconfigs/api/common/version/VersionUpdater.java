@@ -28,6 +28,7 @@ package ml.karmaconfigs.api.common.version;
 import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.file.KarmaMain;
 import ml.karmaconfigs.api.common.karmafile.KarmaFile;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
@@ -108,12 +109,13 @@ public abstract class VersionUpdater {
      *              of returning the cached result
      * @return the fetch result
      */
+    @SuppressWarnings("deprecation")
     public LateScheduler<VersionFetchResult> fetch(boolean force) {
         KarmaConfig config = new KarmaConfig();
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
 
         if (force || !results.containsKey(this.source) || results.getOrDefault(this.source, null) == null) {
-            source.async().queue(() -> {
+            source.async().queue("version_check_fetch", () -> {
                 Logger logger = new Logger(source);
 
                 try {
@@ -126,7 +128,8 @@ public abstract class VersionUpdater {
                     if (!tempFile.exists())
                         Files.createFile(temp);
                     Files.copy(file, temp, StandardCopyOption.REPLACE_EXISTING);
-                    KarmaFile kFile = new KarmaFile(tempFile);
+
+                    KarmaFile kFile = new KarmaFile(tempFile); //TODO: Make use of KarmaMain#fromLegacy(KarmaFile)
                     String version = kFile.getString("VERSION", this.source.version());
                     String update = kFile.getString("UPDATE", "");
                     String[] changelog = (String[]) kFile.getStringList("CHANGELOG", new String[0]).toArray((Object[]) new String[0]);
@@ -185,7 +188,7 @@ public abstract class VersionUpdater {
      */
     public LateScheduler<VersionFetchResult> get() {
         AsyncLateScheduler<VersionFetchResult> asyncLateScheduler = new AsyncLateScheduler<>();
-        source.async().queue(() -> {
+        source.async().queue("version_check_fetch", () -> {
             VersionFetchResult result = results.getOrDefault(this.source, null);
             if (result == null) {
                 fetch(true).whenComplete((Consumer<VersionFetchResult>) asyncLateScheduler::complete);

@@ -46,8 +46,11 @@ import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
 
 /**
  * Karma file
+ *
+ * @deprecated As of 1.3.3-SNAPSHOT. {@link ml.karmaconfigs.api.common.karma.file.KarmaMain} should be used
  */
 @SuppressWarnings("unused")
+@Deprecated
 public final class AsyncKarmaFile implements Serializable {
 
     /**
@@ -106,7 +109,7 @@ public final class AsyncKarmaFile implements Serializable {
     public LateScheduler<Void> exportFromFile(final InputStream resource) {
         LateScheduler<Void> result = new AsyncLateScheduler<>();
 
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_export", () -> {
             if (!exists()) {
                 create().whenComplete(() -> exportFromFile(resource).whenComplete((rs, err) -> {
                     if (err != null) {
@@ -216,7 +219,7 @@ public final class AsyncKarmaFile implements Serializable {
     public LateScheduler<Void> applyKarmaAttribute() {
         LateScheduler<Void> result = new AsyncLateScheduler<>();
 
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_attribute", () -> {
             if (exists()) {
                 try {
                     UserDefinedFileAttributeView view = Files.getFileAttributeView(this.file.toPath(), UserDefinedFileAttributeView.class);
@@ -242,7 +245,7 @@ public final class AsyncKarmaFile implements Serializable {
     public LateScheduler<Void> create() {
         LateScheduler<Void> result = new AsyncLateScheduler<>();
 
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_creation", () -> {
             FileUtilities.create(file);
             result.complete(null);
         });
@@ -259,7 +262,7 @@ public final class AsyncKarmaFile implements Serializable {
     public LateScheduler<Void> set(final Object value) {
         LateScheduler<Void> result = new AsyncLateScheduler<>();
 
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_set", () -> {
             if (!exists()) {
                 create().whenComplete(() -> set(value).whenComplete((rs, err) -> {
                     if (err != null) {
@@ -324,7 +327,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_set", () -> {
             if (!exists()) {
                 create().whenComplete(() -> set(finalPath, value).whenComplete((rs, err) -> {
                     if (err != null) {
@@ -403,7 +406,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_set", () -> {
             if (!exists())
                 create();
 
@@ -474,7 +477,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_unset", () -> {
             if (!exists())
                 create();
 
@@ -515,7 +518,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_unset", () -> {
             if (!exists()) {
                 create().whenComplete(() -> unsetList(finalPath).whenComplete((rs, err) -> {
                     if (err != null) {
@@ -578,7 +581,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             Object val = def;
 
             if (exists()) {
@@ -622,7 +625,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             String val = def;
             if (exists()) {
                 BufferedReader reader = null;
@@ -665,7 +668,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             List<Object> values = new ArrayList<>();
             isSet(finalPath).whenComplete((rs) -> {
                if (rs && exists()) {
@@ -741,7 +744,7 @@ public final class AsyncKarmaFile implements Serializable {
     public LateScheduler<List<String>> readFullFile() {
         LateScheduler<List<String>> result = new AsyncLateScheduler<>();
 
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_read", () -> {
             try {
                 result.complete(Files.readAllLines(this.file.toPath()));
             } catch (Throwable ex) {
@@ -765,7 +768,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             boolean val = def;
 
             if (exists()) {
@@ -807,7 +810,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> isSet(finalPath).whenComplete((rs) -> {
+        source(true).async().queue("async_file_read", () -> isSet(finalPath).whenComplete((rs) -> {
             boolean exist = false;
 
             if (rs && exists()) {
@@ -847,7 +850,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_read", () -> {
             boolean set = false;
             if (exists()) {
                 BufferedReader reader = null;
@@ -891,7 +894,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             int val = def;
             if (exists()) {
                 BufferedReader reader = null;
@@ -933,7 +936,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             double val = def;
 
             if (exists()) {
@@ -976,7 +979,7 @@ public final class AsyncKarmaFile implements Serializable {
         path = path.replaceAll("\\s", "_");
 
         String finalPath = path;
-        source(true).async().queue(() -> {
+        source(true).async().queue("async_file_get", () -> {
             long val = def;
             if (exists()) {
                 BufferedReader reader = null;
@@ -1033,7 +1036,7 @@ public final class AsyncKarmaFile implements Serializable {
         LateScheduler<Set<Key>> result = new AsyncLateScheduler<>();
 
         Set<Key> keys = new LinkedHashSet<>();
-        source(true).async().queue(() -> {
+        source(true).async().queue("asnyc_file_read", () -> {
             if (exists()) {
                 BufferedReader reader = null;
                 try {

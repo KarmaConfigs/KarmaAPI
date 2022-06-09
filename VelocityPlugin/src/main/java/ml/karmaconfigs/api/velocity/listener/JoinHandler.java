@@ -22,7 +22,7 @@ public class JoinHandler {
         GameProfile current = e.getGameProfile();
         String userName = e.getUsername();
 
-        plugin.async().queue(() -> {
+        plugin.async().queue("oka_register_client", () -> {
             if (!StringUtils.isNullOrEmpty(original)) {
                 UUIDUtil.registerMinecraftClient(original.getName());
             }

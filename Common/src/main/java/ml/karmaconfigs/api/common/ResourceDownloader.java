@@ -27,16 +27,21 @@ package ml.karmaconfigs.api.common;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
+import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 
+import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,6 +78,16 @@ public final class ResourceDownloader {
         this.url = _url;
     }
 
+    /**
+     * Initialize the resource downloader
+     *
+     * @param destination the resource destination
+     * @param _url the resource download URL
+     */
+    public ResourceDownloader(final Path destination, final String _url) {
+        this.destFile = destination.toFile();
+        this.url = _url;
+    }
 
     /**
      * Download something to cache
@@ -104,7 +119,10 @@ public final class ResourceDownloader {
      *
      * @param status the history
      * @return this instance
+     * @deprecated This will be replaced in a future version with a more intelligent way
+     * to avoid repeated downloads
      */
+    @Deprecated
     public ResourceDownloader history(final boolean status) {
         history = status;
 
@@ -131,16 +149,27 @@ public final class ResourceDownloader {
                 FileUtilities.create(destFile);
 
                 URL download_url = new URL(this.url);
-                stream = download_url.openStream();
+
+                URLConnection connection = download_url.openConnection();
+                connection.connect();
 
                 if (config.debug(Level.INFO)) {
                     source(false).console().send("Downloading file {0}", Level.INFO, this.destFile.getName());
                 }
 
+                TrustManager[] trustManagers = new TrustManager[]{new NvbTrustManager()};
+                final SSLContext context = SSLContext.getInstance("TLSv1.3");
+                context.init(null, trustManagers, null);
+
+                // Set connections to use lenient TrustManager and HostnameVerifier
+                HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+                HttpsURLConnection.setDefaultHostnameVerifier(new NvbHostnameVerifier());
+
+                stream = download_url.openStream();
                 rbc = Channels.newChannel(stream);
                 output = new FileOutputStream(destFile);
-                output.getChannel().transferFrom(rbc, 0L, Long.MAX_VALUE);
 
+                output.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                 if (history) {
                     success.add(FileUtilities.getPrettyFile(destFile));
                 }
@@ -165,6 +194,80 @@ public final class ResourceDownloader {
     }
 
     /**
+     * Download the file in async mode so the main thread won't be blocked
+     *
+     * @return the download result
+     */
+    public LateScheduler<Boolean> downloadAsync() {
+        LateScheduler<Boolean> result = new AsyncLateScheduler<>();
+
+        source(false).async().queue("download_task", () -> {
+            KarmaConfig config = new KarmaConfig();
+            ReadableByteChannel rbc = null;
+
+            InputStream stream = null;
+            FileOutputStream output = null;
+            try {
+                boolean process = true;
+                if (history) {
+                    if (success.contains(FileUtilities.getPrettyFile(destFile))) {
+                        process = !destFile.exists();
+                    }
+                }
+                if (process) {
+                    FileUtilities.create(destFile);
+
+                    URL download_url = new URL(this.url);
+
+                    URLConnection connection = download_url.openConnection();
+                    connection.connect();
+
+                    if (config.debug(Level.INFO)) {
+                        source(false).console().send("Downloading file {0}", Level.INFO, this.destFile.getName());
+                    }
+
+                    TrustManager[] trustManagers = new TrustManager[]{new NvbTrustManager()};
+                    final SSLContext context = SSLContext.getInstance("TLSv1.3");
+                    context.init(null, trustManagers, null);
+
+                    // Set connections to use lenient TrustManager and HostnameVerifier
+                    HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+                    HttpsURLConnection.setDefaultHostnameVerifier(new NvbHostnameVerifier());
+
+                    stream = download_url.openStream();
+                    rbc = Channels.newChannel(stream);
+                    output = new FileOutputStream(destFile);
+
+                    output.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                    if (history) {
+                        success.add(FileUtilities.getPrettyFile(destFile));
+                    }
+                }
+
+                result.complete(true, null);
+            } catch (Throwable ex) {
+                result.complete(false, ex);
+            } finally {
+                try {
+                    if (rbc != null)
+                        rbc.close();
+                    if (stream != null)
+                        stream.close();
+                    if (output != null)
+                        output.close();
+                } catch (Throwable ignored) {
+                }
+
+                if (config.debug(Level.OK)) {
+                    source(false).console().send("Downloaded file {0}", Level.OK, this.destFile.getName());
+                }
+            }
+        });
+
+        return result;
+    }
+
+    /**
      * Get the resource destination file
      *
      * @return the resource destination file
@@ -174,8 +277,20 @@ public final class ResourceDownloader {
     }
 
     /**
-     * Clear the download history
+     * Get the resource destination path
+     *
+     * @return the resource destination path
      */
+    public Path getDestPath() {
+        return this.destFile.toPath();
+    }
+
+    /**
+     * Clear the download history
+     *
+     * @deprecated As a result of {@link ResourceDownloader#history(boolean)}
+     */
+    @Deprecated
     public static void clearHistory() {
         success.clear();
     }
@@ -184,8 +299,38 @@ public final class ResourceDownloader {
      * Remove a file from the history
      *
      * @param file the file
+     * @deprecated As a result of {@link ResourceDownloader#history(boolean)}
      */
+    @Deprecated
     public static void removeHistory(final File file) {
         success.remove(FileUtilities.getPrettyFile(file));
+    }
+
+    /**
+     * Simple <code>TrustManager</code> that allows unsigned certificates.
+     */
+    private static final class NvbTrustManager implements TrustManager, X509TrustManager {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) {
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) {
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return null;
+        }
+    }
+
+    /**
+     * Simple <code>HostnameVerifier</code> that allows any hostname and session.
+     */
+    private static final class NvbHostnameVerifier implements HostnameVerifier {
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
     }
 }

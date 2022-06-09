@@ -145,7 +145,7 @@ public final class StringUtils {
                     WINDOWS_REPLACEMENT.put(pattern, "\u001B[0m");
                     break;
                 case 'l':
-                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[0;1m");
+                    NON_WINDOWS_REPLACEMENT.put(pattern, "\033[1m");
                     WINDOWS_REPLACEMENT.put(pattern, "\u001B[1m");
                     break;
                 case 'n':

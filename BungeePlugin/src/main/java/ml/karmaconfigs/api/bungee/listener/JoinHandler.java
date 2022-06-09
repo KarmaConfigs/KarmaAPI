@@ -17,6 +17,6 @@ public class JoinHandler implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void profileRequest(PreLoginEvent e) {
-        plugin.async().queue(() -> UUIDUtil.registerMinecraftClient(e.getConnection().getName()));
+        plugin.async().queue("oka_register_client", () -> UUIDUtil.registerMinecraftClient(e.getConnection().getName()));
     }
 }

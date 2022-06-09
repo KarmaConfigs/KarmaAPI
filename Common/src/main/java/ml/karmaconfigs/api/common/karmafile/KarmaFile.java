@@ -26,6 +26,7 @@ package ml.karmaconfigs.api.common.karmafile;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaMain;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
 import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
@@ -41,7 +42,10 @@ import java.util.*;
 
 /**
  * Karma file
+ *
+ * @deprecated As of 1.3.3-SNAPSHOT. {@link ml.karmaconfigs.api.common.karma.file.KarmaMain} should be used
  */
+@Deprecated
 public final class KarmaFile implements Serializable {
 
     /**

@@ -44,7 +44,7 @@ import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
  */
 public final class KarmaConfig {
 
-    public final KarmaMain mn;
+    private final KarmaMain mn;
 
     /**
      * Initialize the configuration

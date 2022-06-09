@@ -101,16 +101,4 @@ public interface BiLateScheduler<A, B> extends CancellableScheduler {
      * @param paramThrowable any error that has been thrown
      */
     void complete(final A paramA, final B paramB, final Throwable paramThrowable);
-
-    /**
-     * Complete another bi consumer with these
-     * objects
-     *
-     * @param next the other bi consumer
-     * @return the other bi consumer
-     */
-    default BiLateScheduler<A, B> thenCompleteUnder(final BiLateScheduler<A, B> next) {
-        next.complete(getObject(), getSubObject());
-        return next;
-    }
 }

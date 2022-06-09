@@ -29,7 +29,8 @@ import ml.karmaconfigs.api.bukkit.server.BukkitServer;
 import ml.karmaconfigs.api.bukkit.server.Version;
 import ml.karmaconfigs.api.common.boss.*;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.timer.SourceSecondsTimer;
+import ml.karmaconfigs.api.common.timer.SchedulerUnit;
+import ml.karmaconfigs.api.common.timer.SourceScheduler;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
@@ -342,9 +343,9 @@ public final class BossMessage extends BossProvider<Player> {
                         
                         packet_connect_send.invoke(packet_connection.cast(p_connection), packet);
                         wither_objects.put(id, wither);
-                        bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
+                        bar_timer = new SourceScheduler(plugin, live_time, SchedulerUnit.SECOND, false).cancelUnloaded(false);
 
-                        bar_timer.conditionalAction(TimeCondition.OVER_OF, 2, second -> {
+                        bar_timer.condition(TimeCondition.OVER_OF, 2, second -> {
                             try {
                                 newLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(20).add(new Vector(0, 5, 0)));
                                 wither_set_location_method.invoke(player, newLoc.getX(), newLoc.getY(), newLoc.getZ(), newLoc.getYaw(), newLoc.getPitch());
@@ -403,8 +404,8 @@ public final class BossMessage extends BossProvider<Player> {
                             }
                         }).start();
                         
-                        SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
-                        hp_timer.secondChangeAction(second -> {
+                        SimpleScheduler hp_timer = new SourceScheduler(plugin, live_time - 1.0, SchedulerUnit.SECOND, false).cancelUnloaded(false);
+                        hp_timer.changeAction(second -> {
                             if (!cancelled) {
                                 try {
                                     double percentage;
@@ -447,7 +448,7 @@ public final class BossMessage extends BossProvider<Player> {
 
             wither.setVisible(true);
             wither_objects.put(id, wither);
-            bar_timer = new SourceSecondsTimer(plugin, live_time, false).cancelUnloaded(false);
+            bar_timer = new SourceScheduler(plugin, live_time, SchedulerUnit.SECOND, false).cancelUnloaded(false);
 
             bar_timer.endAction(() -> {
                 wither.setVisible(false);
@@ -471,8 +472,8 @@ public final class BossMessage extends BossProvider<Player> {
                 bars--;
             }).start();
 
-            SimpleScheduler hp_timer = new SourceSecondsTimer(plugin, live_time - 1.0, false).cancelUnloaded(false);
-            hp_timer.secondChangeAction(second -> {
+            SimpleScheduler hp_timer = new SourceScheduler(plugin, live_time - 1.0, SchedulerUnit.SECOND, false).cancelUnloaded(false);
+            hp_timer.changeAction(second -> {
                 if (!cancelled) {
                     double percentage;
 
@@ -516,8 +517,8 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
-        timer.periodChangeAction(milli -> {
+        SimpleScheduler timer = new SourceScheduler(plugin, 1, SchedulerUnit.SECOND, false).cancelUnloaded(false).multiThreading(true);
+        timer.changeAction(second -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
                 boss.displayBar(players);
@@ -536,8 +537,8 @@ public final class BossMessage extends BossProvider<Player> {
         b_bars.add(this);
         boss_bars.put(id, this);
 
-        SimpleScheduler timer = new SourceSecondsTimer(plugin, 1, false).cancelUnloaded(false).multiThreading(true);
-        timer.periodChangeAction(milli -> {
+        SimpleScheduler timer = new SourceScheduler(plugin, 1, SchedulerUnit.SECOND, false).cancelUnloaded(false).multiThreading(true);
+        timer.changeAction(second -> {
             if (!b_bars.isEmpty() && getBarsAmount() < 4) {
                 BossMessage boss = b_bars.get(0);
                 boss.displayBar(Collections.singleton(player));
@@ -711,6 +712,7 @@ public final class BossMessage extends BossProvider<Player> {
     /**
      * Boss bar getters
      */
+    @SuppressWarnings("unused")
     public interface getters {
 
         /**

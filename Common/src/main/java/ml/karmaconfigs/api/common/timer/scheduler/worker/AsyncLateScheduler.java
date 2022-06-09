@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.timer.scheduler.worker;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.timer.scheduler.CancellableScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 
@@ -66,7 +67,6 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
      */
     private boolean completed = false;
 
-
     /**
      * The scheduler type A object
      */
@@ -89,7 +89,9 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
         whenCompleteRunner = action;
 
         if (completed) {
-            whenCompleteRunner.run();
+            if (whenCompleteRunner != null) {
+                whenCompleteRunner.run();
+            }
         }
 
         return this;
@@ -107,7 +109,9 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
         whenComplete = action;
 
         if (completed) {
-            whenComplete.accept(typeA);
+            if (whenComplete != null) {
+                whenComplete.accept(typeA);
+            }
         }
 
         return this;
@@ -125,7 +129,9 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
         whenCompleteWithError = caughtAction;
 
         if (completed) {
-            whenCompleteWithError.accept(typeA, typeE);
+            if (whenCompleteWithError != null) {
+                whenCompleteWithError.accept(typeA, typeE);
+            }
         }
 
         return this;
@@ -161,22 +167,25 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed) {
             return;
         }
-        try {
-            new Thread(() -> {
-                if (this.whenComplete != null)
-                    this.whenComplete.accept(target);
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, null);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
 
-                typeA = target;
-            }).start();
+        typeA = target;
 
-            this.completed = true;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }
+        BiConsumer<A, Throwable> cachedError = whenCompleteWithError;
+        Consumer<A> cachedComplete = whenComplete;
+        Runnable cachedRunner = whenCompleteRunner;
+
+        APISource.getOriginal(false).async().queue("late_scheduler", () -> {
+            if (cachedError != null)
+                cachedError.accept(target, typeE);
+
+            if (cachedComplete != null)
+                cachedComplete.accept(target);
+
+            if (cachedRunner != null)
+                cachedRunner.run();
+        });
+
+        completed = true;
     }
 
     /**
@@ -190,23 +199,26 @@ public final class AsyncLateScheduler<A> implements LateScheduler<A> {
         if (this.cancelled || this.completed) {
             return;
         }
-        try {
-            new Thread(() -> {
-                if (this.whenCompleteWithError != null)
-                    this.whenCompleteWithError.accept(target, error);
-                if (this.whenComplete != null)
-                    this.whenComplete.accept(target);
-                if (this.whenCompleteRunner != null)
-                    this.whenCompleteRunner.run();
 
-                typeA = target;
-                typeE = error;
-            }).start();
+        typeA = target;
+        typeE = error;
 
-            this.completed = true;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }
+        BiConsumer<A, Throwable> cachedError = whenCompleteWithError;
+        Consumer<A> cachedComplete = whenComplete;
+        Runnable cachedRunner = whenCompleteRunner;
+
+        APISource.getOriginal(false).async().queue("late_scheduler", () -> {
+            if (cachedError != null)
+                cachedError.accept(target, error);
+
+            if (cachedComplete != null)
+                cachedComplete.accept(target);
+
+            if (cachedRunner != null)
+                cachedRunner.run();
+        });
+
+        completed = true;
     }
 
     /**

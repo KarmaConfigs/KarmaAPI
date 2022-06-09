@@ -2,9 +2,6 @@ package ml.karmaconfigs.api.common.karma.file.element;
 
 import ml.karmaconfigs.api.common.karma.NumType;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 /**
  * Karma element for the new KarmaFile API which
  * is very similar to json
@@ -62,6 +59,24 @@ public class KarmaObject extends KarmaElement {
      */
     public String getString() {
         return str;
+    }
+
+    /**
+     * Get the text value of the object
+     *
+     * @return the object text value
+     */
+    public String textValue() {
+        if (str != null)
+            return str;
+
+        if (num != null)
+            return String.valueOf(num);
+
+        if (boo != null)
+            return String.valueOf(boo);
+
+        return "[Unknown]";
     }
 
     /**

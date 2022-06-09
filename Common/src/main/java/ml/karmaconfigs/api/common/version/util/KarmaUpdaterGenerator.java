@@ -26,11 +26,17 @@ package ml.karmaconfigs.api.common.version.util;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaMain;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaArray;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaObject;
 import ml.karmaconfigs.api.common.karmafile.KarmaFile;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
+import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -135,6 +141,7 @@ public final class KarmaUpdaterGenerator {
      * @param name the file name
      * @return the generated file
      */
+    @SuppressWarnings("deprecation")
     public KarmaFile generate(final String name) {
         File destination = FileUtilities.getFixedFile(new File(this.source.getDataPath().toFile(), name + ".kupdter"));
         KarmaFile file = new KarmaFile(destination);
@@ -142,6 +149,39 @@ public final class KarmaUpdaterGenerator {
         file.set("VERSION", this.source.version());
         file.set("UPDATE", (this.updateURL != null) ? this.updateURL.toString() : "");
         file.set("CHANGELOG", this.lines);
+        return file;
+    }
+
+    /**
+     * Generate the file
+     *
+     * @param name the file name
+     * @return the generated file
+     */
+    public KarmaMain generateV2(final String name) {
+        Path destination = PathUtilities.getFixedPath(source.getDataPath().resolve(name + ".kup"));
+        KarmaMain file = new KarmaMain(destination)
+                .internal(KarmaUpdaterGenerator.class.getResourceAsStream("/update_template.kup"));
+
+        try {
+            file.validate();
+            file.set("version", new KarmaObject(source.version()));
+            file.set("update_url", new KarmaObject((updateURL != null ? updateURL.toString() : "")));
+
+            List<KarmaElement> elements = new ArrayList<>();
+            for (String line : lines) {
+                elements.add(new KarmaObject(line));
+            }
+
+            file.set("changelog", new KarmaArray(elements.toArray(new KarmaElement[0])));
+
+            if (!file.save()) {
+                throw new RuntimeException("Failed to save update file for " + source.name());
+            }
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+        }
+
         return file;
     }
 }

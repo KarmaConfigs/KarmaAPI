@@ -105,8 +105,7 @@ public final class BruteLoader {
         //Dependencies will always be inside ./KarmaAPI/cache/dependencies/...
         name.addParentStart("dependencies");
 
-        ResourceDownloader downloader = ResourceDownloader.toCache(source(true), name.getName() + "." + name.findExtension(), downloadURL.toString(), name.getParents())
-                .history(true);
+        ResourceDownloader downloader = ResourceDownloader.toCache(source(true), name.getName() + "." + name.findExtension(), downloadURL.toString(), name.getParents());
         downloader.download();
 
         add(downloader.getDestFile());

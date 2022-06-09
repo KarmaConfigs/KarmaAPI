@@ -28,16 +28,21 @@ package ml.karmaconfigs.api.common.karma;
 import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.karma.loader.BruteLoader;
 import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
-import ml.karmaconfigs.api.common.utils.string.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * Karma API
@@ -109,27 +114,48 @@ public interface KarmaAPI extends Serializable {
      * @return if the source jar is loaded
      */
     static boolean isLoaded(final KarmaSource source) {
-        boolean status = false;
-        Path destJar = null;
+        JarFile jar = null;
+        SourceMap map = new SourceMap(source);
 
         try {
-            Path sourceJar = source.getSourceFile().toPath();
-            destJar = Files.createTempFile(StringUtils.generateString().create() + "_", StringUtils.generateString().create());
-
-            Files.move(sourceJar, destJar);
-            Files.move(destJar, sourceJar);
-        } catch (Throwable ex) {
-            status = true;
-        } finally {
-            if (destJar != null) {
-                try {
-                    Files.deleteIfExists(destJar);
-                } catch (Throwable ignored) {
+            String stored = map.get();
+            if (!StringUtils.isNullOrEmpty(stored)) {
+                Class<?> clazz = KarmaAPI.class.getClassLoader().loadClass(stored);
+                if (clazz != null) {
+                    return true;
                 }
             }
+        } catch (Throwable ignored) {}
+
+        try {
+            File sourceJar = source.getSourceFile();
+            jar = new JarFile(sourceJar);
+
+            Enumeration<JarEntry> e = jar.entries();
+            while (e.hasMoreElements()) {
+                JarEntry jarEntry = e.nextElement();
+                if (jarEntry.getName().endsWith(".class")) {
+                    String className = jarEntry.getName()
+                            .replace("/", ".")
+                            .replace(".class", "");
+
+                    try {
+                        Class<?> clazz = KarmaAPI.class.getClassLoader().loadClass(className);
+                        if (clazz != null) {
+                            map.set(className);
+                            return true;
+                        }
+                    } catch (Throwable ignored) {}
+                }
+            }
+        } catch (Throwable ignored) {} finally {
+            try {
+                if (jar != null)
+                    jar.close();
+            } catch (Throwable ignored) {}
         }
 
-        return status;
+        return false;
     }
 
     /**
@@ -216,5 +242,45 @@ public interface KarmaAPI extends Serializable {
                 );
             }
         }
+    }
+}
+
+/**
+ * Sources class map
+ */
+class SourceMap {
+
+    private final static Map<KarmaSource, String> map = new HashMap<>();
+
+    private final KarmaSource source;
+
+    /**
+     * Initialize the source class map
+     *
+     * @param src the source
+     */
+    public SourceMap(final KarmaSource src) {
+        source = src;
+    }
+
+    /**
+     * Set the source class. This class is any class
+     * found inside the jar file
+     *
+     * @param clazz the clazz path
+     */
+    public void set(final String clazz) {
+        if (!StringUtils.isNullOrEmpty(clazz))
+            map.put(source, clazz);
+    }
+
+    /**
+     * Get the source class
+     *
+     * @return the source class path
+     */
+    @Nullable
+    public String get() {
+        return map.getOrDefault(source, null);
     }
 }

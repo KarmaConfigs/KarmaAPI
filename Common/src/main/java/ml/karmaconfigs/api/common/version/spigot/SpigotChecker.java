@@ -68,12 +68,16 @@ public final class SpigotChecker {
             if (utils != null) {
                 String response = utils.getResponse();
 
-                if (response != null) {
+                if (!StringUtils.isNullOrEmpty(response)) {
                     Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
-                    JsonObject object = gson.fromJson(response, JsonObject.class);
+                    JsonElement element = gson.fromJson(response, JsonElement.class);
 
-                    if (object.has("current_version")) {
-                        return object.get("current_version").getAsString();
+                    if (element.isJsonObject()) {
+                        JsonObject object = element.getAsJsonObject();
+
+                        if (object.has("current_version")) {
+                            return object.get("current_version").getAsString();
+                        }
                     }
                 }
             }
@@ -92,7 +96,7 @@ public final class SpigotChecker {
     public LateScheduler<URL> getUpdateURL() {
         LateScheduler<URL> result = new AsyncLateScheduler<>();
 
-        KarmaAPI.source(false).async().queue(() -> {
+        KarmaAPI.source(false).async().queue("plugin_version_check", () -> {
             try {
                 int page = 0;
                 URL url = new URL(StringUtils.formatString(fetch_update, resource_id, page));

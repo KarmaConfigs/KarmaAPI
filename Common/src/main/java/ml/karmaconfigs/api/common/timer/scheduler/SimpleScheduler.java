@@ -27,11 +27,11 @@ package ml.karmaconfigs.api.common.timer.scheduler;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.timer.SchedulerUnit;
 import ml.karmaconfigs.api.common.timer.TimeCondition;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.TimerAlreadyStarted;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 
-import javax.swing.*;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -65,14 +65,21 @@ public abstract class SimpleScheduler {
     private final int id;
 
     /**
+     * The scheduler working unit
+     */
+    protected SchedulerUnit working_unit;
+
+    /**
      * Initialize the scheduler
      *
      * @param owner the scheduler source
+     * @param workingUnit the scheduler working unit
      */
-    public SimpleScheduler(final KarmaSource owner) {
+    public SimpleScheduler(final KarmaSource owner, final SchedulerUnit workingUnit) {
         this.source = owner;
         this.id = ++global_id;
         id_instance.put(this.id, this);
+        working_unit = workingUnit;
     }
 
     /**
@@ -150,12 +157,51 @@ public abstract class SimpleScheduler {
 
     /**
      * Add an action to perform when the timer reaches
+     * the specified time
+     *
+     * Please note; the consumer will be always second if the working unit is second or over.
+     * It's impossible to retrieve change action as ms when using seconds or over
+     *
+     * @param paramInt the time
+     * @param paramRunnable the action to perform
+     * @return this instance
+     */
+    public abstract SimpleScheduler exactAction(final long paramInt, final Runnable paramRunnable);
+
+    /**
+     * Add an action when the timer passes a time
+     *
+     * Please note; the consumer will be always second if the working unit is second or over.
+     * It's impossible to retrieve change action as ms when using seconds or over. For more specific triggers
+     * take a look to {@link SimpleScheduler#changeSpecificAction(Consumer, SchedulerUnit)} (Consumer, SchedulerUnit)}
+     *
+     * @param paramConsumer the action to perform
+     * @return this instance
+     */
+    public abstract SimpleScheduler changeAction(final Consumer<Long> paramConsumer);
+
+    /**
+     * Add an action when the timer passes a time
+     *
+     * This will add a specific action when a specific time unit changes. This won't work with milliseconds
+     * and or seconds, only with minutes, hours and days.
+     *
+     * @param paramConsumer the action to perform
+     * @param paramUnit the time unit
+     * @return this instance
+     */
+    public abstract SimpleScheduler changeSpecificAction(final Consumer<Integer> paramConsumer, SchedulerUnit paramUnit);
+
+    /**
+     * Add an action to perform when the timer reaches
      * the specified second
      *
      * @param paramInt the second
      * @param paramRunnable the action to perform
      * @return this instance
+     * @deprecated Use {@link SimpleScheduler#exactAction(long, Runnable)} instead
      */
+    @Deprecated
     public abstract SimpleScheduler exactSecondPeriodAction(final int paramInt, final Runnable paramRunnable);
 
     /**
@@ -165,7 +211,9 @@ public abstract class SimpleScheduler {
      * @param paramLong the millisecond
      * @param paramRunnable the action to perform
      * @return this instance
+     * @deprecated Use {@link SimpleScheduler#exactAction(long, Runnable)} instead
      */
+    @Deprecated
     public abstract SimpleScheduler exactPeriodAction(final long paramLong, final Runnable paramRunnable);
 
     /**
@@ -173,7 +221,9 @@ public abstract class SimpleScheduler {
      *
      * @param paramConsumer the action to perform
      * @return this instance
+     * @deprecated Use {@link SimpleScheduler#changeAction(Consumer)} instead
      */
+    @Deprecated
     public abstract SimpleScheduler secondChangeAction(final Consumer<Integer> paramConsumer);
 
     /**
@@ -181,7 +231,9 @@ public abstract class SimpleScheduler {
      *
      * @param paramConsumer the action to perform
      * @return this instance
+     * @deprecated Use {@link SimpleScheduler#changeAction(Consumer)} instead
      */
+    @Deprecated
     public abstract SimpleScheduler periodChangeAction(final Consumer<Long> paramConsumer);
 
     /**
@@ -230,10 +282,23 @@ public abstract class SimpleScheduler {
      *
      * @param paramTimeCondition the condition that the timer
      *                           must complete
-     * @param paramInt the timer second
+     * @param paramInt the time
      * @param paramConsumer the action to perform
      * @return this instance
      */
+    public abstract SimpleScheduler condition(final TimeCondition paramTimeCondition, final long paramInt, final Consumer<Long> paramConsumer);
+
+    /**
+     * Add a conditional action
+     *
+     * @param paramTimeCondition the condition that the timer
+     *                           must complete
+     * @param paramInt the timer second
+     * @param paramConsumer the action to perform
+     * @return this instance
+     * @deprecated Use {@link SimpleScheduler#condition(TimeCondition, long, Consumer)} instead
+     */
+    @Deprecated
     public abstract SimpleScheduler conditionalAction(final TimeCondition paramTimeCondition, final int paramInt, final Consumer<Integer> paramConsumer);
 
     /**
@@ -243,7 +308,9 @@ public abstract class SimpleScheduler {
      * @param paramLong the timer millisecond
      * @param paramConsumer the action to perform
      * @return this instance
+     * @deprecated Use {@link SimpleScheduler#condition(TimeCondition, long, Consumer)} instead
      */
+    @Deprecated
     public abstract SimpleScheduler conditionalPeriodAction(final TimeCondition paramTimeCondition, final long paramLong, final Consumer<Long> paramConsumer);
 
     /**
@@ -310,23 +377,9 @@ public abstract class SimpleScheduler {
      * @param unit the time unit
      * @return the timer time in the specified time unit if possible
      */
-    public final long getTime(final TimeUnit unit) {
+    public final long getTime(final SchedulerUnit unit) {
         long time = getMillis();
-        switch (unit) {
-            case NANOSECONDS:
-                return TimeUnit.MILLISECONDS.toNanos(time);
-            case MICROSECONDS:
-                return TimeUnit.MILLISECONDS.toMicros(time);
-            case SECONDS:
-                return TimeUnit.MILLISECONDS.toSeconds(time);
-            case MINUTES:
-                return TimeUnit.MILLISECONDS.toMinutes(time);
-            case HOURS:
-                return TimeUnit.MILLISECONDS.toHours(time);
-            case DAYS:
-                return TimeUnit.MILLISECONDS.toDays(time);
-        }
-        return time;
+        return unit.toJavaUnit().convert(time, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -336,7 +389,7 @@ public abstract class SimpleScheduler {
      * @param name the unit name
      * @return the formatted timer time
      */
-    public final String format(final TimeUnit unit, final String name) {
+    public final String format(final SchedulerUnit unit, final String name) {
         return getTime(unit) + " " + name;
     }
 
@@ -349,52 +402,36 @@ public abstract class SimpleScheduler {
      */
     public final String timeLeft(final boolean millis) {
         long milliseconds = getMillis();
-        long seconds = getTime(TimeUnit.SECONDS);
-        long minutes = getTime(TimeUnit.MINUTES);
-        long hours = getTime(TimeUnit.HOURS);
+        long seconds = getTime(SchedulerUnit.SECOND);
+        long minutes = getTime(SchedulerUnit.MINUTE);
+        long hours = getTime(SchedulerUnit.HOUR);
+        long days = getTime(SchedulerUnit.DAY);
+
         StringBuilder builder = new StringBuilder();
+        if (days > 0L)
+            builder.append(days).append(" day(s) ");
         if (hours > 0L)
-            builder.append(hours).append(" hour(s) ");
+            if (hours > 24L) {
+                builder.append(Math.abs(days - hours)).append(" hour(s) ");
+            } else {
+                builder.append(hours).append("hour(s)");
+            }
         if (minutes > 0L)
             if (minutes > 59L) {
-                builder.append(Math.abs(hours - minutes)).append(" min(s) ");
+                builder.append(Math.abs((days - hours) - minutes)).append(" min(s) ");
             } else {
                 builder.append(minutes).append(" min(s) ");
             }
         if (seconds > 0L)
             if (seconds > 59L) {
-                builder.append(Math.abs(hours - minutes - seconds)).append(" sec(s) ");
+                builder.append(Math.abs((days - hours) - (minutes - seconds))).append(" sec(s) ");
             } else {
                 builder.append(seconds).append(" sec(s) ");
             }
         if (millis || builder.length() <= 0)
             builder.append(milliseconds).append(" ms");
+
         return builder.toString();
-    }
-
-    /**
-     * Request a synchronous task
-     *
-     * @param action the action to perform
-     * @deprecated Use {@link KarmaSource#sync()}
-     */
-    @Deprecated
-    public void requestSync(final Runnable action) {
-        try {
-            SwingUtilities.invokeAndWait(action);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    /**
-     * Request an asynchronous task
-     *
-     * @param action the action to perform
-     * @deprecated Use {@link KarmaSource#async()}
-     */
-    @Deprecated
-    public void requestAsync(final Runnable action) {
-        SwingUtilities.invokeLater(action);
     }
 
     /**
