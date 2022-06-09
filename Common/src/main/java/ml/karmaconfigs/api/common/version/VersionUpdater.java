@@ -29,9 +29,11 @@ import ml.karmaconfigs.api.common.Logger;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.karma.file.KarmaMain;
+import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
 import ml.karmaconfigs.api.common.karmafile.KarmaFile;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
+import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.FileUtilities;
@@ -48,8 +50,11 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -129,21 +134,44 @@ public abstract class VersionUpdater {
                         Files.createFile(temp);
                     Files.copy(file, temp, StandardCopyOption.REPLACE_EXISTING);
 
-                    KarmaFile kFile = new KarmaFile(tempFile); //TODO: Make use of KarmaMain#fromLegacy(KarmaFile)
-                    String version = kFile.getString("VERSION", this.source.version());
-                    String update = kFile.getString("UPDATE", "");
-                    String[] changelog = (String[]) kFile.getStringList("CHANGELOG", new String[0]).toArray((Object[]) new String[0]);
+                    AtomicReference<String> version = new AtomicReference<>("");
+                    AtomicReference<String> update = new AtomicReference<>("");
+                    AtomicReference<String[]> changelog = new AtomicReference<>(new String[0]);
+
+                    if (checkURL.toString().endsWith(".kup")) {
+                        KarmaMain kFile = new KarmaMain(temp);
+                        KarmaElement v = kFile.get("version");
+                        KarmaElement u = kFile.get("update_url");
+                        KarmaElement c = kFile.get("changelog");
+
+                        if (v.isString() && u.isString() && c.isString()) {
+                            version.set(v.getObjet().getString());
+                            update.set(u.getObjet().getString());
+
+                            List<String> tmpChangelog = new ArrayList<>();
+                            c.getArray().forEach((element) -> tmpChangelog.add(element.getObjet().textValue()));
+
+                            changelog.set(tmpChangelog.toArray(new String[0]));
+                        } else {
+                            asyncLateScheduler.complete(null, new Error("Cannot read properties correctly from karma updater file"));
+                        }
+                    } else {
+                        KarmaFile kFile = new KarmaFile(tempFile);
+                        version.set(kFile.getString("VERSION", this.source.version()));
+                        update.set(kFile.getString("UPDATE", ""));
+                        changelog.set((String[]) kFile.getStringList("CHANGELOG", new String[0]).toArray((Object[]) new String[0]));
+                    }
 
                     ComparatorBuilder builder;
                     VersionComparator comparator;
                     switch (this.versionType) {
                         case ID:
-                            updated = this.source.version().equals(version);
+                            updated = this.source.version().equals(version.get());
                             break;
                         case RESOLVABLE_ID:
                             builder = VersionComparator.createBuilder()
                                     .currentVersion(versionResolver.resolve(source.version()))
-                                    .checkVersion(versionResolver.resolve(version));
+                                    .checkVersion(versionResolver.resolve(version.get()));
                             comparator = StringUtils.compareTo(builder);
 
                             updated = comparator.isUpToDate();
@@ -151,13 +179,13 @@ public abstract class VersionUpdater {
                         default:
                             builder = VersionComparator.createBuilder()
                                     .currentVersion(source.version())
-                                    .checkVersion(version);
+                                    .checkVersion(version.get());
                             comparator = StringUtils.compareTo(builder);
 
                             updated = comparator.isUpToDate();
                             break;
                     }
-                    VersionFetchResult result = new VersionFetchResult(updated, version, this.source.version(), update, changelog, this.versionResolver);
+                    VersionFetchResult result = new VersionFetchResult(updated, version.get(), this.source.version(), update.get(), changelog.get(), this.versionResolver);
                     results.put(this.source, result);
                     asyncLateScheduler.complete(result);
                 } catch (Throwable ex) {
@@ -302,20 +330,21 @@ public abstract class VersionUpdater {
          * @throws IllegalStateException if something goes wrong
          */
         public VersionUpdater build() throws IllegalStateException {
-            if (!StringUtils.isNullOrEmpty(URLUtils.getOrNull(source.updateURL())) && source.updateURL().endsWith(".kupdter")) {
+            if (!StringUtils.isNullOrEmpty(URLUtils.getOrNull(source.updateURL())) && (source.updateURL().endsWith(".kupdter") || source.updateURL().endsWith(".kup"))) {
                 VersionUpdater analyzer = VersionUpdater.instance();
                 analyzer.source = this.source;
                 analyzer.checkURL = URLUtils.getOrNull(source.updateURL());
                 analyzer.versionType = this.versionType;
                 if (this.versionType.equals(VersionCheckType.RESOLVABLE_ID) && this.versionResolver == null)
                     throw new IllegalStateException("Cannot build a version updater with null version resolver and using RESOLVABLE_ID version type");
+
                 analyzer.versionResolver = this.versionResolver;
                 return analyzer;
             } else {
                 if (StringUtils.isNullOrEmpty(URLUtils.getOrNull(source.updateURL()))) {
                     throw new IllegalStateException("Cannot build a version builder from null update URL");
                 } else {
-                    throw new IllegalStateException("Cannot build a version updater with null/invalid version check URL [" + source.updateURL() + "] ( update url must be a .kupdter file )");
+                    throw new IllegalStateException("Cannot build a version updater with null/invalid version check URL [" + source.updateURL() + "] ( update url must be a .kupdter or .kup file )");
                 }
             }
         }
