@@ -54,14 +54,6 @@ public enum InteractAction {
      */
     RIGHT_CLICK_AIR,
     /**
-     * Item dropped
-     */
-    DROP_ITEM,
-    /**
-     * Item pickup-ed
-     */
-    PICKUP_ITEM,
-    /**
      * Entity jumped on soil
      */
     JUMP_SOIL,
@@ -69,6 +61,14 @@ public enum InteractAction {
      * Entity press pressure plate
      */
     PRESSURE_PLATE,
+    /**
+     * Entity press a button
+     */
+    PRESS_BUTTON,
+    /**
+     * Entity press a lever
+     */
+    PRESS_LEVER,
     /**
      * Entity triggers redstone ore
      */

@@ -139,7 +139,7 @@ public abstract class VersionUpdater {
                     AtomicReference<String[]> changelog = new AtomicReference<>(new String[0]);
 
                     if (checkURL.toString().endsWith(".kup")) {
-                        KarmaMain kFile = new KarmaMain(temp);
+                        KarmaMain kFile = new KarmaMain(source, temp);
                         KarmaElement v = kFile.get("version");
                         KarmaElement u = kFile.get("update_url");
                         KarmaElement c = kFile.get("changelog");

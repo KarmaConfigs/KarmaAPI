@@ -97,7 +97,7 @@ public abstract class Cuboid implements Serializable {
                 File destination = new File(pluginsFolder, "BKCommonLib.jar");
 
                 ResourceDownloader downloader = new ResourceDownloader(destination,  URLUtils.getOrBackup(
-                        "https://karmadev.es/dl/bkcommonlib/plugin.jar", "https://karmarepo.000webhostapp.com/dl/bkcommonlib/plugin.jar").toString());
+                        "https://ci.mg-dev.eu/job/BKCommonLib/1334/artifact/target/BKCommonLib-1.19-v1-1334.jar").toString());
                 downloader.download();
 
                 try {
@@ -125,6 +125,8 @@ public abstract class Cuboid implements Serializable {
 
                 manager.registerEvents(dummy, plugin);
                 manager.registerEvents(blocks, plugin);
+
+                source.console().send("Registered region event listeners", Level.INFO);
             }
         }
 
@@ -256,6 +258,16 @@ public abstract class Cuboid implements Serializable {
      * region
      */
     public abstract boolean isInside(final Block block);
+
+    /**
+     * Get if the location is inside the
+     * region
+     *
+     * @param location the location
+     * @return if the location is inside the
+     * region
+     */
+    public abstract boolean isInside(final Location location);
 
     /**
      * Get if the entity is inside the

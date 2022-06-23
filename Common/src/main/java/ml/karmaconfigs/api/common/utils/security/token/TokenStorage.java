@@ -29,6 +29,8 @@ import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.KarmaMain;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaObject;
+import ml.karmaconfigs.api.common.karmafile.KarmaFile;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.security.data.PBECryptoAPI;
 import ml.karmaconfigs.api.common.utils.security.token.exception.TokenExpiredException;
 import ml.karmaconfigs.api.common.utils.security.token.exception.TokenIncorrectPasswordException;
@@ -57,6 +59,33 @@ public final class TokenStorage {
      */
     public TokenStorage(final KarmaSource src) {
         this.source = src;
+    }
+
+    /**
+     * Migrate from legacy token to modern token
+     *
+     * @param tokenId the token ID to migrate
+     */
+    @SuppressWarnings("deprecation")
+    public void migrate(final UUID tokenId) {
+        KarmaFile tokenFile = new KarmaFile(source, tokenId.toString().replace("-", ""), "cache", "tokens");
+        if (tokenFile.exists()) {
+            String storedToken = tokenFile.getString("TOKEN", "");
+            String storedSalt = tokenFile.getString("SALT", "");
+            String storedExpiration = tokenFile.getString("EXPIRATION", "");
+
+            tokenFile.delete();
+
+            KarmaMain main = new KarmaMain(source, tokenId.toString().replace("-", ""), "cache", "tokens");
+
+            main.set("token", new KarmaObject(storedToken));
+            main.set("salt", new KarmaObject(storedSalt));
+            main.set("expiration", new KarmaObject(storedExpiration));
+
+            if (main.save()) {
+                source.console().send("Migrated successfully token {0}", Level.OK, tokenId.toString());
+            }
+        }
     }
 
     /**
@@ -96,6 +125,7 @@ public final class TokenStorage {
     public UUID store(final String token, final String password, final Instant expiration) {
         UUID tokenID = UUID.nameUUIDFromBytes(Base64.getUrlDecoder().decode(token));
         KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
+
         PBECryptoAPI api = new PBECryptoAPI(password, Base64.getUrlDecoder().decode(token));
         byte[] salt = api.generateSALT();
         tokenFile.set("salt", new KarmaObject(new String(Base64.getUrlEncoder().encode(salt))));
@@ -109,6 +139,9 @@ public final class TokenStorage {
         } else {
             tokenFile.set("expiration", new KarmaObject("N/A"));
         }
+
+        tokenFile.save();
+
         return tokenID;
     }
 
@@ -125,6 +158,7 @@ public final class TokenStorage {
      */
     public String load(final UUID tokenID, final String password) throws TokenNotFoundException, TokenExpiredException, TokenIncorrectPasswordException {
         KarmaMain tokenFile = new KarmaMain(this.source, tokenID.toString().replace("-", ""), "cache", "tokens");
+
         String token = null;
         Instant expiration = null;
         if (tokenFile.exists() && tokenFile.isSet("token") && tokenFile.isSet("salt")) {

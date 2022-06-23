@@ -119,7 +119,11 @@ public final class BukkitServer {
         String full = getFullVersion();
         full = "v" + full.replace(".", "_");
 
-        return Version.valueOf(full);
+        try {
+            return Version.valueOf(full);
+        } catch (IllegalArgumentException ex) {
+            return Version.UNKNOWN; //Do not panic. We will make this version unknown and use the latest instead
+        }
     }
 
     /**
@@ -150,7 +154,12 @@ public final class BukkitServer {
      * specified one
      */
     public static boolean isUpdated(final Version version) {
-        String current_version = version().name().replace("v", "").replace("_", ".");
+        Version current = version();
+
+        if (current == Version.UNKNOWN)
+            current = Version.values()[Version.values().length - 1];
+
+        String current_version = current.name().replace("v", "").replace("_", ".");
         String check_version = version.name().replace("v", "").replace("_", ".");
 
         ComparatorBuilder builder = VersionComparator.createBuilder()

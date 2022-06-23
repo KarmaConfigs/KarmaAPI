@@ -290,6 +290,24 @@ public class KarmaArray extends KarmaElement implements Iterable<KarmaElement> {
     }
 
     /**
+     * Get the array size
+     *
+     * @return the array size
+     */
+    public final int size() {
+        return elements.size();
+    }
+
+    /**
+     * Get the array elements
+     *
+     * @return the array elements
+     */
+    public final Set<KarmaElement> getElements() {
+        return new LinkedHashSet<>(elements);
+    }
+
+    /**
      * Returns an iterator over elements of type {@code T}.
      *
      * @return an Iterator.

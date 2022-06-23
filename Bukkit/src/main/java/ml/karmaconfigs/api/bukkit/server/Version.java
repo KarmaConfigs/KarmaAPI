@@ -83,5 +83,8 @@ public enum Version {
     /** Minecraft 1.18 version */ v1_18,
     /** Minecraft 1.18.1 version */ v1_18_1,
     /** Minecraft 1.18.2 version */ v1_18_2,
-    /** Minecraft 1.18.3 version */ v1_18_3,
+    /** Minecraft 1.19 version */ v1_19,
+    /** Minecraft 1.19 version */ v1_19_1,
+    /** Minecraft 1.19 version */ v1_19_2,
+    /** Minecraft unknown version */ UNKNOWN,
 }

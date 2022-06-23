@@ -255,7 +255,7 @@ public class Region extends Cuboid implements Serializable {
     public boolean exists(KarmaPlugin owner) {
         Path regionFile = owner.getDataPath().resolve("cache").resolve("regions").resolve(token + ".region");
         if (Files.exists(regionFile)) {
-            KarmaMain file = new KarmaMain(regionFile);
+            KarmaMain file = new KarmaMain(owner, regionFile);
             if (file.isSet("region")) {
                 KarmaElement result = file.get("region");
                 if (result.isString()) {
@@ -447,6 +447,27 @@ public class Region extends Cuboid implements Serializable {
     }
 
     /**
+     * Get if the location is inside the
+     * region
+     *
+     * @param location the location
+     * @return if the location is inside the
+     * region
+     */
+    @Override
+    public boolean isInside(Location location) {
+        World world = Bukkit.getWorld(worldId);
+
+        return location.getWorld() == world
+                && location.getBlockX() >= xMin
+                && location.getBlockX() <= xMax
+                && location.getBlockY() >= yMin
+                && location.getBlockY() <= yMax
+                && location.getBlockZ() >= zMin
+                && location.getBlockZ() <= zMax;
+    }
+
+    /**
      * Get if the entity is inside the
      * region
      *
@@ -527,7 +548,7 @@ public class Region extends Cuboid implements Serializable {
         if (!exists(owner)) {
             Path regionFile = owner.getDataPath().resolve("cache").resolve("regions").resolve(token + ".region");
 
-            KarmaMain file = new KarmaMain(regionFile);
+            KarmaMain file = new KarmaMain(owner, regionFile);
             file.set("region", new KarmaObject(StringUtils.serialize(this)));
         }
     }
@@ -547,7 +568,7 @@ public class Region extends Cuboid implements Serializable {
         String reason = "";
 
         if (Files.exists(regionFile)) {
-            KarmaMain file = new KarmaMain(regionFile);
+            KarmaMain file = new KarmaMain(owner, regionFile);
             if (file.isSet("region")) {
                 KarmaElement result = file.get("region", null);
                 if (result.isString()) {

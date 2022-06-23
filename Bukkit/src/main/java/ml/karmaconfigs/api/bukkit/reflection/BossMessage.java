@@ -46,6 +46,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Karma boss bar message
@@ -324,6 +325,8 @@ public final class BossMessage extends BossProvider<Player> {
         if (isLegacy) {
             try {
                 for (final Player player : players) {
+                    AtomicBoolean showing = new AtomicBoolean(false);
+
                     if (!shown.contains(player.getUniqueId())) {
                         shown.add(player.getUniqueId());
                         Location location = player.getLocation();
@@ -331,7 +334,7 @@ public final class BossMessage extends BossProvider<Player> {
                         Object c_world = craft_world.cast(player.getWorld());
                         Object w_server = craft_world_handle.invoke(c_world);
                         Object wither = wither_constructor.newInstance(w_server);
-                        
+
                         wither.getClass().getMethod("setCustomName", String.class).invoke(wither, message);
                         wither.getClass().getMethod("setInvisible", Boolean.TYPE).invoke(wither, true);
                         wither.getClass().getMethod("setLocation", Double.TYPE, Double.TYPE, Double.TYPE, Float.TYPE, Float.TYPE).invoke(wither, location.getX(), location.getY(), location.getZ(), 0, 0);
@@ -340,67 +343,72 @@ public final class BossMessage extends BossProvider<Player> {
                         Object c_player = craft_player.cast(player);
                         Object e_player = craft_player_handle.invoke(c_player);
                         Object p_connection = e_player.getClass().getField("playerConnection").get(e_player);
-                        
-                        packet_connect_send.invoke(packet_connection.cast(p_connection), packet);
+
                         wither_objects.put(id, wither);
                         bar_timer = new SourceScheduler(plugin, live_time, SchedulerUnit.SECOND, false).cancelUnloaded(false);
 
                         bar_timer.condition(TimeCondition.OVER_OF, 2, second -> {
-                            try {
-                                newLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(20).add(new Vector(0, 5, 0)));
-                                wither_set_location_method.invoke(player, newLoc.getX(), newLoc.getY(), newLoc.getZ(), newLoc.getYaw(), newLoc.getPitch());
-                                teleport_packet = packet_play_teleport_constructor.newInstance(player);
-                                new_c_player = craft_player.cast(player);
-                                new_e_player = craft_player_handle.invoke(new_c_player);
-                                new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
-                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
-                                packet_class = BukkitServer.getMinecraftClass("Packet");
-                                packet_connect_send.invoke(packet_connection.cast(new_p_connection), teleport_packet);
-                            } catch (Throwable ex) {
-                                ex.printStackTrace();
-                                bar_timer.cancel();
+                            if (showing.get()) {
+                                try {
+                                    newLoc = player.getEyeLocation().add(player.getEyeLocation().getDirection().normalize().multiply(20).add(new Vector(0, 5, 0)));
+                                    wither_set_location_method.invoke(player, newLoc.getX(), newLoc.getY(), newLoc.getZ(), newLoc.getYaw(), newLoc.getPitch());
+                                    teleport_packet = packet_play_teleport_constructor.newInstance(player);
+                                    new_c_player = craft_player.cast(player);
+                                    new_e_player = craft_player_handle.invoke(new_c_player);
+                                    new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
+                                    packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                    packet_class = BukkitServer.getMinecraftClass("Packet");
+                                    packet_connect_send.invoke(packet_connection.cast(new_p_connection), teleport_packet);
+                                } catch (Throwable ex) {
+                                    ex.printStackTrace();
+                                    bar_timer.cancel();
+                                }
                             }
                         }).endAction(() -> {
-                            try {
-                                remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
-                                        .newInstance(player.getUniqueId());
-                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
-                                packet_class = BukkitServer.getMinecraftClass("Packet");
-                                craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
-                                if (craft_player != null) {
-                                    new_c_player = craft_player.cast(player);
-                                    new_e_player = craft_player_handle.invoke(new_c_player);
-                                    new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
-                                    packet_connect_send.invoke(packet_connection.cast(new_p_connection), remove_wither);
-                                    boss_bars.remove(id);
-                                    wither_objects.remove(id);
-                                    shown.remove(player.getUniqueId());
-                                    --bars;
+                            if (showing.get()) {
+                                try {
+                                    remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
+                                            .newInstance(player.getUniqueId());
+                                    packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                    packet_class = BukkitServer.getMinecraftClass("Packet");
+                                    craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
+                                    if (craft_player != null) {
+                                        new_c_player = craft_player.cast(player);
+                                        new_e_player = craft_player_handle.invoke(new_c_player);
+                                        new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
+                                        packet_connect_send.invoke(packet_connection.cast(new_p_connection), remove_wither);
+                                        boss_bars.remove(id);
+                                        wither_objects.remove(id);
+                                        shown.remove(player.getUniqueId());
+                                        --bars;
+                                    }
+                                } catch (Throwable ex2) {
+                                    ex2.printStackTrace();
+                                    bar_timer.cancel();
                                 }
-                            } catch (Throwable ex2) {
-                                ex2.printStackTrace();
-                                bar_timer.cancel();
                             }
                         }).cancelAction(time -> {
-                            try {
-                                remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
-                                        .newInstance(player.getUniqueId());
-                                packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
-                                packet_class = BukkitServer.getMinecraftClass("Packet");
-                                craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
-                                if (craft_player != null) {
-                                    new_c_player = craft_player.cast(player);
-                                    new_e_player = craft_player_handle.invoke(new_c_player);
-                                    new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
-                                    packet_connect_send.invoke(packet_connection.cast(new_p_connection), remove_wither);
-                                    boss_bars.remove(id);
-                                    wither_objects.remove(id);
-                                    shown.remove(player.getUniqueId());
-                                    --bars;
+                            if (showing.get()) {
+                                try {
+                                    remove_wither = packet_play_out_destroy.getConstructor(BukkitServer.getMinecraftClass("EntityLiving"))
+                                            .newInstance(player.getUniqueId());
+                                    packet_connection = BukkitServer.getMinecraftClass("PlayerConnection");
+                                    packet_class = BukkitServer.getMinecraftClass("Packet");
+                                    craft_player = BukkitServer.getMinecraftClass("entity.CraftPlayer");
+                                    if (craft_player != null) {
+                                        new_c_player = craft_player.cast(player);
+                                        new_e_player = craft_player_handle.invoke(new_c_player);
+                                        new_p_connection = new_e_player.getClass().getField("playerConnection").get(new_e_player);
+                                        packet_connect_send.invoke(packet_connection.cast(new_p_connection), remove_wither);
+                                        boss_bars.remove(id);
+                                        wither_objects.remove(id);
+                                        shown.remove(player.getUniqueId());
+                                        --bars;
+                                    }
+                                } catch (Throwable ex3) {
+                                    ex3.printStackTrace();
+                                    bar_timer.cancel();
                                 }
-                            } catch (Throwable ex3) {
-                                ex3.printStackTrace();
-                                bar_timer.cancel();
                             }
                         }).start();
                         
@@ -415,7 +423,7 @@ public final class BossMessage extends BossProvider<Player> {
                                             percentage = lived_time / live_time;
                                             wither_set_progress_method.invoke(wither, (toFloat ? ((float) percentage) : percentage));
 
-                                            lived_time--;
+                                            lived_time++;
                                             break;
                                         }
                                         case DOWN: {
@@ -425,6 +433,11 @@ public final class BossMessage extends BossProvider<Player> {
                                             lived_time--;
                                             break;
                                         }
+                                    }
+
+                                    if (!showing.get()) {
+                                        packet_connect_send.invoke(packet_connection.cast(p_connection), packet);
+                                        showing.set(true);
                                     }
                                 } catch (Throwable ex5) {
                                     cancel();
@@ -446,7 +459,6 @@ public final class BossMessage extends BossProvider<Player> {
                 wither.addPlayer(player2);
             }
 
-            wither.setVisible(true);
             wither_objects.put(id, wither);
             bar_timer = new SourceScheduler(plugin, live_time, SchedulerUnit.SECOND, false).cancelUnloaded(false);
 
@@ -495,6 +507,10 @@ public final class BossMessage extends BossProvider<Player> {
                                 lived_time--;
                                 break;
                             }
+                        }
+
+                        if (!wither.isVisible()) {
+                            wither.setVisible(true);
                         }
                     } catch (Throwable ex6) {
                         cancel();

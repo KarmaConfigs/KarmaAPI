@@ -98,7 +98,7 @@ public abstract class KarmaElement {
         if (this instanceof KarmaArray) {
             return (KarmaArray) this;
         } else {
-            throw new NotTypeError(this, KarmaObject.class);
+            throw new NotTypeError(this, KarmaArray.class);
         }
     }
 
@@ -111,7 +111,7 @@ public abstract class KarmaElement {
         if (this instanceof KarmaKeyArray) {
             return (KarmaKeyArray) this;
         } else {
-            throw new NotTypeError(this, KarmaObject.class);
+            throw new NotTypeError(this, KarmaKeyArray.class);
         }
     }
 }

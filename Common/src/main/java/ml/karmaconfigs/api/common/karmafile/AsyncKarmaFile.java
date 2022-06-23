@@ -1091,6 +1091,16 @@ public final class AsyncKarmaFile implements Serializable {
     }
 
     /**
+     * Just creates a KarmaFile instance with
+     * the current file
+     *
+     * @return the synchronous version of the editor
+     */
+    public KarmaFile synchronize() {
+        return new KarmaFile(file);
+    }
+
+    /**
      * Get the karma file as string
      *
      * @return the karma file as string

@@ -25,6 +25,7 @@ package ml.karmaconfigs.api.common.karma.file;
  *  SOFTWARE.
  */
 
+import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaArray;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
@@ -69,8 +70,8 @@ public final class KarmaConfig {
                 }
             }
 
-            tmp = new KarmaMain(dst);
-            tmp.preCache();
+            tmp = new KarmaMain(APISource.getOriginal(false), dst);
+            tmp.validate();
         } catch (Throwable ex) {
             ex.printStackTrace();
         }

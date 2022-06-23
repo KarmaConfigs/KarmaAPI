@@ -41,6 +41,7 @@ import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
@@ -140,6 +141,55 @@ public abstract class KarmaPlugin implements KarmaSource {
      */
     public final PluginContainer getContainer() {
         return container;
+    }
+
+    /**
+     * Karma source name
+     *
+     * @return the source name
+     */
+    @Override
+    public String name() {
+        AtomicReference<String> name = new AtomicReference<>("");
+        getContainer().getDescription().getName().ifPresent(name::set);
+
+        return name.get();
+    }
+
+    /**
+     * Karma source version
+     *
+     * @return the source version
+     */
+    @Override
+    public String version() {
+        AtomicReference<String> version = new AtomicReference<>("");
+        getContainer().getDescription().getVersion().ifPresent(version::set);
+
+        return version.get();
+    }
+
+    /**
+     * Karma source description
+     *
+     * @return the source description
+     */
+    @Override
+    public String description() {
+        AtomicReference<String> description = new AtomicReference<>("");
+        getContainer().getDescription().getDescription().ifPresent(description::set);
+
+        return description.get();
+    }
+
+    /**
+     * Karma source authors
+     *
+     * @return the source authors
+     */
+    @Override
+    public String[] authors() {
+        return getContainer().getDescription().getAuthors().toArray(new String[0]);
     }
 
     /**

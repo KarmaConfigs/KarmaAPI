@@ -1,5 +1,6 @@
 package ml.karmaconfigs.api.common.karma.file;
 
+import ml.karmaconfigs.api.common.karma.APISource;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaArray;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
@@ -11,6 +12,7 @@ import ml.karmaconfigs.api.common.karmafile.KarmaFile;
 import ml.karmaconfigs.api.common.karmafile.Key;
 import ml.karmaconfigs.api.common.timer.scheduler.LateScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.worker.AsyncLateScheduler;
+import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.file.PathUtilities;
 import ml.karmaconfigs.api.common.utils.string.OptionsBuilder;
 import ml.karmaconfigs.api.common.utils.string.RandomString;
@@ -40,7 +42,6 @@ public class KarmaMain {
     private final Map<KarmaElement, String> reverse = new LinkedHashMap<>();
     private final Map<String, Integer> indexes = new HashMap<>();
 
-    private boolean destroy = true;
     private String raw = "";
     private InputStream internal = null;
 
@@ -67,25 +68,51 @@ public class KarmaMain {
      * @param doc the file that must be read
      * @throws IllegalStateException if something goes wrong
      */
-    public KarmaMain(final Path doc) throws RuntimeException {
-        document = doc;
+    public KarmaMain(final KarmaSource source, final Path doc) throws RuntimeException {
+        if (source.migrateLegacyKarmaFile()) {
+            List<String> lines = PathUtilities.readAllLines(doc);
 
-        if (!Files.exists(doc)) {
-            PathUtilities.create(doc);
-            try {
-                Files.write(doc, "(\"main\"\n)".getBytes(StandardCharsets.UTF_8));
-            } catch (Throwable ex) {
-                throw new RuntimeException(ex);
-            }
+            if (!lines.isEmpty()) {
+                String first = lines.get(0);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                //Destroy unless modifications are done in the file
-                if (destroy) {
-                    PathUtilities.destroy(document);
+                if (!first.startsWith("(") && !first.startsWith("(\"main\"")) {
+                    KarmaConfig config = new KarmaConfig();
+
+                    //Must be migrated
+                    if (config.debug(Level.WARNING)) {
+                        source.console().send("Preparing to migrate from legacy karma file {0} to modern format", Level.WARNING, PathUtilities.getPrettyPath(doc));
+                    }
+
+                    try {
+                        @SuppressWarnings("deprecation")
+                        KarmaMain migrated = KarmaMain.fromLegacy(source, new KarmaFile(doc));
+                        if (migrated.save(doc)) {
+                            if (config.debug(Level.OK)) {
+                                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(doc));
+                            }
+                        } else {
+                            if (config.log(Level.WARNING)) {
+                                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(doc));
+                            }
+                            if (config.debug(Level.GRAVE)) {
+                                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(doc));
+                            }
+                        }
+                    } catch (Throwable ex) {
+                        if (config.log(Level.GRAVE)) {
+                            source.logger().scheduleLog(Level.GRAVE, ex);
+                            source.logger().scheduleLog(Level.INFO, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(doc));
+                        }
+
+                        if (config.debug(Level.GRAVE)) {
+                            source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(doc));
+                        }
+                    }
                 }
-            }));
+            }
         }
 
+        document = doc;
         preCache();
     }
 
@@ -102,20 +129,48 @@ public class KarmaMain {
             main = main.resolve(str);
 
         document = main.resolve(name);
-        if (!Files.exists(document)) {
-            PathUtilities.create(document);
-            try {
-                Files.write(document, "(\"main\"\n)".getBytes(StandardCharsets.UTF_8));
-            } catch (Throwable ex) {
-                throw new RuntimeException(ex);
-            }
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                //Destroy unless modifications are done in the file
-                if (destroy) {
-                    PathUtilities.destroy(document);
+        if (source.migrateLegacyKarmaFile()) {
+            List<String> lines = PathUtilities.readAllLines(document);
+
+            if (!lines.isEmpty()) {
+                String first = lines.get(0);
+
+                if (!first.startsWith("(") && !first.startsWith("(\"main\"")) {
+                    KarmaConfig config = new KarmaConfig();
+
+                    //Must be migrated
+                    if (config.debug(Level.WARNING)) {
+                        source.console().send("Preparing to migrate from legacy karma file {0} to modern format", Level.WARNING, PathUtilities.getPrettyPath(document));
+                    }
+
+                    try {
+                        @SuppressWarnings("deprecation")
+                        KarmaMain migrated = KarmaMain.fromLegacy(source, new KarmaFile(document));
+                        if (migrated.save(document)) {
+                            if (config.debug(Level.OK)) {
+                                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
+                            }
+                        } else {
+                            if (config.log(Level.WARNING)) {
+                                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+                            }
+                            if (config.debug(Level.GRAVE)) {
+                                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
+                            }
+                        }
+                    } catch (Throwable ex) {
+                        if (config.log(Level.GRAVE)) {
+                            source.logger().scheduleLog(Level.GRAVE, ex);
+                            source.logger().scheduleLog(Level.INFO, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+                        }
+
+                        if (config.debug(Level.GRAVE)) {
+                            source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
+                        }
+                    }
                 }
-            }));
+            }
         }
 
         preCache();
@@ -133,13 +188,12 @@ public class KarmaMain {
                 .withContent(TextContent.NUMBERS_AND_LETTERS)
                 .withSize(16)
                 .withType(TextType.RANDOM_SIZE);
+
         String random = StringUtils.generateString(builder).create();
         document = Files.createTempFile(random, "-kf");
         Files.copy(doc, document, StandardCopyOption.REPLACE_EXISTING);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            PathUtilities.destroy(document);
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> PathUtilities.destroy(document)));
 
         preCache();
     }
@@ -191,127 +245,132 @@ public class KarmaMain {
             if (lines.isEmpty() && internal != null) {
                 try {
                     Files.copy(internal, document, StandardCopyOption.REPLACE_EXISTING);
+                    lines = PathUtilities.readAllLines(document);
                 } catch (Throwable ignored) {
                 }
             }
 
-            String fileLines = StringUtils.listToString(lines, false);
-            Pattern blockComment = Pattern.compile("\\*\\((?:.|[\\n\\r])*?\\)\\*|\\*/.*");
-            Set<String> comments = new LinkedHashSet<>();
-            Matcher commentMatcher = blockComment.matcher(fileLines);
-            String remove_string = StringUtils.generateString(RandomString.createBuilder().withSize(32)).create();
-            while (commentMatcher.find()) {
-                int start = commentMatcher.start();
-                int end = commentMatcher.end();
+            if (!lines.isEmpty()) {
+                String fileLines = StringUtils.listToString(lines, false);
+                Pattern blockComment = Pattern.compile("\\*\\((?:.|[\\n\\r])*?\\)\\*|\\*/.*");
+                Set<String> comments = new LinkedHashSet<>();
+                Matcher commentMatcher = blockComment.matcher(fileLines);
+                String remove_string = StringUtils.generateString(RandomString.createBuilder().withSize(32)).create();
+                while (commentMatcher.find()) {
+                    int start = commentMatcher.start();
+                    int end = commentMatcher.end();
 
-                comments.add(fileLines.substring(start, end));
-            }
-
-            for (String comment : comments) {
-                fileLines = fileLines.replace(comment, remove_string);
-            }
-
-            String[] data = fileLines.split("\n");
-            StringBuilder builder = new StringBuilder();
-            for (String fl : data) {
-                if (!fl.replaceAll("\\s", "").equals(remove_string)) {
-                    builder.append(fl).append("\n");
+                    comments.add(fileLines.substring(start, end));
                 }
-            }
-            String result = builder.toString();
-            lines = new ArrayList<>(Arrays.asList(StringUtils.replaceLast(result, "\n", "").split("\n")));
 
-            StringBuilder rawBuilder = new StringBuilder();
+                for (String comment : comments) {
+                    fileLines = fileLines.replace(comment, remove_string);
+                }
 
-            boolean underComment = false;
-            boolean jump = true;
-            boolean parsedFirst = false;
-
-            String breaking = null;
-            int index = 0;
-
-            Set<String> added = new HashSet<>();
-            for (String line : lines) {
-                if (!line.replaceAll("\\s", "").startsWith("*/")) {
-                    int size = line.length();
-                    indexes.put(line, ++index);
-
-                    if (breaking != null) {
-                        throw new KarmaFormatException(document, breaking, index);
+                String[] data = fileLines.split("\n");
+                StringBuilder builder = new StringBuilder();
+                for (String fl : data) {
+                    if (!fl.replaceAll("\\s", "").equals(remove_string)) {
+                        builder.append(fl).append("\n");
                     }
+                }
+                String result = builder.toString();
+                lines = new ArrayList<>(Arrays.asList(StringUtils.replaceLast(result, "\n", "").split("\n")));
 
-                    boolean string = false;
-                    for (int i = 0; i < size; i++) {
-                        char current = line.charAt(i);
-                        int nextIndex = (i + 1 != size ? i + 1 : i);
-                        char next = line.charAt(nextIndex);
+                StringBuilder rawBuilder = new StringBuilder();
 
-                        if (!underComment) {
-                            jump = true;
+                boolean underComment = false;
+                boolean jump = true;
+                boolean parsedFirst = false;
 
-                            if (current == '*') {
-                                if (next == '(') {
-                                    underComment = true;
-                                    jump = false;
-                                } else {
-                                    i = size;
-                                    continue;
-                                }
-                            }
+                String breaking = null;
+                int index = 0;
+
+                Set<String> added = new HashSet<>();
+                for (String line : lines) {
+                    if (!line.replaceAll("\\s", "").startsWith("*/")) {
+                        int size = line.length();
+                        indexes.put(line, ++index);
+
+                        if (breaking != null) {
+                            throw new KarmaFormatException(document, breaking, index);
+                        }
+
+                        boolean string = false;
+                        for (int i = 0; i < size; i++) {
+                            char current = line.charAt(i);
+                            int nextIndex = (i + 1 != size ? i + 1 : i);
+                            char next = line.charAt(nextIndex);
 
                             if (!underComment) {
-                                if (current == '(') {
-                                    if (next != '"') {
-                                        if (!parsedFirst) {
-                                            parsedFirst = true;
-                                            added.add("main");
-                                            indexes.put("main", index);
-                                        } else {
-                                            breaking = "Error, found invalid section definition at " + line + ", it must be (\"x\" where 'x' is any value!";
-                                        }
+                                jump = true;
+
+                                if (current == '*') {
+                                    if (next == '(') {
+                                        underComment = true;
+                                        jump = false;
                                     } else {
-                                        StringBuilder secName = new StringBuilder();
-                                        boolean broke = false;
-                                        for (int x = (nextIndex + 1); x < size; x++) {
-                                            char tmp = line.charAt(x);
-                                            if (tmp == '"') {
-                                                broke = true;
-                                                break;
-                                            }
-
-                                            secName.append(tmp);
-                                        }
-
-                                        if (broke) {
-                                            String section = secName.toString();
-                                            if (!added.contains(section)) {
-                                                added.add(section);
-                                                indexes.put(section, index);
-                                            } else {
-                                                breaking = "Error, found repeated section definition " + section;
-                                            }
-                                        } else {
-                                            breaking = "Error, found invalid section definition at " + line + ", it must be (\"x\" where 'x' is any value!";
-                                        }
+                                        i = size;
+                                        continue;
                                     }
                                 }
 
-                                if (current == '"')
-                                    string = !string;
+                                if (!underComment) {
+                                    if (current == '(') {
+                                        if (next != '"') {
+                                            if (!parsedFirst) {
+                                                parsedFirst = true;
+                                                added.add("main");
+                                                indexes.put("main", index);
+                                            } else {
+                                                breaking = "Error, found invalid section definition at " + line + ", it must be (\"x\" where 'x' is any value!";
+                                            }
+                                        } else {
+                                            StringBuilder secName = new StringBuilder();
+                                            boolean broke = false;
+                                            for (int x = (nextIndex + 1); x < size; x++) {
+                                                char tmp = line.charAt(x);
+                                                if (tmp == '"') {
+                                                    broke = true;
+                                                    break;
+                                                }
 
-                                if (!string) {
-                                    char prev = line.charAt((i != 0 ? (i - 1) : 0));
-                                    char prev1 = line.charAt((i > 2 ? i - 2 : 0));
-                                    if (current == '-' && next == '>') {
-                                        char cont = line.charAt((nextIndex + 1 != size ? (nextIndex + 1) : nextIndex));
-                                        char cont1 = line.charAt((nextIndex + 2 != size ? (nextIndex + 2) : nextIndex));
+                                                secName.append(tmp);
+                                            }
 
-                                        boolean error = false;
-                                        if (Character.isSpaceChar(prev)) {
-                                            if (!Character.isSpaceChar(prev1)) {
-                                                if (Character.isSpaceChar(cont)) {
-                                                    if (!Character.isSpaceChar(cont1)) {
-                                                        rawBuilder.append(current);
+                                            if (broke) {
+                                                String section = secName.toString();
+                                                if (!added.contains(section)) {
+                                                    added.add(section);
+                                                    indexes.put(section, index);
+                                                } else {
+                                                    breaking = "Error, found repeated section definition " + section;
+                                                }
+                                            } else {
+                                                breaking = "Error, found invalid section definition at " + line + ", it must be (\"x\" where 'x' is any value!";
+                                            }
+                                        }
+                                    }
+
+                                    if (current == '"')
+                                        string = !string;
+
+                                    if (!string) {
+                                        char prev = line.charAt((i != 0 ? (i - 1) : 0));
+                                        char prev1 = line.charAt((i > 2 ? i - 2 : 0));
+                                        if (current == '-' && next == '>') {
+                                            char cont = line.charAt((nextIndex + 1 != (size - 1) ? (nextIndex + 1) : nextIndex));
+                                            char cont1 = line.charAt((nextIndex + 2 != (size - 1) ? (nextIndex + 2) : nextIndex));
+
+                                            boolean error = false;
+                                            if (Character.isSpaceChar(prev)) {
+                                                if (!Character.isSpaceChar(prev1)) {
+                                                    if (Character.isSpaceChar(cont)) {
+                                                        if (!Character.isSpaceChar(cont1)) {
+                                                            rawBuilder.append(current);
+                                                        } else {
+                                                            error = true;
+                                                        }
                                                     } else {
                                                         error = true;
                                                     }
@@ -319,186 +378,122 @@ public class KarmaMain {
                                                     error = true;
                                                 }
                                             } else {
-                                                error = true;
+                                                if (prev == '<') {
+                                                    error = !Character.isSpaceChar(prev1);
+                                                } else {
+                                                    error = true;
+                                                }
+                                            }
+
+                                            if (error) {
+                                                breaking = "Error, found invalid key -> value definition at " + line + ". It must be 'Key' -> \"Value\"";
                                             }
                                         } else {
-                                            if (prev == '<') {
-                                                error = !Character.isSpaceChar(prev1);
-                                            } else {
-                                                error = true;
-                                            }
-                                        }
+                                            if (prev == '-' && prev1 == '<')
+                                                rawBuilder.append(prev);
 
-                                        if (error) {
-                                            breaking = "Error, found invalid key -> value definition at " + line + ". It must be 'Key' -> \"Value\"";
+                                            rawBuilder.append(current);
                                         }
                                     } else {
-                                        if (prev == '-' && prev1 == '<')
-                                            rawBuilder.append(prev);
-
                                         rawBuilder.append(current);
                                     }
-                                } else {
-                                    rawBuilder.append(current);
+                                }
+                            } else {
+                                underComment = current != ')' && next != '*';
+                                if (!underComment) {
+                                    i++;
+                                    jump = true;
                                 }
                             }
-                        } else {
-                            underComment = current != ')' && next != '*';
-                            if (!underComment) {
-                                i++;
-                                jump = true;
-                            }
+                        }
+
+                        if (jump) {
+                            rawBuilder.append("\n");
                         }
                     }
+                }
 
-                    if (jump) {
-                        rawBuilder.append("\n");
+                //We need raw text to parse easily the data...
+                raw = rawBuilder.toString();
+                String[] tmp = raw.split("\n");
+                for (int i = 0; i < tmp.length; i++) {
+                    if (!StringUtils.isNullOrEmpty(tmp[i])) {
+                        raw = rawBuilder.substring(i);
+                        break;
                     }
                 }
-            }
 
-            //We need raw text to parse easily the data...
-            raw = rawBuilder.toString();
-            String[] tmp = raw.split("\n");
-            for (int i = 0; i < tmp.length; i++) {
-                if (!StringUtils.isNullOrEmpty(tmp[i])) {
-                    raw = rawBuilder.substring(i);
-                    break;
-                }
-            }
+                data = raw.split("\n");
+                String main = data[0];
+                if (main.equals("(") || main.equals("(\"main\"")) {
+                    String parent = "main";
+                    for (int i = 1; i < data.length; i++) {
+                        String line = data[i];
+                        if (line.replaceAll("\\s", "").startsWith("(")) {
+                            String name = line.replaceAll("\\s", "");
+                            name = name.replaceFirst("\\(", "");
+                            name = name.replaceFirst("\"", "");
+                            name = name.substring(0, name.length() - 1);
 
-            data = raw.split("\n");
-            String main = data[0];
-            if (main.equals("(") || main.equals("(\"main\"")) {
-                String parent = "main";
-                for (int i = 1; i < data.length; i++) {
-                    String line = data[i];
-                    if (line.replaceAll("\\s", "").startsWith("(")) {
-                        String name = line.replaceAll("\\s", "");
-                        name = name.replaceFirst("\\(", "");
-                        name = name.replaceFirst("\"", "");
-                        name = name.substring(0, name.length() - 1);
+                            parent = parent + "." + name;
+                        } else {
+                            if (line.contains("->")) {
+                                boolean rec = false;
+                                Pattern pattern = Pattern.compile("' .?-> ");
+                                Matcher matcher = pattern.matcher(line);
+                                if (!matcher.find()) {
+                                    throw new KarmaFormatException(document, "Error, couldn't find valid key format -> or <-> at ( " + line + " )", indexes.getOrDefault(line, -1));
+                                }
+                                int start = matcher.start();
+                                int end = matcher.end();
+                                String match = line.substring(start + 2, end - 2).replaceAll("\\s", "");
+                                if (match.equalsIgnoreCase("<-")) {
+                                    rec = true;
+                                }
 
-                        parent = parent + "." + name;
-                    } else {
-                        if (line.contains("->")) {
-                            boolean rec = false;
-                            Pattern pattern = Pattern.compile("' .?-> ");
-                            Matcher matcher = pattern.matcher(line);
-                            if (!matcher.find()) {
-                                throw new KarmaFormatException(document, "Error, couldn't find valid key format -> or <-> at ( " + line + " )", indexes.getOrDefault(line, -1));
-                            }
-                            int start = matcher.start();
-                            int end = matcher.end();
-                            String match = line.substring(start + 2, end - 2).replaceAll("\\s", "");
-                            if (match.equalsIgnoreCase("<-")) {
-                                rec = true;
-                            }
+                                String[] dt = line.split((rec ? "<->" : "->"));
 
-                            String[] dt = line.split((rec ? "<->" : "->"));
+                                String tmpName = dt[0].replaceAll("\\s", "");
+                                if (!tmpName.startsWith("'") && !tmpName.endsWith("'"))
+                                    throw new KarmaFormatException(document, "Error, invalid key format, it must be 'x' where x is any value", indexes.getOrDefault(line, -1));
 
-                            String tmpName = dt[0].replaceAll("\\s", "");
-                            if (!tmpName.startsWith("'") && !tmpName.endsWith("'"))
-                                throw new KarmaFormatException(document, "Error, invalid key format, it must be 'x' where x is any value", indexes.getOrDefault(line, -1));
+                                String name = StringUtils.replaceLast(dt[0].replaceFirst("'", ""), "'", "");
+                                String key = parent + "." + name.replaceAll("\\s", "");
+                                StringBuilder value = new StringBuilder();
+                                for (int x = 1; x < dt.length; x++) {
+                                    value.append(dt[x]).append((x != dt.length - 1 ? (rec ? "<->" : "->") : ""));
+                                }
 
-                            String name = StringUtils.replaceLast(dt[0].replaceFirst("'", ""), "'", "");
-                            String key = parent + "." + name.replaceAll("\\s", "");
-                            StringBuilder value = new StringBuilder();
-                            for (int x = 1; x < dt.length; x++) {
-                                value.append(dt[x]).append((x != dt.length - 1 ? (rec ? "<->" : "->") : ""));
-                            }
+                                if (!StringUtils.isNullOrEmpty(value)) {
+                                    if (value.toString().replaceAll("\\s", "").startsWith("{")) {
+                                        boolean keyed = false;
+                                        boolean simple = false;
+                                        KarmaElement array = new KarmaArray();
+                                        int subIndex = 0;
 
-                            if (!StringUtils.isNullOrEmpty(value)) {
-                                if (value.toString().replaceAll("\\s", "").startsWith("{")) {
-                                    boolean keyed = false;
-                                    boolean simple = false;
-                                    KarmaElement array = new KarmaArray();
-                                    int subIndex = 0;
+                                        String parentKey = key;
+                                        for (int x = (i + 1); x < data.length; x++, subIndex++) {
+                                            line = data[x];
 
-                                    String parentKey = key;
-                                    for (int x = (i + 1); x < data.length; x++, subIndex++) {
-                                        line = data[x];
-
-                                        if (!line.replaceAll("\\s", "").endsWith("}")) {
-                                            if (line.contains("<->")) {
-                                                if (!(array instanceof KarmaKeyArray))
-                                                    array = new KarmaKeyArray();
-
-                                                if (!simple) {
-                                                    keyed = true;
-
-                                                    dt = line.split("->");
-
-                                                    tmpName = dt[0].replaceAll("\\s", "");
-                                                    if (!tmpName.startsWith("'") && !tmpName.endsWith("'"))
-                                                        throw new KarmaFormatException(document, "Error, invalid key format, it must be 'x' where x is any value", indexes.getOrDefault(line, -1));
-
-                                                    name = StringUtils.replaceLast(StringUtils.replaceLast(dt[0].replaceFirst("'", ""), "'", ""), "<", "");
-                                                    key = name.replaceAll("\\s", "");
-                                                    value = new StringBuilder();
-                                                    for (int y = 1; y < dt.length; y++) {
-                                                        value.append(dt[y]).append((y != dt.length - 1 ? "->" : ""));
-                                                    }
-
-                                                    KarmaKeyArray ka = (KarmaKeyArray) array;
-
-                                                    String v = value.toString().replaceFirst("\t", "").replaceFirst(" ", "");
-                                                    if (!StringUtils.isNullOrEmpty(v)) {
-                                                        if (v.startsWith("\"") || v.startsWith("'")) {
-                                                            if (!v.endsWith((v.startsWith("\"") ? "\"" : "'"))) {
-                                                                throw new KarmaFormatException(document, "Error, invalid text format. It seems that you mixed quotes or forgot to close string", indexes.getOrDefault(line, -1));
-                                                            } else {
-                                                                v = v.substring(1, v.length() - 1);
-                                                                KarmaObject obj = new KarmaObject(v);
-
-                                                                ka.add(key, obj, true);
-                                                            }
-                                                        } else {
-                                                            if (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("false")) {
-                                                                boolean bool = Boolean.parseBoolean(v);
-                                                                KarmaObject obj = new KarmaObject(bool);
-
-                                                                ka.add(key, obj, true);
-                                                            } else {
-                                                                if (v.contains(",")) {
-                                                                    Number number = Double.parseDouble(v.replace(",", "."));
-                                                                    KarmaObject obj = new KarmaObject(number);
-
-                                                                    ka.add(key, obj, true);
-                                                                } else {
-                                                                    if (v.contains(".")) {
-                                                                        Number number = Float.parseFloat(v);
-                                                                        KarmaObject obj = new KarmaObject(number);
-
-                                                                        ka.add(key, obj, true);
-                                                                    } else {
-                                                                        Number number = Integer.parseInt(v);
-                                                                        KarmaObject obj = new KarmaObject(number);
-
-                                                                        ka.add(key, obj, true);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } else {
-                                                    throw new KarmaFormatException(document, "Error, invalid list format. It seems that you mixed a simple list and a keyed list", indexes.getOrDefault(line, -1));
-                                                }
-                                            } else {
-                                                if (line.contains("->")) {
+                                            if (!line.replaceAll("\\s", "").endsWith("}")) {
+                                                if (line.contains("<->")) {
                                                     if (!(array instanceof KarmaKeyArray))
                                                         array = new KarmaKeyArray();
 
                                                     if (!simple) {
                                                         keyed = true;
+
                                                         dt = line.split("->");
 
                                                         tmpName = dt[0].replaceAll("\\s", "");
                                                         if (!tmpName.startsWith("'") && !tmpName.endsWith("'"))
                                                             throw new KarmaFormatException(document, "Error, invalid key format, it must be 'x' where x is any value", indexes.getOrDefault(line, -1));
 
-                                                        name = StringUtils.replaceLast(StringUtils.replaceLast(dt[0].replaceFirst("'", ""), "'", ""), "<", "");
-                                                        key = name.replaceAll("\\s", "");
+                                                        int i1 = dt[0].indexOf("'");
+                                                        int i2 = dt[0].lastIndexOf("'");
+
+                                                        name = StringUtils.replaceLast(dt[0], "<", "");
+                                                        key = name.substring(i1 + 1, i2);
                                                         value = new StringBuilder();
                                                         for (int y = 1; y < dt.length; y++) {
                                                             value.append(dt[y]).append((y != dt.length - 1 ? "->" : ""));
@@ -515,31 +510,31 @@ public class KarmaMain {
                                                                     v = v.substring(1, v.length() - 1);
                                                                     KarmaObject obj = new KarmaObject(v);
 
-                                                                    ka.add(key, obj, false);
+                                                                    ka.add(key, obj, true);
                                                                 }
                                                             } else {
-                                                                if (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("false")) {
-                                                                    boolean bool = Boolean.parseBoolean(v);
+                                                                if (v.replaceAll("\\s", "").equalsIgnoreCase("true") || v.replaceAll("\\s", "").equalsIgnoreCase("false")) {
+                                                                    boolean bool = Boolean.parseBoolean(v.replaceAll("\\s", ""));
                                                                     KarmaObject obj = new KarmaObject(bool);
 
-                                                                    ka.add(key, obj, false);
+                                                                    ka.add(key, obj, true);
                                                                 } else {
                                                                     if (v.contains(",")) {
-                                                                        Number number = Double.parseDouble(v.replace(",", "."));
+                                                                        Number number = Double.parseDouble(v.replaceAll("\\s", "").replace(",", "."));
                                                                         KarmaObject obj = new KarmaObject(number);
 
-                                                                        ka.add(key, obj, false);
+                                                                        ka.add(key, obj, true);
                                                                     } else {
                                                                         if (v.contains(".")) {
-                                                                            Number number = Float.parseFloat(v);
+                                                                            Number number = Float.parseFloat(v.replaceAll("\\s", ""));
                                                                             KarmaObject obj = new KarmaObject(number);
 
-                                                                            ka.add(key, obj, false);
+                                                                            ka.add(key, obj, true);
                                                                         } else {
-                                                                            Number number = Integer.parseInt(v);
+                                                                            Number number = Integer.parseInt(v.replaceAll("\\s", ""));
                                                                             KarmaObject obj = new KarmaObject(number);
 
-                                                                            ka.add(key, obj, false);
+                                                                            ka.add(key, obj, true);
                                                                         }
                                                                     }
                                                                 }
@@ -549,32 +544,32 @@ public class KarmaMain {
                                                         throw new KarmaFormatException(document, "Error, invalid list format. It seems that you mixed a simple list and a keyed list", indexes.getOrDefault(line, -1));
                                                     }
                                                 } else {
-                                                    if (!keyed) {
-                                                        if (!(array instanceof KarmaArray))
-                                                            array = new KarmaArray();
+                                                    if (line.contains("->")) {
+                                                        if (!(array instanceof KarmaKeyArray))
+                                                            array = new KarmaKeyArray();
 
-                                                        simple = true;
+                                                        if (!simple) {
+                                                            keyed = true;
+                                                            dt = line.split("->");
 
-                                                        value = new StringBuilder();
-                                                        boolean parsing = false;
-                                                        for (int y = 1; y < line.length(); y++) {
-                                                            char character = line.charAt(y);
-                                                            if (!parsing) {
-                                                                if (!Character.isSpaceChar(character)) {
-                                                                    parsing = true;
-                                                                }
+                                                            tmpName = dt[0].replaceAll("\t", "").replaceAll("\\s", "");
+                                                            if (!tmpName.startsWith("'") && !tmpName.endsWith("'"))
+                                                                throw new KarmaFormatException(document, "Error, invalid key format, it must be 'x' where x is any value", indexes.getOrDefault(line, -1));
+
+                                                            int i1 = dt[0].indexOf("'");
+                                                            int i2 = dt[0].lastIndexOf("'");
+
+                                                            name = StringUtils.replaceLast(dt[0], "<", "");
+                                                            key = name.substring(i1 + 1, i2);
+                                                            value = new StringBuilder();
+                                                            for (int y = 1; y < dt.length; y++) {
+                                                                value.append(dt[y]).append((y != dt.length - 1 ? "->" : ""));
                                                             }
 
-                                                            if (parsing) {
-                                                                value.append(character);
-                                                            }
-                                                        }
+                                                            KarmaKeyArray ka = (KarmaKeyArray) array;
 
-                                                        KarmaArray ka = (KarmaArray) array;
-
-                                                        String v = value.toString().replaceFirst("\t", "");
-                                                        if (!StringUtils.isNullOrEmpty(v)) {
-                                                            if (!v.equals("{")) {
+                                                            String v = value.toString().replaceFirst("\t", "").replaceFirst(" ", "");
+                                                            if (!StringUtils.isNullOrEmpty(v)) {
                                                                 if (v.startsWith("\"") || v.startsWith("'")) {
                                                                     if (!v.endsWith((v.startsWith("\"") ? "\"" : "'"))) {
                                                                         throw new KarmaFormatException(document, "Error, invalid text format. It seems that you mixed quotes or forgot to close string", indexes.getOrDefault(line, -1));
@@ -582,120 +577,188 @@ public class KarmaMain {
                                                                         v = v.substring(1, v.length() - 1);
                                                                         KarmaObject obj = new KarmaObject(v);
 
-                                                                        ka.add(obj);
+                                                                        ka.add(key, obj, false);
                                                                     }
                                                                 } else {
-                                                                    if (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("false")) {
-                                                                        boolean bool = Boolean.parseBoolean(v);
+                                                                    if (v.replaceAll("\\s", "").equalsIgnoreCase("true") || v.replaceAll("\\s", "").equalsIgnoreCase("false")) {
+                                                                        boolean bool = Boolean.parseBoolean(v.replaceAll("\\s", ""));
                                                                         KarmaObject obj = new KarmaObject(bool);
 
-                                                                        ka.add(obj);
+                                                                        ka.add(key, obj, false);
                                                                     } else {
                                                                         if (v.contains(",")) {
-                                                                            Number number = Double.parseDouble(v.replace(",", "."));
+                                                                            Number number = Double.parseDouble(v.replaceAll("\\s", "").replace(",", "."));
                                                                             KarmaObject obj = new KarmaObject(number);
 
-                                                                            ka.add(obj);
+                                                                            ka.add(key, obj, false);
                                                                         } else {
                                                                             if (v.contains(".")) {
-                                                                                Number number = Float.parseFloat(v);
+                                                                                Number number = Float.parseFloat(v.replaceAll("\\s", ""));
                                                                                 KarmaObject obj = new KarmaObject(number);
 
-                                                                                ka.add(obj);
+                                                                                ka.add(key, obj, false);
                                                                             } else {
-                                                                                Number number = Integer.parseInt(v);
+                                                                                Number number = Integer.parseInt(v.replaceAll("\\s", ""));
                                                                                 KarmaObject obj = new KarmaObject(number);
 
-                                                                                ka.add(obj);
+                                                                                ka.add(key, obj, false);
                                                                             }
                                                                         }
                                                                     }
                                                                 }
                                                             }
+                                                        } else {
+                                                            throw new KarmaFormatException(document, "Error, invalid list format. It seems that you mixed a simple list and a keyed list", indexes.getOrDefault(line, -1));
                                                         }
                                                     } else {
-                                                        throw new KarmaFormatException(document, "Error, invalid list format. It seems that you mixed a simple list and a keyed list", indexes.getOrDefault(line, -1));
+                                                        if (!keyed) {
+                                                            if (!(array instanceof KarmaArray))
+                                                                array = new KarmaArray();
+
+                                                            simple = true;
+
+                                                            value = new StringBuilder();
+                                                            boolean parsing = false;
+                                                            for (int y = 1; y < line.length(); y++) {
+                                                                char character = line.charAt(y);
+                                                                if (!parsing) {
+                                                                    if (!Character.isSpaceChar(character)) {
+                                                                        parsing = true;
+                                                                    }
+                                                                }
+
+                                                                if (parsing) {
+                                                                    value.append(character);
+                                                                }
+                                                            }
+
+                                                            KarmaArray ka = (KarmaArray) array;
+
+                                                            String v = value.toString().replaceFirst("\t", "");
+                                                            if (!StringUtils.isNullOrEmpty(v)) {
+                                                                if (!v.equals("{")) {
+                                                                    if (v.startsWith("\"") || v.startsWith("'")) {
+                                                                        if (!v.endsWith((v.startsWith("\"") ? "\"" : "'"))) {
+                                                                            throw new KarmaFormatException(document, "Error, invalid text format. It seems that you mixed quotes or forgot to close string", indexes.getOrDefault(line, -1));
+                                                                        } else {
+                                                                            v = v.substring(1, v.length() - 1);
+                                                                            KarmaObject obj = new KarmaObject(v);
+
+                                                                            ka.add(obj);
+                                                                        }
+                                                                    } else {
+                                                                        if (v.replaceAll("\\s", "").equalsIgnoreCase("true") || v.replaceAll("\\s", "").equalsIgnoreCase("false")) {
+                                                                            boolean bool = Boolean.parseBoolean(v.replaceAll("\\s", ""));
+                                                                            KarmaObject obj = new KarmaObject(bool);
+
+                                                                            ka.add(obj);
+                                                                        } else {
+                                                                            if (v.contains(",")) {
+                                                                                Number number = Double.parseDouble(v.replaceAll("\\s", "").replace(",", "."));
+                                                                                KarmaObject obj = new KarmaObject(number);
+
+                                                                                ka.add(obj);
+                                                                            } else {
+                                                                                if (v.contains(".")) {
+                                                                                    Number number = Float.parseFloat(v.replaceAll("\\s", ""));
+                                                                                    KarmaObject obj = new KarmaObject(number);
+
+                                                                                    ka.add(obj);
+                                                                                } else {
+                                                                                    Number number = Integer.parseInt(v.replaceAll("\\s", ""));
+                                                                                    KarmaObject obj = new KarmaObject(number);
+
+                                                                                    ka.add(obj);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        } else {
+                                                            throw new KarmaFormatException(document, "Error, invalid list format. It seems that you mixed a simple list and a keyed list", indexes.getOrDefault(line, -1));
+                                                        }
                                                     }
                                                 }
+                                            } else {
+                                                i = x;
+                                                break;
+                                            }
+                                        }
+
+                                        content.put(parentKey, array);
+                                        if (rec)
+                                            reverse.put(array, parentKey);
+                                    } else {
+                                        String v = value.toString().replaceFirst("\t", "").replaceFirst(" ", "");
+                                        if (v.startsWith("\"") || v.startsWith("'")) {
+                                            if (!v.endsWith((v.startsWith("\"") ? "\"" : "'"))) {
+                                                throw new KarmaFormatException(document, "Error, invalid text format. It seems that you mixed quotes or forgot to close string", indexes.getOrDefault(line, -1));
+                                            } else {
+                                                v = v.substring(1, v.length() - 1);
+                                                KarmaObject obj = new KarmaObject(v);
+
+                                                content.put(key, obj);
+                                                if (rec)
+                                                    reverse.put(obj, key);
                                             }
                                         } else {
-                                            i = x;
-                                            break;
-                                        }
-                                    }
-
-                                    content.put(parentKey, array);
-                                    if (rec)
-                                        reverse.put(array, parentKey);
-                                } else {
-                                    String v = value.toString().replaceFirst("\t", "").replaceFirst(" ", "");
-                                    if (v.startsWith("\"") || v.startsWith("'")) {
-                                        if (!v.endsWith((v.startsWith("\"") ? "\"" : "'"))) {
-                                            throw new KarmaFormatException(document, "Error, invalid text format. It seems that you mixed quotes or forgot to close string", indexes.getOrDefault(line, -1));
-                                        } else {
-                                            v = v.substring(1, v.length() - 1);
-                                            KarmaObject obj = new KarmaObject(v);
-
-                                            content.put(key, obj);
-                                            if (rec)
-                                                reverse.put(obj, key);
-                                        }
-                                    } else {
-                                        if (v.equalsIgnoreCase("true") || v.equalsIgnoreCase("false")) {
-                                            boolean bool = Boolean.parseBoolean(v);
-                                            KarmaObject obj = new KarmaObject(bool);
-
-                                            content.put(key, obj);
-                                            if (rec)
-                                                reverse.put(obj, key);
-                                        } else {
-                                            if (v.contains(",")) {
-                                                Number number = Double.parseDouble(v.replace(",", "."));
-                                                KarmaObject obj = new KarmaObject(number);
+                                            if (v.replaceAll("\\s", "").equalsIgnoreCase("true") || v.replaceAll("\\s", "").equalsIgnoreCase("false")) {
+                                                boolean bool = Boolean.parseBoolean(v.replaceAll("\\s", ""));
+                                                KarmaObject obj = new KarmaObject(bool);
 
                                                 content.put(key, obj);
                                                 if (rec)
                                                     reverse.put(obj, key);
                                             } else {
-                                                if (v.contains(".")) {
-                                                    Number number = Float.parseFloat(v);
+                                                if (v.contains(",")) {
+                                                    Number number = Double.parseDouble(v.replaceAll("\\s", "").replace(",", "."));
                                                     KarmaObject obj = new KarmaObject(number);
 
                                                     content.put(key, obj);
                                                     if (rec)
                                                         reverse.put(obj, key);
                                                 } else {
-                                                    Number number = Integer.parseInt(v);
-                                                    KarmaObject obj = new KarmaObject(number);
+                                                    if (v.contains(".")) {
+                                                        Number number = Float.parseFloat(v.replaceAll("\\s", ""));
+                                                        KarmaObject obj = new KarmaObject(number);
 
-                                                    content.put(key, obj);
-                                                    if (rec)
-                                                        reverse.put(obj, key);
+                                                        content.put(key, obj);
+                                                        if (rec)
+                                                            reverse.put(obj, key);
+                                                    } else {
+                                                        Number number = Integer.parseInt(v.replaceAll("\\s", ""));
+                                                        KarmaObject obj = new KarmaObject(number);
+
+                                                        content.put(key, obj);
+                                                        if (rec)
+                                                            reverse.put(obj, key);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
-                        } else {
-                            if (line.replaceAll("\\s", "").endsWith(")")) {
-                                if (parent.contains(".")) {
-                                    String[] pData = parent.split("\\.");
-                                    parent = StringUtils.replaceLast(parent, "." + pData[pData.length - 1], "");
-                                    if (pData.length == 1)
-                                        parent = pData[0];
+                            } else {
+                                if (line.replaceAll("\\s", "").endsWith(")")) {
+                                    if (parent.contains(".")) {
+                                        String[] pData = parent.split("\\.");
+                                        parent = StringUtils.replaceLast(parent, "." + pData[pData.length - 1], "");
+                                        if (pData.length == 1)
+                                            parent = pData[0];
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                if (!parent.equals("main")) {
-                    String[] pData = parent.split("\\.");
-                    throw new KarmaFormatException(document, "Error, non closed section path ( " + parent + " )", indexes.getOrDefault(pData[pData.length - 1], -1));
+                    if (!parent.equals("main")) {
+                        String[] pData = parent.split("\\.");
+                        throw new KarmaFormatException(document, "Error, non closed section path ( " + parent + " )", indexes.getOrDefault(pData[pData.length - 1], -1));
+                    }
+                } else {
+                    throw new KarmaFormatException(document, "Error, found invalid main section name at " + main + "; it must be \"main\" or empty!", indexes.getOrDefault(main, -1));
                 }
-            } else {
-                throw new KarmaFormatException(document, "Error, found invalid main section name at " + main + "; it must be \"main\" or empty!", indexes.getOrDefault(main, -1));
             }
         }
     }
@@ -877,8 +940,14 @@ public class KarmaMain {
         } else {
             content.remove(tmpKey);
         }
+    }
 
-        destroy = content.isEmpty();
+    /**
+     * Create the document if it doesn't
+     * exist
+     */
+    public void create() {
+        PathUtilities.create(document);
     }
 
     /**
@@ -887,291 +956,18 @@ public class KarmaMain {
      * @throws KarmaFormatException if the file could not be parsed correctly
      */
     public boolean save() {
-        try {
-            List<String> write = new ArrayList<>();
-            write.add("(");
-
-            List<String> lines = PathUtilities.readAllLines(document);
-
-            Pattern keyMatcher = Pattern.compile("'.*' .?->");
-
-            StringBuilder section = new StringBuilder("main");
-
-            int index = 1;
-            boolean bigComment = false;
-            boolean readingList = false;
-            for (String line : lines) {
-                String noSpace = line.replaceAll("\\s", "");
-                if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
-                    write.add(line);
-                    continue;
-                }
-
-                Matcher matcher = keyMatcher.matcher(line);
-
-                if (matcher.find()) {
-                    int start = matcher.start();
-                    int end = matcher.end();
-
-                    String space = line.substring(0, start);
-                    String result = line.substring(start, end);
-                    boolean recursive = line.endsWith("<->");
-                    String name = result.substring(1, result.length() - (recursive ? 5 : 4));
-
-                    String key = section + "." + name;
-                    String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
-
-                    KarmaElement element = content.getOrDefault(key, null);
-                    if (element != null) {
-                        if (element.isString() || element.isBoolean() || element.isNumber()) {
-                            write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
-                        }
-
-                        if (!readingList) {
-                            if (value.startsWith("{")) {
-                                readingList = true;
-                                write.add(space + "'" + name + "' " + (recursive ? "<->" : "->") + " {");
-
-                                if (element.isKeyArray()) {
-                                    KarmaKeyArray kA = element.getKeyArray();
-                                    kA.getKeys().forEach((k) -> {
-                                        KarmaElement kAElement = kA.get(k);
-                                        boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
-
-                                        write.add(space + "\t'" + k + "' " + (rec ? "<->" : "->") + kAElement.getObjet().textValue());
-                                    });
-                                } else{
-                                    KarmaArray a = element.getArray();
-                                    for (KarmaElement sub : a) {
-                                        write.add(space + "\t'" + sub.getObjet().textValue() + "'");
-                                    }
-                                }
-                            }
-                        } else {
-                            if (line.endsWith("}")) {
-                                readingList = false;
-                                write.add(line);
-                            }
-                        }
-                    }
-                } else {
-                    if (readingList) {
-                        if (line.endsWith("}")) {
-                            readingList = false;
-                            write.add(line);
-                        }
-                    } else {
-                        Pattern sectMatcher = Pattern.compile("\\(\".*\"");
-
-                        matcher = sectMatcher.matcher(line);
-
-                        if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
-                            write.add(line);
-
-                            String current = section.toString();
-                            String[] data = current.split("\\.");
-                            if (data.length >= 1)
-                                current = current.replace("." + data[data.length - 1], "");
-
-                            section = new StringBuilder(current);
-                            continue;
-                        }
-
-                        if (matcher.find()) {
-                            int start = matcher.start();
-                            int end = matcher.end();
-
-                            if (line.contains("\"")) {
-                                if (section.length() > 0) {
-                                    section.append(".").append(line, start + 2, end - 1);
-                                } else {
-                                    section = new StringBuilder(line.substring(start + 2, end));
-                                }
-                                write.add(line);
-                            } else {
-                                if (!section.toString().equals("main")) {
-                                    section = new StringBuilder("main");
-                                } else {
-                                    throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
-                                }
-                            }
-                        } else {
-                            if (!bigComment) {
-                                Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
-                                matcher = comment.matcher(line);
-
-                                if (matcher.find()) {
-                                    write.add(line);
-                                } else {
-                                    bigComment = line.replaceAll("\\s", "").startsWith("*(");
-                                    if (bigComment) {
-                                        write.add(line);
-                                    }
-                                }
-                            } else {
-                                write.add(line);
-                                bigComment = !line.endsWith(")*");
-                            }
-                        }
-                    }
-                }
-            }
-            write.add(")");
-
-            PathUtilities.create(document);
-            Files.write(document, StringUtils.listToString(new ArrayList<>(write), false).getBytes(StandardCharsets.UTF_8));
-            return true;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-            return false;
-        }
+        return save(document);
     }
 
     /**
      * Save the file
      *
      * @param flName the target file name
+     * @param sub the file subdirectories
      * @throws KarmaFormatException if the file could not be parsed correctly
      */
-    public boolean save(final String flName) throws KarmaFormatException {
-        try {
-            List<String> write = new ArrayList<>();
-            write.add("(");
-
-            List<String> lines = PathUtilities.readAllLines(document);
-
-            Pattern keyMatcher = Pattern.compile("'.*' .?->");
-
-            StringBuilder section = new StringBuilder("main");
-
-            int index = 1;
-            boolean bigComment = false;
-            boolean readingList = false;
-            for (String line : lines) {
-                String noSpace = line.replaceAll("\\s", "");
-                if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
-                    write.add(line);
-                    continue;
-                }
-
-                Matcher matcher = keyMatcher.matcher(line);
-
-                if (matcher.find()) {
-                    int start = matcher.start();
-                    int end = matcher.end();
-
-                    String space = line.substring(0, start);
-                    String result = line.substring(start, end);
-                    boolean recursive = line.endsWith("<->");
-                    String name = result.substring(1, result.length() - (recursive ? 5 : 4));
-
-                    String key = section + "." + name;
-                    String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
-
-                    KarmaElement element = content.getOrDefault(key, null);
-                    if (element != null) {
-                        if (element.isString() || element.isBoolean() || element.isNumber()) {
-                            write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
-                        }
-
-                        if (!readingList) {
-                            if (value.startsWith("{")) {
-                                readingList = true;
-                                write.add(space + "'" + name + "' " + (recursive ? "<->" : "->") + " {");
-
-                                if (element.isKeyArray()) {
-                                    KarmaKeyArray kA = element.getKeyArray();
-                                    kA.getKeys().forEach((k) -> {
-                                        KarmaElement kAElement = kA.get(k);
-                                        boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
-
-                                        write.add(space + "\t'" + k + "' " + (rec ? "<->" : "->") + kAElement.getObjet().textValue());
-                                    });
-                                } else{
-                                    KarmaArray a = element.getArray();
-                                    for (KarmaElement sub : a) {
-                                        write.add(space + "\t'" + sub.getObjet().textValue() + "'");
-                                    }
-                                }
-                            }
-                        } else {
-                            if (line.endsWith("}")) {
-                                readingList = false;
-                                write.add(line);
-                            }
-                        }
-                    }
-                } else {
-                    if (readingList) {
-                        if (line.endsWith("}")) {
-                            readingList = false;
-                            write.add(line);
-                        }
-                    } else {
-                        Pattern sectMatcher = Pattern.compile("\\(\".*\"");
-
-                        matcher = sectMatcher.matcher(line);
-
-                        if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
-                            write.add(line);
-
-                            String current = section.toString();
-                            String[] data = current.split("\\.");
-                            if (data.length >= 1)
-                                current = current.replace("." + data[data.length - 1], "");
-
-                            section = new StringBuilder(current);
-                            continue;
-                        }
-
-                        if (matcher.find()) {
-                            int start = matcher.start();
-                            int end = matcher.end();
-
-                            if (line.contains("\"")) {
-                                if (section.length() > 0) {
-                                    section.append(".").append(line, start + 2, end - 1);
-                                } else {
-                                    section = new StringBuilder(line.substring(start + 2, end));
-                                }
-                                write.add(line);
-                            } else {
-                                if (!section.toString().equals("main")) {
-                                    section = new StringBuilder("main");
-                                } else {
-                                    throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
-                                }
-                            }
-                        } else {
-                            if (!bigComment) {
-                                Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
-                                matcher = comment.matcher(line);
-
-                                if (matcher.find()) {
-                                    write.add(line);
-                                } else {
-                                    bigComment = line.replaceAll("\\s", "").startsWith("*(");
-                                    if (bigComment) {
-                                        write.add(line);
-                                    }
-                                }
-                            } else {
-                                write.add(line);
-                                bigComment = !line.endsWith(")*");
-                            }
-                        }
-                    }
-                }
-            }
-            write.add(")");
-
-            PathUtilities.create(Paths.get(flName));
-            Files.write(Paths.get(flName), StringUtils.listToString(new ArrayList<>(write), false).getBytes(StandardCharsets.UTF_8));
-            return true;
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-            return false;
-        }
+    public boolean save(final String flName, final String... sub) throws KarmaFormatException {
+        return save(Paths.get(flName, sub));
     }
 
     /**
@@ -1181,139 +977,335 @@ public class KarmaMain {
      * @throws KarmaFormatException if the file could not be parsed correctly
      */
     public boolean save(final Path target) throws KarmaFormatException {
+        if (!exists())
+            create();
+
         try {
             List<String> write = new ArrayList<>();
-            write.add("(");
-
             List<String> lines = PathUtilities.readAllLines(document);
 
-            Pattern keyMatcher = Pattern.compile("'.*' .?->");
+            if (!lines.isEmpty()) {
+                write.add("(\"main\"");
+                Pattern keyMatcher = Pattern.compile("'.*' .?->");
 
-            StringBuilder section = new StringBuilder("main");
+                StringBuilder section = new StringBuilder();
 
-            int index = 1;
-            boolean bigComment = false;
-            boolean readingList = false;
-            for (String line : lines) {
-                String noSpace = line.replaceAll("\\s", "");
-                if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
-                    write.add(line);
-                    continue;
-                }
+                int index = 1;
+                boolean bigComment = false;
+                boolean readingList = false;
+                for (String line : lines) {
+                    String noSpace = line.replaceAll("\\s", "");
+                    if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
+                        write.add(line);
+                        continue;
+                    }
 
-                Matcher matcher = keyMatcher.matcher(line);
+                    Matcher matcher = keyMatcher.matcher(line);
 
-                if (matcher.find()) {
-                    int start = matcher.start();
-                    int end = matcher.end();
+                    if (matcher.find()) {
+                        if (section.toString().isEmpty())
+                            section.append("main");
 
-                    String space = line.substring(0, start);
-                    String result = line.substring(start, end);
-                    boolean recursive = line.endsWith("<->");
-                    String name = result.substring(1, result.length() - (recursive ? 5 : 4));
+                        int start = matcher.start();
+                        int end = matcher.end();
 
-                    String key = section + "." + name;
-                    String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
+                        String space = line.substring(0, start);
+                        String result = line.substring(start, end);
+                        boolean recursive = line.endsWith("<->");
+                        String name = result.substring(1, result.length() - (recursive ? 5 : 4));
 
-                    KarmaElement element = content.getOrDefault(key, null);
-                    if (element != null) {
-                        if (element.isString() || element.isBoolean() || element.isNumber()) {
-                            write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
+                        String key = section + "." + name;
+                        String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
+
+                        KarmaElement element = content.getOrDefault(key, null);
+                        if (element == null && internal != null) {
+                            KarmaMain tmp = new KarmaMain(internal);
+                            element = tmp.content.getOrDefault(key, null);
                         }
 
-                        if (!readingList) {
-                            if (value.startsWith("{")) {
-                                readingList = true;
-                                write.add(space + "'" + name + "' " + (recursive ? "<->" : "->") + " {");
+                        if (element != null) {
+                            if (element.isString() || element.isBoolean() || element.isNumber()) {
+                                write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
+                            }
 
-                                if (element.isKeyArray()) {
-                                    KarmaKeyArray kA = element.getKeyArray();
-                                    kA.getKeys().forEach((k) -> {
-                                        KarmaElement kAElement = kA.get(k);
-                                        boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
+                            if (!readingList) {
+                                if (value.startsWith("{")) {
+                                    readingList = true;
+                                    write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + "{");
 
-                                        write.add(space + "\t'" + k + "' " + (rec ? "<->" : "->") + kAElement.getObjet().textValue());
-                                    });
-                                } else{
-                                    KarmaArray a = element.getArray();
-                                    for (KarmaElement sub : a) {
-                                        write.add(space + "\t'" + sub.getObjet().textValue() + "'");
+                                    if (element.isKeyArray()) {
+                                        KarmaKeyArray kA = element.getKeyArray();
+                                        kA.getKeys().forEach((k) -> {
+                                            KarmaElement kAElement = kA.get(k);
+                                            boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
+
+                                            write.add(space + "\t'" + k + "' " + (rec ? "<-> " : "-> ") + kAElement.getObjet().textValue());
+                                        });
+                                    } else {
+                                        KarmaArray a = element.getArray();
+                                        for (KarmaElement sub : a) {
+                                            write.add(space + "\t'" + sub.getObjet().textValue() + "'");
+                                        }
                                     }
+                                }
+                            } else {
+                                if (line.endsWith("}")) {
+                                    readingList = false;
+                                    write.add(line);
                                 }
                             }
                         } else {
+                            KarmaConfig config = new KarmaConfig();
+
+                            if (config.log(Level.WARNING)) {
+                                APISource.getOriginal(false).logger().scheduleLog(Level.WARNING,
+                                        "An error occurred while saving file {0}. Required key {1} is not defined{2}. The file will be try to be saved anyway",
+                                        PathUtilities.getPrettyPath(document),
+                                        key,
+                                        (internal == null ? " ( setting internal file may fix the issue )" : " ( internal file does not contain the key neither )"));
+                            }
+                            if (config.fileDebug(Level.WARNING)) {
+                                APISource.getOriginal(false).console().send("An error occurred while saving file {0} because the key {1} is not defined{2}. The file will be try to be saved anyway",
+                                        Level.WARNING,
+                                        PathUtilities.getPrettyPath(document),
+                                        key,
+                                        (internal == null ? " ( setting internal file may fix the issue )" : " ( internal file does not contain the key neither )"));
+                            }
+                        }
+                    } else {
+                        if (readingList) {
                             if (line.endsWith("}")) {
                                 readingList = false;
                                 write.add(line);
                             }
-                        }
-                    }
-                } else {
-                    if (readingList) {
-                        if (line.endsWith("}")) {
-                            readingList = false;
-                            write.add(line);
-                        }
-                    } else {
-                        Pattern sectMatcher = Pattern.compile("\\(\".*\"");
-
-                        matcher = sectMatcher.matcher(line);
-
-                        if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
-                            write.add(line);
-
-                            String current = section.toString();
-                            String[] data = current.split("\\.");
-                            if (data.length >= 1)
-                                current = current.replace("." + data[data.length - 1], "");
-
-                            section = new StringBuilder(current);
-                            continue;
-                        }
-
-                        if (matcher.find()) {
-                            int start = matcher.start();
-                            int end = matcher.end();
-
-                            if (line.contains("\"")) {
-                                if (section.length() > 0) {
-                                    section.append(".").append(line, start + 2, end - 1);
-                                } else {
-                                    section = new StringBuilder(line.substring(start + 2, end));
-                                }
-                                write.add(line);
-                            } else {
-                                if (!section.toString().equals("main")) {
-                                    section = new StringBuilder("main");
-                                } else {
-                                    throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
-                                }
-                            }
                         } else {
-                            if (!bigComment) {
-                                Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
-                                matcher = comment.matcher(line);
+                            Pattern sectMatcher = Pattern.compile("\\(\".*\"");
 
-                                if (matcher.find()) {
-                                    write.add(line);
-                                } else {
-                                    bigComment = line.replaceAll("\\s", "").startsWith("*(");
-                                    if (bigComment) {
+                            matcher = sectMatcher.matcher(line);
+
+                            if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
+                                write.add(line);
+
+                                String current = section.toString();
+                                String[] data = current.split("\\.");
+                                if (data.length >= 1)
+                                    current = current.replace("." + data[data.length - 1], "");
+
+                                section = new StringBuilder(current);
+                                continue;
+                            }
+
+                            if (matcher.find()) {
+                                int start = matcher.start();
+                                int end = matcher.end();
+
+                                if (line.contains("\"")) {
+                                    String name = line.substring(start + 2, end - 1);
+
+                                    if (section.length() > 0) {
+                                        section.append(".").append(name);
+                                    } else {
+                                        section = new StringBuilder(name);
+                                    }
+
+                                    if (!name.equalsIgnoreCase("main")) {
                                         write.add(line);
+                                    }
+                                } else {
+                                    if (!section.toString().equals("main")) {
+                                        section = new StringBuilder("main");
+                                    } else {
+                                        throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
                                     }
                                 }
                             } else {
-                                write.add(line);
-                                bigComment = !line.endsWith(")*");
+                                if (!bigComment) {
+                                    Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
+                                    matcher = comment.matcher(line);
+
+                                    if (matcher.find()) {
+                                        write.add(line);
+                                    } else {
+                                        bigComment = line.replaceAll("\\s", "").startsWith("*(");
+                                        if (bigComment) {
+                                            write.add(line);
+                                        }
+                                    }
+                                } else {
+                                    write.add(line);
+                                    bigComment = !line.endsWith(")*");
+                                }
                             }
                         }
                     }
                 }
+                write.add(")");
+            } else {
+                //Basically the file is new and we must set the values
+                Map<String, Map<String, KarmaElement>> sections = new LinkedHashMap<>();
+                for (String key : content.keySet()) {
+                    if (key.contains(".")) {
+                        String[] data = key.split("\\.");
+                        if (data.length > 2) {
+                            String realKey = data[data.length - 1];
+                            String realPath = key.replace("." + realKey, "");
+
+                            Map<String, KarmaElement> values = sections.getOrDefault(realPath, new LinkedHashMap<>());
+                            values.put(realKey, content.get(key));
+
+                            sections.put(realPath, values);
+                        } else {
+                            Map<String, KarmaElement> values = sections.getOrDefault("main", new LinkedHashMap<>());
+                            values.put(data[1], content.get(key));
+
+                            sections.put("main", values);
+                        }
+                    }
+                }
+
+                int index;
+                int sectionIndex = 0;
+                for (String section : sections.keySet()) {
+                    sectionIndex++;
+
+                    if (!section.equals("main")) {
+                        if (section.contains(".")) {
+                            String[] data = section.split("\\.");
+
+                            index = 1;
+                            StringBuilder realKeyBuilder = new StringBuilder("main");
+                            for (String sub : data) {
+                                if (!sub.equals("main")) {
+                                    realKeyBuilder.append(".").append(sub);
+
+                                    StringBuilder b = new StringBuilder();
+                                    for (int i = 0; i < index; i++)
+                                        b.append("\t");
+
+                                    write.add(b + "(\"" + sub + "\"");
+                                    Map<String, KarmaElement> values = sections.getOrDefault(realKeyBuilder.toString(), new LinkedHashMap<>());
+
+                                    for (String key : values.keySet()) {
+                                        KarmaElement value = values.get(key);
+                                        if (value.isArray()) {
+                                            write.add(b + "\t'" + key + "' -> {");
+                                            KarmaArray array = value.getArray();
+
+                                            array.forEach((element) -> {
+                                                write.add(b + "\t\t'" + element.getObjet().textValue() + "'");
+                                            });
+                                            write.add(b + "\t}");
+                                        } else {
+                                            if (value.isKeyArray()) {
+                                                write.add(b + "\t'" + key + "' -> {");
+                                                KarmaKeyArray array = value.getKeyArray();
+
+                                                array.getKeys().forEach((k) -> {
+                                                    KarmaElement val = array.get(k);
+                                                    if (array.isRecursive(k)) {
+                                                        write.add(b + "\t\t'" + k + "' <-> " + val.toString());
+                                                    } else {
+                                                        write.add(b + "\t\t'" + k + "' -> " + val.toString());
+                                                    }
+                                                });
+                                                write.add(b + "\t}");
+                                            } else {
+                                                write.add(b + "\t'" + key + "' -> " + values.get(key).toString());
+                                            }
+                                        }
+                                    }
+                                    write.add(b + ")");
+
+                                    index++;
+                                }
+                            }
+                        } else {
+                            write.add("\t(\"" + section + "\"");
+                            Map<String, KarmaElement> values = sections.getOrDefault(section, new LinkedHashMap<>());
+
+                            for (String key : values.keySet()) {
+                                KarmaElement value = values.get(key);
+
+                                if (value.isArray()) {
+                                    write.add("\t\t'" + key + "' -> {");
+                                    KarmaArray array = value.getArray();
+
+                                    array.forEach((element) -> {
+                                        write.add("\t\t\t'" + element.getObjet().textValue() + "'");
+                                    });
+                                    write.add("\t\t}");
+                                } else {
+                                    if (value.isKeyArray()) {
+                                        write.add("\t\t'" + key + "' -> {");
+                                        KarmaKeyArray array = value.getKeyArray();
+
+                                        array.getKeys().forEach((k) -> {
+                                            KarmaElement val = array.get(k);
+                                            if (array.isRecursive(k)) {
+                                                write.add("\t\t\t'" + k + "' <-> " + val.toString());
+                                            } else {
+                                                write.add("\t\t\t'" + k + "' -> " + val.toString());
+                                            }
+                                        });
+                                        write.add("\t\t}");
+                                    } else {
+                                        write.add("\t\t'" + key + "' -> " + values.get(key).toString());
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        write.add("(\"main\"");
+                        Map<String, KarmaElement> values = sections.getOrDefault(section, new LinkedHashMap<>());
+
+                        for (String key : values.keySet()) {
+                            write.add("");
+                            KarmaElement value = values.get(key);
+
+                            if (value.isArray()) {
+                                write.add("\t'" + key + "' -> {");
+                                KarmaArray array = value.getArray();
+
+                                array.forEach((element) -> {
+                                    write.add("\t\t'" + element.getObjet().textValue() + "'");
+                                });
+                                write.add("\t}");
+                            } else {
+                                if (value.isKeyArray()) {
+                                    write.add("\t'" + key + "' -> {");
+                                    KarmaKeyArray array = value.getKeyArray();
+
+                                    array.getKeys().forEach((k) -> {
+                                        KarmaElement val = array.get(k);
+                                        if (array.isRecursive(k)) {
+                                            write.add("\t\t'" + k + "' <-> " + val.toString());
+                                        } else {
+                                            write.add("\t\t'" + k + "' -> " + val.toString());
+                                        }
+                                    });
+                                    write.add("\t}");
+                                } else {
+                                    write.add("\t'" + key + "' -> " + values.get(key).toString());
+                                }
+                            }
+                        }
+                    }
+
+                    if (sectionIndex != sections.size()) {
+                        write.add("");
+                    }
+                }
+
+                write.add(")");
+
+                String firstLine = write.get(0);
+                if (!firstLine.equals("(") && !firstLine.equals("(\"main\"")) {
+                    write.add(0, "(\"main\"");
+                }
             }
-            write.add(")");
 
             PathUtilities.create(target);
-            Files.write(target, StringUtils.listToString(new ArrayList<>(write), false).getBytes(StandardCharsets.UTF_8));
+            Files.write(target, StringUtils.listToString(write, false).getBytes(StandardCharsets.UTF_8));
             return true;
         } catch (Throwable ex) {
             ex.printStackTrace();
@@ -1337,159 +1329,189 @@ public class KarmaMain {
      */
     public void validate() throws IOException {
         if (internal != null) {
-            clearCache();
-            preCache(); //We must update the cache
+            if (!exists()) {
+                create();
+                Files.copy(internal, document, StandardCopyOption.REPLACE_EXISTING);
+            }
 
-            Files.write(document, "".getBytes(StandardCharsets.UTF_8));
+            if (raw.isEmpty()) {
+                Files.copy(internal, document, StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                clearCache();
+                preCache(); //We must update the cache
 
-            KarmaMain tmp = new KarmaMain(internal);
+                Files.write(document, "".getBytes(StandardCharsets.UTF_8));
 
-            List<String> write = new ArrayList<>();
-            write.add("(");
+                KarmaMain tmp = new KarmaMain(internal);
 
-            List<String> lines = PathUtilities.readAllLines(tmp.document);
+                List<String> write = new ArrayList<>();
+                write.add("(\"main\"");
 
-            Pattern keyMatcher = Pattern.compile("'.*' .?->");
+                List<String> lines = PathUtilities.readAllLines(tmp.document);
 
-            StringBuilder section = new StringBuilder("main");
+                Pattern keyMatcher = Pattern.compile("'.*' .?->");
 
-            int index = 1;
-            boolean bigComment = false;
-            boolean readingList = false;
-            for (String line : lines) {
-                String noSpace = line.replaceAll("\\s", "");
-                if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
-                    write.add(line);
-                    continue;
-                }
+                StringBuilder section = new StringBuilder();
 
-                Matcher matcher = keyMatcher.matcher(line);
-
-                if (matcher.find()) {
-                    int start = matcher.start();
-                    int end = matcher.end();
-
-                    String space = line.substring(0, start);
-                    String result = line.substring(start, end);
-                    boolean recursive = line.endsWith("<->");
-                    String name = result.substring(1, result.length() - (recursive ? 5 : 4));
-
-                    String key = section + "." + name;
-                    String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
-
-                    KarmaElement element = content.getOrDefault(key, null);
-                    if (element == null) {
-                        element = tmp.get(key, null);
-                    } else {
-                        KarmaElement original = tmp.get(key, null);
-                        if (original.isString() && !element.isString() ||
-                                original.isNumber() && !element.isNumber() ||
-                                original.isBoolean() && !element.isBoolean() ||
-                                original.isArray() && !element.isArray() ||
-                                original.isKeyArray() && !element.isKeyArray()) {
-                            element = original;
-                        }
+                int index = 1;
+                boolean bigComment = false;
+                boolean readingList = false;
+                for (String line : lines) {
+                    String noSpace = line.replaceAll("\\s", "");
+                    if (noSpace.equals("\n") || StringUtils.isNullOrEmpty(noSpace)) {
+                        write.add(line);
+                        continue;
                     }
 
-                    if (element != null) {
-                        if (element.isString() || element.isBoolean() || element.isNumber()) {
-                            write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
+                    Matcher matcher = keyMatcher.matcher(line);
+
+                    if (matcher.find()) {
+                        if (section.toString().isEmpty())
+                            section.append("main");
+
+                        int start = matcher.start();
+                        int end = matcher.end();
+
+                        String space = line.substring(0, start);
+                        String result = line.substring(start, end);
+                        boolean recursive = line.endsWith("<->");
+                        String name = result.substring(1, result.length() - (recursive ? 5 : 4));
+
+                        String key = section + "." + name;
+                        String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
+
+                        KarmaElement element = content.getOrDefault(key, null);
+                        if (element == null) {
+                            element = tmp.get(key, null);
+                        } else {
+                            KarmaElement original = tmp.get(key, null);
+                            if (original.isString() && !element.isString() ||
+                                    original.isNumber() && !element.isNumber() ||
+                                    original.isBoolean() && !element.isBoolean() ||
+                                    original.isArray() && !element.isArray() ||
+                                    original.isKeyArray() && !element.isKeyArray()) {
+                                element = original;
+                            }
                         }
 
-                        if (!readingList) {
-                            if (value.startsWith("{")) {
-                                readingList = true;
-                                write.add(space + "'" + name + "' " + (recursive ? "<->" : "->") + " {");
-
-                                if (element.isKeyArray()) {
-                                    KarmaKeyArray kA = element.getKeyArray();
-                                    kA.getKeys().forEach((k) -> {
-                                        KarmaElement kAElement = kA.get(k);
-                                        boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
-
-                                        write.add(space + "\t'" + k + "' " + (rec ? "<->" : "->") + kAElement);
-                                    });
-                                } else{
-                                    KarmaArray a = element.getArray();
-                                    for (KarmaElement sub : a) {
-                                        write.add(space + "\t'" + sub.getObjet().textValue() + "'");
-                                    }
+                        if (element != null) {
+                            if (element.isString() || element.isBoolean() || element.isNumber()) {
+                                String val = element.getObjet().textValue();
+                                if (val.equals("true") || val.equals("false")) {
+                                    if (!element.isBoolean())
+                                        element = new KarmaObject(Boolean.parseBoolean(val));
+                                } else {
+                                    Number num = parseNumber(val);
+                                    if (num != null && !element.isNumber())
+                                        element = new KarmaObject(num);
                                 }
-                                //write.add(line);
+
+                                write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
                             }
-                        } else {
+
+                            if (!readingList) {
+                                if (value.startsWith("{")) {
+                                    readingList = true;
+                                    write.add(space + "'" + name + "' " + (recursive ? "<->" : "->") + " {");
+
+                                    if (element.isKeyArray()) {
+                                        KarmaKeyArray kA = element.getKeyArray();
+                                        kA.getKeys().forEach((k) -> {
+                                            KarmaElement kAElement = kA.get(k);
+                                            boolean rec = kA.isRecursive(k) || kA.isRecursive(kAElement);
+
+                                            write.add(space + "\t'" + k + "' " + (rec ? "<-> " : "-> ") + kAElement);
+                                        });
+                                    } else {
+                                        KarmaArray a = element.getArray();
+                                        for (KarmaElement sub : a) {
+                                            write.add(space + "\t'" + sub.getObjet().textValue() + "'");
+                                        }
+                                    }
+                                    //write.add(line);
+                                }
+                            } else {
+                                if (line.endsWith("}")) {
+                                    readingList = false;
+                                }
+                                write.add(line);
+                            }
+                        }
+                    } else {
+                        if (readingList) {
                             if (line.endsWith("}")) {
                                 readingList = false;
-                            }
-                            write.add(line);
-                        }
-                    }
-                } else {
-                    if (readingList) {
-                        if (line.endsWith("}")) {
-                            readingList = false;
-                            write.add(line);
-                        }
-                    } else {
-                        Pattern sectMatcher = Pattern.compile("\\(\".*\"");
-
-                        matcher = sectMatcher.matcher(line);
-
-                        if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
-                            write.add(line);
-
-                            String current = section.toString();
-                            String[] data = current.split("\\.");
-                            if (data.length >= 1)
-                                current = current.replace("." + data[data.length - 1], "");
-
-                            section = new StringBuilder(current);
-                            continue;
-                        }
-
-                        if (matcher.find()) {
-                            int start = matcher.start();
-                            int end = matcher.end();
-
-                            if (line.contains("\"")) {
-                                if (section.length() > 0) {
-                                    section.append(".").append(line, start + 2, end - 1);
-                                } else {
-                                    section = new StringBuilder(line.substring(start + 2, end));
-                                }
                                 write.add(line);
-                            } else {
-                                if (!section.toString().equals("main")) {
-                                    section = new StringBuilder("main");
-                                } else {
-                                    throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
-                                }
                             }
                         } else {
-                            if (!bigComment) {
-                                Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
-                                matcher = comment.matcher(line);
+                            Pattern sectMatcher = Pattern.compile("\\(\".*\"");
 
-                                if (matcher.find()) {
-                                    write.add(line);
-                                } else {
-                                    bigComment = line.replaceAll("\\s", "").startsWith("*(");
-                                    if (bigComment) {
+                            matcher = sectMatcher.matcher(line);
+
+                            if (line.replaceAll("\\s", "").equals(")") && !section.toString().equals("main")) {
+                                write.add(line);
+
+                                String current = section.toString();
+                                String[] data = current.split("\\.");
+                                if (data.length >= 1)
+                                    current = current.replace("." + data[data.length - 1], "");
+
+                                section = new StringBuilder(current);
+                                continue;
+                            }
+
+                            if (matcher.find()) {
+                                int start = matcher.start();
+                                int end = matcher.end();
+
+                                if (line.contains("\"")) {
+                                    String name = line.substring(start + 2, end - 1);
+
+                                    if (section.length() > 0) {
+                                        section.append(".").append(name);
+                                    } else {
+                                        section = new StringBuilder(name);
+                                    }
+
+                                    if (!name.equalsIgnoreCase("main")) {
                                         write.add(line);
+                                    }
+                                } else {
+                                    if (!section.toString().equals("main")) {
+                                        section = new StringBuilder("main");
+                                    } else {
+                                        throw new KarmaFormatException(document, "Error, couldn't save file because the main section has been defined two or more times", index);
                                     }
                                 }
                             } else {
-                                write.add(line);
-                                bigComment = !line.endsWith(")*");
+                                if (!bigComment) {
+                                    Pattern comment = Pattern.compile("(\\*\\(.[^)*]*\\)\\*)|(\\*\\(\\n[^)*]*\\)\\*)|(\\*/.[^\\n]*)");
+                                    matcher = comment.matcher(line);
+
+                                    if (matcher.find()) {
+                                        write.add(line);
+                                    } else {
+                                        bigComment = line.replaceAll("\\s", "").startsWith("*(");
+                                        if (bigComment) {
+                                            write.add(line);
+                                        }
+                                    }
+                                } else {
+                                    write.add(line);
+                                    bigComment = !line.endsWith(")*");
+                                }
                             }
                         }
                     }
                 }
-            }
-            write.add(")");
+                write.add(")");
 
-            PathUtilities.create(document);
-            Files.write(document, StringUtils.listToString(new ArrayList<>(write), false).getBytes(StandardCharsets.UTF_8));
+                PathUtilities.create(document);
+                Files.write(document, StringUtils.listToString(write, false).getBytes(StandardCharsets.UTF_8));
+
+                clearCache();
+                preCache();
+            }
         }
     }
 
@@ -1542,12 +1564,13 @@ public class KarmaMain {
     /**
      * Load data from legacy karma file
      *
+     * @param source the source that is converting from legacy
      * @param kf the legacy karma file
      * @return the karma file
      * @throws IOException if something goes wrong
      */
     @SuppressWarnings("deprecation")
-    public static KarmaMain fromLegacy(final KarmaFile kf) throws IOException {
+    public static KarmaMain fromLegacy(final KarmaSource source, final KarmaFile kf) throws IOException {
         Set<Key> keys = kf.getKeys(false);
 
         OptionsBuilder builder = RandomString.createBuilder()
@@ -1558,30 +1581,40 @@ public class KarmaMain {
         Path document = Files.createTempFile(random, "-kf");
 
         List<String> write = new ArrayList<>();
+        List<String> wrote_keys = new ArrayList<>();
+
         write.add("(\"main\"");
 
         for (Key k : keys) {
-            String path = k.getPath();
-            Object value = k.getValue();
+            String path = k.getPath().replace(".", "_").toLowerCase();
+            if (!wrote_keys.contains(path)) {
+                Object value = k.getValue();
 
-            if (value instanceof Object[]) {
-                Object[] objects = (Object[]) value;
-                write.add("    '" + path + "' -> {");
-                for (Object obj : objects) {
-                    write.add("        " + obj);
-                }
-                write.add("    }");
-            } else {
-                if (value instanceof Iterable<?>) {
-                    Iterable<?> collection = (Iterable<?>) value;
+                wrote_keys.add(path);
 
-                    write.add("    '" + path + "' -> {");
-                    collection.forEach((v) -> {
-                        write.add("        " + v);
-                    });
-                    write.add("    }");
+                if (value instanceof Object[]) {
+                    Object[] objects = (Object[]) value;
+                    write.add("\t'" + path + "' -> {");
+                    for (Object obj : objects) {
+                        write.add("\t\t'" + obj + "'");
+                    }
+                    write.add("\t}");
                 } else {
-                    write.add("    '" + path + "' -> " + value);
+                    if (value instanceof Iterable<?>) {
+                        Iterable<?> collection = (Iterable<?>) value;
+
+                        write.add("\t'" + path + "' -> {");
+                        collection.forEach((v) -> {
+                            write.add("\t\t'" + v + "'");
+                        });
+                        write.add("\t}");
+                    } else {
+                        if (value instanceof String) {
+                            write.add("\t'" + path + "' -> \"" + value + "\"");
+                        } else {
+                            write.add("\t'" + path + "' -> " + value);
+                        }
+                    }
                 }
             }
         }
@@ -1591,18 +1624,18 @@ public class KarmaMain {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> PathUtilities.destroy(document)));
 
-        return new KarmaMain(document);
+        return new KarmaMain(source, document);
     }
 
     /**
      * Load data from legacy async karma file
      *
+     * @param source the source that is converting from legacy
      * @param kf the legacy karma file
      * @return the karma file
-     * @throws IOException if something goes wrong
      */
     @SuppressWarnings("deprecation")
-    public static LateScheduler<KarmaMain> fromLegacyAsync(final AsyncKarmaFile kf) {
+    public static LateScheduler<KarmaMain> fromLegacy(final KarmaSource source, final AsyncKarmaFile kf) {
         LateScheduler<KarmaMain> result = new AsyncLateScheduler<>();
 
         kf.getKeys(false).whenComplete((keys) -> {
@@ -1615,30 +1648,40 @@ public class KarmaMain {
                 Path document = Files.createTempFile(random, "-kf");
 
                 List<String> write = new ArrayList<>();
+                List<String> wrote_keys = new ArrayList<>();
+
                 write.add("(\"main\"");
 
                 for (Key k : keys) {
-                    String path = k.getPath();
-                    Object value = k.getValue();
+                    String path = k.getPath().replace(".", "_").toLowerCase();
+                    if (!wrote_keys.contains(path)) {
+                        Object value = k.getValue();
 
-                    if (value instanceof Object[]) {
-                        Object[] objects = (Object[]) value;
-                        write.add("    '" + path + "' -> {");
-                        for (Object obj : objects) {
-                            write.add("        " + obj);
-                        }
-                        write.add("    }");
-                    } else {
-                        if (value instanceof Iterable<?>) {
-                            Iterable<?> collection = (Iterable<?>) value;
+                        wrote_keys.add(path);
 
-                            write.add("    '" + path + "' -> {");
-                            collection.forEach((v) -> {
-                                write.add("        " + v);
-                            });
-                            write.add("    }");
+                        if (value instanceof Object[]) {
+                            Object[] objects = (Object[]) value;
+                            write.add("\t'" + path + "' -> {");
+                            for (Object obj : objects) {
+                                write.add("\t\t'" + obj + "'");
+                            }
+                            write.add("\t}");
                         } else {
-                            write.add("    '" + path + "' -> " + value);
+                            if (value instanceof Iterable<?>) {
+                                Iterable<?> collection = (Iterable<?>) value;
+
+                                write.add("\t'" + path + "' -> {");
+                                collection.forEach((v) -> {
+                                    write.add("\t\t'" + v + "'");
+                                });
+                                write.add("\t}");
+                            } else {
+                                if (value instanceof String) {
+                                    write.add("\t'" + path + "' -> \"" + value + "\"");
+                                } else {
+                                    write.add("\t'" + path + "' -> " + value);
+                                }
+                            }
                         }
                     }
                 }
@@ -1648,12 +1691,108 @@ public class KarmaMain {
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> PathUtilities.destroy(document)));
 
-                result.complete(new KarmaMain(document));
+                result.complete(new KarmaMain(source, document));
             } catch (Throwable ex) {
                 result.complete(null, ex);
             }
         });
 
         return result;
+    }
+
+    /**
+     * Migrate a legacy KarmaFile
+     *
+     * @param source the source that is performing the migration
+     * @param legacy the legacy KarmaFile
+     * @return the migrated file
+     * @throws IOException if something goes wrong
+     */
+    @SuppressWarnings("deprecation")
+    public static KarmaMain migrate(final KarmaSource source, final KarmaFile legacy) throws IOException {
+        Path document = legacy.getFile().toPath();
+        KarmaMain migrated = KarmaMain.fromLegacy(source, legacy);
+        KarmaConfig config = new KarmaConfig();
+
+        if (migrated.save(document)) {
+            if (config.debug(Level.OK)) {
+                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
+            }
+        } else {
+            if (config.log(Level.WARNING)) {
+                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+            }
+            if (config.debug(Level.GRAVE)) {
+                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
+            }
+        }
+
+        return migrated;
+    }
+
+    /**
+     * Migrate a legacy KarmaFile asynchronous
+     *
+     * @param source the source that is performing the migration
+     * @param legacy the legacy KarmaFile
+     * @return the migrated file
+     * @throws IOException if something goes wrong
+     */
+    @SuppressWarnings("deprecation")
+    public static KarmaMain migrate(final KarmaSource source, final AsyncKarmaFile legacy) throws IOException {
+        //We don't want async
+        Path document = legacy.getFile().toPath();
+        KarmaMain migrated = KarmaMain.fromLegacy(source, legacy.synchronize());
+        KarmaConfig config = new KarmaConfig();
+
+        if (migrated.save(document)) {
+            if (config.debug(Level.OK)) {
+                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
+            }
+        } else {
+            if (config.log(Level.WARNING)) {
+                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+            }
+            if (config.debug(Level.GRAVE)) {
+                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
+            }
+        }
+
+        return migrated;
+    }
+
+    /**
+     * Parse a string into a number
+     *
+     * @param string the string
+     * @return the number or null if not a number
+     */
+    private Number parseNumber(final String string) {
+        Number number = null;
+        try {
+            number = Double.parseDouble(string);
+        } catch (NumberFormatException db) {
+            try {
+                number = Float.parseFloat(string);
+            } catch (NumberFormatException fl) {
+                try {
+                    number = Long.parseLong(string);
+                } catch (NumberFormatException lo) {
+                    try {
+                        number = Short.parseShort(string);
+                    } catch (NumberFormatException sh) {
+                        try {
+                            number = Byte.parseByte(string);
+                        } catch (NumberFormatException by) {
+                            try {
+                                number = Integer.parseInt(string);
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+                }
+            }
+        }
+
+        return number;
     }
 }

@@ -228,6 +228,40 @@ public class KarmaKeyArray extends KarmaElement implements Iterable<KarmaElement
     }
 
     /**
+     * Get the array size
+     *
+     * @return the array size
+     */
+    public final int size() {
+        return elements.size();
+    }
+
+    /**
+     * Get the array elements
+     *
+     * @return the array elements
+     */
+    public final Map<String, KarmaElement> getElements() {
+        return new LinkedHashMap<>(elements);
+    }
+
+    /**
+     * Get if the array contains a key
+     *
+     * @param key the key
+     * @return if the array contains the key
+     */
+    public final boolean containsKey(final String key) {
+        for (String k : elements.keySet()) {
+            if (k.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Get the element at that index
      *
      * @param index the element index
@@ -286,7 +320,7 @@ public class KarmaKeyArray extends KarmaElement implements Iterable<KarmaElement
         if (element != null) {
             //Return true if the key element can be retrieved with the key and vice versa
             String tmp = reverse.getOrDefault(element, null);
-            return tmp.equals(key);
+            return tmp != null && tmp.equals(key);
         }
 
         return false;
@@ -303,7 +337,7 @@ public class KarmaKeyArray extends KarmaElement implements Iterable<KarmaElement
         if (key != null) {
             //Return true if the element key can be retrieved with the element and vice versa
             KarmaElement tmp = elements.getOrDefault(key, null);
-            return tmp == element;
+            return tmp != null && tmp == element;
         }
 
         return false;
@@ -436,7 +470,7 @@ public class KarmaKeyArray extends KarmaElement implements Iterable<KarmaElement
      */
     @Override
     public final boolean isArray() {
-        return true;
+        return false;
     }
 
     /**
@@ -446,7 +480,7 @@ public class KarmaKeyArray extends KarmaElement implements Iterable<KarmaElement
      */
     @Override
     public final boolean isKeyArray() {
-        return false;
+        return true;
     }
 
     /**

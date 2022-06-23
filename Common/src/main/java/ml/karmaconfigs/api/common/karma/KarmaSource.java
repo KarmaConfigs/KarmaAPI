@@ -142,6 +142,15 @@ public interface KarmaSource extends Serializable {
     }
 
     /**
+     * Get if this source will migrate automatically karma files
+     *
+     * @return if this source migrates karma files
+     */
+    default boolean migrateLegacyKarmaFile() {
+        return true;
+    }
+
+    /**
      * Get the source out
      *
      * @return the source out

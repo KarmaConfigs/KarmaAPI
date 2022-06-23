@@ -88,7 +88,7 @@ public final class BruteLoader {
     public BruteLoader(final URLClassLoader ucl) {
         loader = ucl;
 
-        if (JavaVM.javaVersion() >= 9 && !open) {
+        if (!open) {
             open = true;
             StaticComponentContainer.Modules.exportAllToAll();
         }

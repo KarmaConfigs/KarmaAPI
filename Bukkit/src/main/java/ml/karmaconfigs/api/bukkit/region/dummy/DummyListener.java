@@ -34,6 +34,7 @@ import ml.karmaconfigs.api.bukkit.region.event.player.PlayerActionWithRegionEven
 import ml.karmaconfigs.api.bukkit.region.event.player.PlayerInteractAtRegionEvent;
 import ml.karmaconfigs.api.common.utils.ConcurrentList;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -94,41 +95,73 @@ public class DummyListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onMove(EntityMoveEvent e) {
-        Entity entity = e.getEntity();
+        Location from = new Location(e.getWorld(), e.getFromX(), e.getFromY(), e.getFromZ());
+        from.setYaw(e.getFromYaw());
+        from.setPitch(e.getFromPitch());
 
-        Cuboid.getRegions().forEach((region) -> {
-            Set<Entity> cached = entity_cache.getOrDefault(region, Collections.newSetFromMap(new ConcurrentHashMap<>()));
-            Set<Entity> insert = new HashSet<>();
-            Set<Entity> remove = new HashSet<>();
+        Location to = new Location(e.getWorld(), e.getToX(), e.getToY(), e.getFromZ());
+        to.setYaw(e.getToYaw());
+        to.setPitch(e.getFromPitch());
 
-            boolean changes = false;
-            if (region.isInside(entity)) {
-                if (!cached.contains(entity)) {
-                    EntityJoinRegionEvent event = new EntityJoinRegionEvent(entity, region);
-                    Bukkit.getServer().getPluginManager().callEvent(event);
+        if (!from.equals(to)) {
+            Entity entity = e.getEntity();
 
-                    insert.add(entity);
+            Cuboid.getRegions().forEach((region) -> {
+                Set<Entity> cached = entity_cache.getOrDefault(region, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                Set<Entity> insert = new HashSet<>();
+                Set<Entity> remove = new HashSet<>();
 
-                    changes = true;
+                boolean changes = false;
+                if (region.isInside(entity)) {
+                    if (!cached.contains(entity)) {
+                        EntityJoinRegionEvent event = new EntityJoinRegionEvent(entity, region);
+                        Bukkit.getServer().getPluginManager().callEvent(event);
+
+                        insert.add(entity);
+
+                        changes = true;
+                    } else {
+                        if (region.isInside(to)) {
+                            EntityMoveAtRegionEvent event = new EntityMoveAtRegionEvent(entity, region, from, to);
+                            Bukkit.getServer().getPluginManager().callEvent(event);
+
+                            if (event.isCancelled()) {
+                                entity.teleport(from);
+                            }
+                        } else {
+                            EntityPreLeaveRegionEvent event = new EntityPreLeaveRegionEvent(entity, region);
+                            if (event.isCancelled()) {
+                                entity.setVelocity(to.getDirection().multiply(-0.5));
+                            }
+                        }
+                    }
+                } else {
+                    if (region.isInside(to)) {
+                        EntityPreJoinRegionEvent event = new EntityPreJoinRegionEvent(entity, region);
+
+                        if (event.isCancelled()) {
+                            entity.setVelocity(to.getDirection().multiply(-0.5));
+                        }
+                    } else {
+                        if (cached.contains(entity)) {
+                            EntityLeaveRegionEvent event = new EntityLeaveRegionEvent(entity, region);
+                            Bukkit.getServer().getPluginManager().callEvent(event);
+
+                            remove.add(entity);
+
+                            changes = true;
+                        }
+                    }
                 }
-            } else {
-                if (cached.contains(entity)) {
-                    EntityLeaveRegionEvent event = new EntityLeaveRegionEvent(entity, region);
-                    Bukkit.getServer().getPluginManager().callEvent(event);
 
-                    remove.add(entity);
+                if (changes) {
+                    cached.removeAll(remove);
+                    cached.addAll(insert);
 
-                    changes = true;
+                    entity_cache.put(region, cached);
                 }
-            }
-
-            if (changes) {
-                cached.removeAll(remove);
-                cached.addAll(insert);
-
-                entity_cache.put(region, cached);
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -140,6 +173,8 @@ public class DummyListener implements Listener {
     public void onMove(PlayerMoveEvent e) {
         if (!e.isCancelled()) {
             Player entity = e.getPlayer();
+            if (e.getTo() == null)
+                e.setTo(entity.getLocation());
 
             Cuboid.getRegions().forEach((region) -> {
                     Set<Entity> cached = entity_cache.getOrDefault(region, Collections.newSetFromMap(new ConcurrentHashMap<>()));
@@ -155,15 +190,37 @@ public class DummyListener implements Listener {
                         insert.add(entity);
 
                         changes = true;
+                    } else {
+                        if (region.isInside(e.getTo())) {
+                            EntityMoveAtRegionEvent event = new EntityMoveAtRegionEvent(entity, region, e.getFrom(), e.getTo());
+                            Bukkit.getServer().getPluginManager().callEvent(event);
+
+                            if (event.isCancelled()) {
+                                e.setCancelled(true);
+                            }
+                        } else {
+                            EntityPreLeaveRegionEvent event = new EntityPreLeaveRegionEvent(entity, region);
+                            if (event.isCancelled()) {
+                                entity.setVelocity(e.getTo().getDirection().multiply(-0.5));
+                            }
+                        }
                     }
                 } else {
-                    if (cached.contains(entity)) {
-                        EntityLeaveRegionEvent event = new EntityLeaveRegionEvent(entity, region);
-                        Bukkit.getServer().getPluginManager().callEvent(event);
+                    if (region.isInside(e.getTo())) {
+                        EntityPreJoinRegionEvent event = new EntityPreJoinRegionEvent(entity, region);
 
-                        remove.add(entity);
+                        if (event.isCancelled()) {
+                            entity.setVelocity(e.getTo().getDirection().multiply(-0.5));
+                        }
+                    } else {
+                        if (cached.contains(entity)) {
+                            EntityLeaveRegionEvent event = new EntityLeaveRegionEvent(entity, region);
+                            Bukkit.getServer().getPluginManager().callEvent(event);
 
-                        changes = true;
+                            remove.add(entity);
+
+                            changes = true;
+                        }
                     }
                 }
 
@@ -210,29 +267,37 @@ public class DummyListener implements Listener {
         Player player = e.getPlayer();
         Block block = e.getClickedBlock();
 
-        if (block != null && !drop_handled.contains(player.getUniqueId())) {
+        if (!drop_handled.contains(player.getUniqueId())) {
             Cuboid.getRegions().forEach((region) -> {
-                if (region.isInside(block)) {
-                    Event.Result blockUse = e.useInteractedBlock();
-                    Event.Result itemUse = e.useItemInHand();
+                if ((block != null ? region.isInside(block) : region.isInside(player))) {
+                    InteractAction action = InteractAction.UNKNOWN;
 
-                    if (!blockUse.equals(Event.Result.DENY) && !itemUse.equals(Event.Result.DENY)) {
-                        InteractAction action = InteractAction.UNKNOWN;
+                    switch (e.getAction()) {
+                        case RIGHT_CLICK_BLOCK:
+                            action = InteractAction.RIGHT_CLICK_BLOCK;
+                            if (block != null) {
+                                Material material = block.getType();
+                                if (material.name().endsWith("_BUTTON")) {
+                                    action = InteractAction.PRESS_BUTTON;
+                                } else {
+                                    if (material.equals(Material.LEVER)) {
+                                        action = InteractAction.PRESS_LEVER;
+                                    }
+                                }
+                            }
 
-                        switch (e.getAction()) {
-                            case RIGHT_CLICK_BLOCK:
-                                action = InteractAction.RIGHT_CLICK_BLOCK;
-                                break;
-                            case LEFT_CLICK_BLOCK:
-                                action = InteractAction.LEFT_CLICK_BLOCK;
-                                break;
-                            case LEFT_CLICK_AIR:
-                                action = InteractAction.LEFT_CLICK_AIR;
-                                break;
-                            case RIGHT_CLICK_AIR:
-                                action = InteractAction.RIGHT_CLICK_AIR;
-                                break;
-                            case PHYSICAL:
+                            break;
+                        case LEFT_CLICK_BLOCK:
+                            action = InteractAction.LEFT_CLICK_BLOCK;
+                            break;
+                        case LEFT_CLICK_AIR:
+                            action = InteractAction.LEFT_CLICK_AIR;
+                            break;
+                        case RIGHT_CLICK_AIR:
+                            action = InteractAction.RIGHT_CLICK_AIR;
+                            break;
+                        case PHYSICAL:
+                            if (block != null) {
                                 BlockState state = block.getState();
 
                                 //If we can get the crop states, then it's a soil item
@@ -258,16 +323,16 @@ public class DummyListener implements Listener {
                                         }
                                     }
                                 }
-                                break;
-                        }
-
-                        InteractAction finalAction = action;
-
-                        PlayerActionWithRegionEvent event = new PlayerActionWithRegionEvent(player, block, finalAction, region);
-                        Bukkit.getServer().getPluginManager().callEvent(event);
-
-                        e.setCancelled(event.isCancelled());
+                            }
+                            break;
                     }
+
+                    InteractAction finalAction = action;
+
+                    PlayerActionWithRegionEvent event = new PlayerActionWithRegionEvent(player, block, finalAction, region);
+                    Bukkit.getServer().getPluginManager().callEvent(event);
+
+                    e.setCancelled(event.isCancelled());
                 }
             });
         } else {
@@ -399,7 +464,7 @@ public class DummyListener implements Listener {
             Entity entity = e.getEntity();
 
             Cuboid.getRegions().forEach((region) -> {
-                if (region.isInside(issuer) || region.isInside(entity)) {
+                if ((issuer != null && region.isInside(issuer)) || region.isInside(entity)) {
                     damage_data.put(entity.getUniqueId(), issuer);
                 }
             });
@@ -532,6 +597,4 @@ public class DummyListener implements Listener {
             });
         }
     }
-
-
 }

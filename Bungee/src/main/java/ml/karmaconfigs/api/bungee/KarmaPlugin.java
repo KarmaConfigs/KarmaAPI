@@ -113,6 +113,46 @@ public abstract class KarmaPlugin extends Plugin implements KarmaSource {
     }
 
     /**
+     * Karma source name
+     *
+     * @return the source name
+     */
+    @Override
+    public String name() {
+        return getDescription().getName();
+    }
+
+    /**
+     * Karma source version
+     *
+     * @return the source version
+     */
+    @Override
+    public String version() {
+        return getDescription().getVersion();
+    }
+
+    /**
+     * Karma source description
+     *
+     * @return the source description
+     */
+    @Override
+    public String description() {
+        return getDescription().getDescription();
+    }
+
+    /**
+     * Karma source authors
+     *
+     * @return the source authors
+     */
+    @Override
+    public String[] authors() {
+        return new String[]{getDescription().getAuthor()};
+    }
+
+    /**
      * Get the source out
      *
      * @return the source out
