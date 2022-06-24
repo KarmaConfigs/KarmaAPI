@@ -26,7 +26,7 @@ package ml.karmaconfigs.api.bungee.loader;
  */
 
 import ml.karmaconfigs.api.bungee.KarmaPlugin;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.karmafile.karmayaml.KarmaYamlManager;
 import ml.karmaconfigs.api.common.utils.BridgeLoader;
 import ml.karmaconfigs.api.common.utils.enums.Level;

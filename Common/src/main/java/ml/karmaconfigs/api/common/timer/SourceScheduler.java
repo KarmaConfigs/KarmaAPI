@@ -27,7 +27,7 @@ package ml.karmaconfigs.api.common.timer;
 
 import ml.karmaconfigs.api.common.karma.KarmaAPI;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.timer.scheduler.SimpleScheduler;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.IllegalTimerAccess;
 import ml.karmaconfigs.api.common.timer.scheduler.errors.TimerAlreadyStarted;

@@ -28,7 +28,7 @@ package ml.karmaconfigs.api.velocity.loader;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.proxy.ProxyServer;
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.BridgeLoader;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 

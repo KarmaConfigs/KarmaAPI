@@ -26,7 +26,7 @@ package ml.karmaconfigs.api.common;
  */
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.PrefixConsoleData;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.placeholder.GlobalPlaceholderEngine;
@@ -242,6 +242,156 @@ public final class Console {
      *
      * @param message the message to send
      * @param level the message level
+     */
+    public void debug(final @NotNull CharSequence message, final @NotNull Level level) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.debug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     */
+    public void debugFile(final @NotNull CharSequence message, final @NotNull Level level) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.fileDebug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     */
+    public void debugUtil(final @NotNull CharSequence message, final @NotNull Level level) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.utilDebug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
      * @param replaces the message replaces
      */
     public void send(final @NotNull CharSequence message, final @NotNull Level level, final @NotNull Object... replaces) {
@@ -286,6 +436,174 @@ public final class Console {
                 tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
 
             messageAction.accept(prefix + tmpMessage);
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     * @param replaces the message replaces
+     */
+    public void debug(final @NotNull CharSequence message, final @NotNull Level level, final @NotNull Object... replaces) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.debug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            for (int i = 0; i < replaces.length; i++) {
+                String placeholder = "{" + i + "}";
+                String value = String.valueOf(replaces[i]);
+                tmpMessage = tmpMessage.replace(placeholder, value);
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     * @param replaces the message replaces
+     */
+    public void debugFile(final @NotNull CharSequence message, final @NotNull Level level, final @NotNull Object... replaces) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.fileDebug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            for (int i = 0; i < replaces.length; i++) {
+                String placeholder = "{" + i + "}";
+                String value = String.valueOf(replaces[i]);
+                tmpMessage = tmpMessage.replace(placeholder, value);
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
+        }
+    }
+
+    /**
+     * Send a message to the console
+     *
+     * @param message the message to send
+     * @param level the message level
+     * @param replaces the message replaces
+     */
+    public void debugUtil(final @NotNull CharSequence message, final @NotNull Level level, final @NotNull Object... replaces) {
+        KarmaConfig config = new KarmaConfig();
+
+        if (config.utilDebug(level)) {
+            Consumer<String> messageAction = messageActions.getOrDefault(source, null);
+
+            String tmpMessage = String.valueOf(message);
+            String prefix = "&b[ &fALERT &b] &7NONE: &b";
+            PrefixConsoleData data = getData();
+            switch (level) {
+                case OK:
+                    prefix = data.getOkPrefix();
+                    break;
+                case INFO:
+                    prefix = data.getInfoPrefix();
+                    break;
+                case WARNING:
+                    prefix = data.getWarningPrefix();
+                    break;
+                case GRAVE:
+                    prefix = data.getGravePrefix();
+                    break;
+            }
+            for (int i = 0; i < replaces.length; i++) {
+                String placeholder = "{" + i + "}";
+                String value = String.valueOf(replaces[i]);
+                tmpMessage = tmpMessage.replace(placeholder, value);
+            }
+            tmpMessage = StringUtils.stripColor(tmpMessage);
+            Set<PlaceholderEngine> added = engines.getOrDefault(source, Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            for (PlaceholderEngine engine : added)
+                tmpMessage = engine.parse(tmpMessage);
+
+            if (messageAction == null) {
+                if (tmpMessage.contains("\n")) {
+                    for (String msg : tmpMessage.split("\n"))
+                        send(msg);
+                } else {
+                    send(prefix + tmpMessage);
+                }
+            } else {
+                if (tmpMessage.contains("\n"))
+                    tmpMessage = StringUtils.listToString(Arrays.asList(tmpMessage.split("\n")), false);
+
+                messageAction.accept(prefix + tmpMessage);
+            }
         }
     }
 }

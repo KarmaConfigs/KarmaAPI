@@ -133,11 +133,10 @@ public class Region extends Cuboid implements Serializable {
     /**
      * Initialize the region
      *
-     * @param owner the region owner
      * @param source the region source
      */
-    Region(final KarmaPlugin owner, final Region source) {
-        super(owner);
+    Region(final Region source) {
+        super();
 
         name = source.name;
         internal = source.internal;
@@ -163,15 +162,13 @@ public class Region extends Cuboid implements Serializable {
     /**
      * Initialize the region
      *
-     * @param owner the region owner
      * @param n the region name
      * @param point1 the first point
      * @param point2 the second point
      * @throws IllegalArgumentException if the locations doesn't have the same world
      * or if any of the worlds are null
      */
-    public Region(final KarmaPlugin owner, final String n, final Location point1, final Location point2) throws IllegalArgumentException {
-        super(owner);
+    public Region(final String n, final Location point1, final Location point2) throws IllegalArgumentException {
         name = n;
 
         StringBuilder internalNameBuilder = new StringBuilder();
@@ -260,7 +257,6 @@ public class Region extends Cuboid implements Serializable {
                 KarmaElement result = file.get("region");
                 if (result.isString()) {
                     Object serialized = StringUtils.load(result.getObjet().getString());
-
                     return serialized instanceof Region;
                 }
             }
@@ -545,12 +541,11 @@ public class Region extends Cuboid implements Serializable {
      */
     @Override
     public void saveToMemory(final KarmaPlugin owner) {
-        if (!exists(owner)) {
-            Path regionFile = owner.getDataPath().resolve("cache").resolve("regions").resolve(token + ".region");
+        Path regionFile = owner.getDataPath().resolve("cache").resolve("regions").resolve(token + ".region");
 
-            KarmaMain file = new KarmaMain(owner, regionFile);
-            file.set("region", new KarmaObject(StringUtils.serialize(this)));
-        }
+        KarmaMain file = new KarmaMain(owner, regionFile);
+        file.set("region", new KarmaObject(StringUtils.serialize(this)));
+        file.save();
     }
 
     /**
@@ -588,7 +583,7 @@ public class Region extends Cuboid implements Serializable {
         }
 
         if (region != null) {
-            return new Region(owner, region);
+            return new Region(region);
         } else {
             throw new RegionNotFound(owner, token, reason);
         }

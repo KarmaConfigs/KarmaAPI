@@ -1,4 +1,4 @@
-package ml.karmaconfigs.api.common.karma.file;
+package ml.karmaconfigs.api.common.karma;
 
 /*
  * This file is part of KarmaAPI, licensed under the MIT License.
@@ -25,59 +25,19 @@ package ml.karmaconfigs.api.common.karma.file;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.common.karma.APISource;
-import ml.karmaconfigs.api.common.karma.KarmaSource;
+import ml.karmaconfigs.api.common.karma.file.KarmaMain;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaArray;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaObject;
 import ml.karmaconfigs.api.common.utils.enums.Level;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-
-import static ml.karmaconfigs.api.common.karma.KarmaAPI.source;
-
 /**
  * Karma configuration
  */
 public final class KarmaConfig {
 
-    private final KarmaMain mn;
-
-    /**
-     * Initialize the configuration
-     */
-    public KarmaConfig() {
-        KarmaMain tmp = null;
-        try {
-            Path dst = source(false).getDataPath().resolve("config.kf");
-            InputStream internal = KarmaConfig.class.getResourceAsStream("/config.kf");
-
-            if (!Files.exists(dst)) {
-                if (internal != null) {
-                    Files.createDirectories(dst.getParent());
-                    Files.createFile(dst);
-                    Files.copy(internal, dst, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-
-            if (Files.size(dst) <= 100) {
-                if (internal != null) {
-                    Files.copy(internal, dst, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-
-            tmp = new KarmaMain(APISource.getOriginal(false), dst);
-            tmp.validate();
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        }
-
-        mn = tmp;
-    }
+    private final static KarmaMain mn = KarmaMain.getConfiguration();
 
     /**
      * Get the console default prefix
@@ -219,7 +179,8 @@ public final class KarmaConfig {
      */
     public boolean debug(final Level lvl) {
         if (mn != null) {
-            KarmaElement element = mn.get("debug", new KarmaObject(true));
+            KarmaElement element = mn.get("debug", new KarmaObject(false));
+
             if (element.isBoolean()) {
                 boolean result = element.getObjet().getBoolean();
                 if (result) {

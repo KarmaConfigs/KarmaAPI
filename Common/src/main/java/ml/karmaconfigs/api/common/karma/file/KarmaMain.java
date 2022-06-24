@@ -76,37 +76,37 @@ public class KarmaMain {
                 String first = lines.get(0);
 
                 if (!first.startsWith("(") && !first.startsWith("(\"main\"")) {
-                    KarmaConfig config = new KarmaConfig();
+                    //KarmaConfig config = new KarmaConfig(); Cannot use KarmaConfig as it depends on KarmaMain. Recursion causes crash
 
                     //Must be migrated
-                    if (config.debug(Level.WARNING)) {
+                    //if (config.debug(Level.WARNING)) {
                         source.console().send("Preparing to migrate from legacy karma file {0} to modern format", Level.WARNING, PathUtilities.getPrettyPath(doc));
-                    }
+                    //}
 
                     try {
                         @SuppressWarnings("deprecation")
                         KarmaMain migrated = KarmaMain.fromLegacy(source, new KarmaFile(doc));
                         if (migrated.save(doc)) {
-                            if (config.debug(Level.OK)) {
+                            //if (config.debug(Level.OK)) {
                                 source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(doc));
-                            }
+                            //}
                         } else {
-                            if (config.log(Level.WARNING)) {
+                            //if (config.log(Level.WARNING)) {
                                 source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(doc));
-                            }
-                            if (config.debug(Level.GRAVE)) {
+                            //}
+                            //if (config.debug(Level.GRAVE)) {
                                 source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(doc));
-                            }
+                            //}
                         }
                     } catch (Throwable ex) {
-                        if (config.log(Level.GRAVE)) {
+                        //if (config.log(Level.GRAVE)) {
                             source.logger().scheduleLog(Level.GRAVE, ex);
                             source.logger().scheduleLog(Level.INFO, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(doc));
-                        }
+                        //}
 
-                        if (config.debug(Level.GRAVE)) {
+                        //if (config.debug(Level.GRAVE)) {
                             source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(doc));
-                        }
+                        //}
                     }
                 }
             }
@@ -137,37 +137,37 @@ public class KarmaMain {
                 String first = lines.get(0);
 
                 if (!first.startsWith("(") && !first.startsWith("(\"main\"")) {
-                    KarmaConfig config = new KarmaConfig();
+                    //KarmaConfig config = new KarmaConfig();
 
                     //Must be migrated
-                    if (config.debug(Level.WARNING)) {
+                    //if (config.debug(Level.WARNING)) {
                         source.console().send("Preparing to migrate from legacy karma file {0} to modern format", Level.WARNING, PathUtilities.getPrettyPath(document));
-                    }
+                    //}
 
                     try {
                         @SuppressWarnings("deprecation")
                         KarmaMain migrated = KarmaMain.fromLegacy(source, new KarmaFile(document));
                         if (migrated.save(document)) {
-                            if (config.debug(Level.OK)) {
+                            //if (config.debug(Level.OK)) {
                                 source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
-                            }
+                            //}
                         } else {
-                            if (config.log(Level.WARNING)) {
+                            //if (config.log(Level.WARNING)) {
                                 source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
-                            }
-                            if (config.debug(Level.GRAVE)) {
+                            //}
+                            //if (config.debug(Level.GRAVE)) {
                                 source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
-                            }
+                            //}
                         }
                     } catch (Throwable ex) {
-                        if (config.log(Level.GRAVE)) {
+                        //if (config.log(Level.GRAVE)) {
                             source.logger().scheduleLog(Level.GRAVE, ex);
                             source.logger().scheduleLog(Level.INFO, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
-                        }
+                        //}
 
-                        if (config.debug(Level.GRAVE)) {
+                        //if (config.debug(Level.GRAVE)) {
                             source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
-                        }
+                        //}
                     }
                 }
             }
@@ -738,6 +738,12 @@ public class KarmaMain {
                                             }
                                         }
                                     }
+                                } else {
+                                    KarmaObject obj = new KarmaObject("");
+
+                                    content.put(key, obj);
+                                    if (rec)
+                                        reverse.put(obj, key);
                                 }
                             } else {
                                 if (line.replaceAll("\\s", "").endsWith(")")) {
@@ -980,11 +986,16 @@ public class KarmaMain {
         if (!exists())
             create();
 
+        KarmaSource source = APISource.getOriginal(false);
         try {
+            source.console().debug("Saving file {0}", Level.INFO, PathUtilities.getPrettyPath(target));
+
             List<String> write = new ArrayList<>();
             List<String> lines = PathUtilities.readAllLines(document);
 
             if (!lines.isEmpty()) {
+                source.console().debug("File is not empty", Level.INFO);
+
                 write.add("(\"main\"");
                 Pattern keyMatcher = Pattern.compile("'.*' .?->");
 
@@ -1003,6 +1014,8 @@ public class KarmaMain {
                     Matcher matcher = keyMatcher.matcher(line);
 
                     if (matcher.find()) {
+                        source.console().debug("Found key!", Level.INFO);
+
                         if (section.toString().isEmpty())
                             section.append("main");
 
@@ -1011,8 +1024,13 @@ public class KarmaMain {
 
                         String space = line.substring(0, start);
                         String result = line.substring(start, end);
+
+                        source.console().debug("The path is: {0} ( From line: {1} )", Level.INFO, result, line);
+
                         boolean recursive = line.endsWith("<->");
                         String name = result.substring(1, result.length() - (recursive ? 5 : 4));
+
+                        source.console().debug("Key name is: {0}", Level.INFO, name);
 
                         String key = section + "." + name;
                         String value = line.replaceFirst(line.substring(0, start) + result + " ", "");
@@ -1024,7 +1042,10 @@ public class KarmaMain {
                         }
 
                         if (element != null) {
+                            source.console().debug("Key {0} has a known value: {1}", Level.INFO, key, element);
+
                             if (element.isString() || element.isBoolean() || element.isNumber()) {
+                                source.console().debug("Wrote!", Level.INFO);
                                 write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + element);
                             }
 
@@ -1034,6 +1055,8 @@ public class KarmaMain {
                                     write.add(space + "'" + name + "' " + (recursive ? "<-> " : "-> ") + "{");
 
                                     if (element.isKeyArray()) {
+                                        source.console().debug("Writing map", Level.INFO);
+
                                         KarmaKeyArray kA = element.getKeyArray();
                                         kA.getKeys().forEach((k) -> {
                                             KarmaElement kAElement = kA.get(k);
@@ -1042,6 +1065,8 @@ public class KarmaMain {
                                             write.add(space + "\t'" + k + "' " + (rec ? "<-> " : "-> ") + kAElement.getObjet().textValue());
                                         });
                                     } else {
+                                        source.console().debug("Writing list", Level.INFO);
+
                                         KarmaArray a = element.getArray();
                                         for (KarmaElement sub : a) {
                                             write.add(space + "\t'" + sub.getObjet().textValue() + "'");
@@ -1055,22 +1080,22 @@ public class KarmaMain {
                                 }
                             }
                         } else {
-                            KarmaConfig config = new KarmaConfig();
+                            //KarmaConfig config = new KarmaConfig();
 
-                            if (config.log(Level.WARNING)) {
+                            //if (config.log(Level.WARNING)) {
                                 APISource.getOriginal(false).logger().scheduleLog(Level.WARNING,
                                         "An error occurred while saving file {0}. Required key {1} is not defined{2}. The file will be try to be saved anyway",
                                         PathUtilities.getPrettyPath(document),
                                         key,
                                         (internal == null ? " ( setting internal file may fix the issue )" : " ( internal file does not contain the key neither )"));
-                            }
-                            if (config.fileDebug(Level.WARNING)) {
+                            //}
+                            //if (config.fileDebug(Level.WARNING)) {
                                 APISource.getOriginal(false).console().send("An error occurred while saving file {0} because the key {1} is not defined{2}. The file will be try to be saved anyway",
                                         Level.WARNING,
                                         PathUtilities.getPrettyPath(document),
                                         key,
                                         (internal == null ? " ( setting internal file may fix the issue )" : " ( internal file does not contain the key neither )"));
-                            }
+                            //}
                         }
                     } else {
                         if (readingList) {
@@ -1141,6 +1166,8 @@ public class KarmaMain {
                 }
                 write.add(")");
             } else {
+                source.console().debug("File is empty. Storing only set paths", Level.INFO);
+
                 //Basically the file is new and we must set the values
                 Map<String, Map<String, KarmaElement>> sections = new LinkedHashMap<>();
                 for (String key : content.keySet()) {
@@ -1185,9 +1212,13 @@ public class KarmaMain {
                                     write.add(b + "(\"" + sub + "\"");
                                     Map<String, KarmaElement> values = sections.getOrDefault(realKeyBuilder.toString(), new LinkedHashMap<>());
 
+                                    source.console().debug("Section: {0}", Level.INFO, sub);
+
                                     for (String key : values.keySet()) {
                                         KarmaElement value = values.get(key);
                                         if (value.isArray()) {
+                                            source.console().debug("Writing list {0}", Level.INFO, key);
+
                                             write.add(b + "\t'" + key + "' -> {");
                                             KarmaArray array = value.getArray();
 
@@ -1197,6 +1228,8 @@ public class KarmaMain {
                                             write.add(b + "\t}");
                                         } else {
                                             if (value.isKeyArray()) {
+                                                source.console().debug("Writing map {0}", Level.INFO, key);
+
                                                 write.add(b + "\t'" + key + "' -> {");
                                                 KarmaKeyArray array = value.getKeyArray();
 
@@ -1210,6 +1243,8 @@ public class KarmaMain {
                                                 });
                                                 write.add(b + "\t}");
                                             } else {
+                                                source.console().debug("Writing key {0} with value: {1}", Level.INFO, key, values.get(key));
+
                                                 write.add(b + "\t'" + key + "' -> " + values.get(key).toString());
                                             }
                                         }
@@ -1220,6 +1255,8 @@ public class KarmaMain {
                                 }
                             }
                         } else {
+                            source.console().debug("Section: {0}", Level.INFO, section);
+
                             write.add("\t(\"" + section + "\"");
                             Map<String, KarmaElement> values = sections.getOrDefault(section, new LinkedHashMap<>());
 
@@ -1227,6 +1264,8 @@ public class KarmaMain {
                                 KarmaElement value = values.get(key);
 
                                 if (value.isArray()) {
+                                    source.console().debug("Writing list {0}", Level.INFO, key);
+
                                     write.add("\t\t'" + key + "' -> {");
                                     KarmaArray array = value.getArray();
 
@@ -1236,6 +1275,8 @@ public class KarmaMain {
                                     write.add("\t\t}");
                                 } else {
                                     if (value.isKeyArray()) {
+                                        source.console().debug("Writing map {0}", Level.INFO, key);
+
                                         write.add("\t\t'" + key + "' -> {");
                                         KarmaKeyArray array = value.getKeyArray();
 
@@ -1249,12 +1290,16 @@ public class KarmaMain {
                                         });
                                         write.add("\t\t}");
                                     } else {
+                                        source.console().debug("Writing key {0} with value: {1}", Level.INFO, key, values.get(key));
+
                                         write.add("\t\t'" + key + "' -> " + values.get(key).toString());
                                     }
                                 }
                             }
                         }
                     } else {
+                        source.console().debug("Section: main", Level.INFO);
+
                         write.add("(\"main\"");
                         Map<String, KarmaElement> values = sections.getOrDefault(section, new LinkedHashMap<>());
 
@@ -1263,6 +1308,8 @@ public class KarmaMain {
                             KarmaElement value = values.get(key);
 
                             if (value.isArray()) {
+                                source.console().debug("Writing list {0}", Level.INFO, key);
+
                                 write.add("\t'" + key + "' -> {");
                                 KarmaArray array = value.getArray();
 
@@ -1272,6 +1319,8 @@ public class KarmaMain {
                                 write.add("\t}");
                             } else {
                                 if (value.isKeyArray()) {
+                                    source.console().debug("Writing map {0}", Level.INFO, key);
+
                                     write.add("\t'" + key + "' -> {");
                                     KarmaKeyArray array = value.getKeyArray();
 
@@ -1285,6 +1334,8 @@ public class KarmaMain {
                                     });
                                     write.add("\t}");
                                 } else {
+                                    source.console().debug("Writing key {0} with value: {1}", Level.INFO, key, values.get(key));
+
                                     write.add("\t'" + key + "' -> " + values.get(key).toString());
                                 }
                             }
@@ -1339,8 +1390,6 @@ public class KarmaMain {
             } else {
                 clearCache();
                 preCache(); //We must update the cache
-
-                Files.write(document, "".getBytes(StandardCharsets.UTF_8));
 
                 KarmaMain tmp = new KarmaMain(internal);
 
@@ -1712,19 +1761,12 @@ public class KarmaMain {
     public static KarmaMain migrate(final KarmaSource source, final KarmaFile legacy) throws IOException {
         Path document = legacy.getFile().toPath();
         KarmaMain migrated = KarmaMain.fromLegacy(source, legacy);
-        KarmaConfig config = new KarmaConfig();
 
         if (migrated.save(document)) {
-            if (config.debug(Level.OK)) {
-                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
-            }
+            source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
         } else {
-            if (config.log(Level.WARNING)) {
-                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
-            }
-            if (config.debug(Level.GRAVE)) {
-                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
-            }
+            source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+            source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
         }
 
         return migrated;
@@ -1743,19 +1785,12 @@ public class KarmaMain {
         //We don't want async
         Path document = legacy.getFile().toPath();
         KarmaMain migrated = KarmaMain.fromLegacy(source, legacy.synchronize());
-        KarmaConfig config = new KarmaConfig();
 
         if (migrated.save(document)) {
-            if (config.debug(Level.OK)) {
-                source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
-            }
+            source.console().send("Migrated successfully from legacy karma file {0}", Level.OK, PathUtilities.getPrettyPath(document));
         } else {
-            if (config.log(Level.WARNING)) {
-                source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
-            }
-            if (config.debug(Level.GRAVE)) {
-                source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
-            }
+            source.logger().scheduleLog(Level.WARNING, "Failed when migrating from legacy karma file {0} to modern karma main file", PathUtilities.getPrettyPath(document));
+            source.console().send("Failed to migrate from legacy karma file {0}", Level.GRAVE, PathUtilities.getPrettyPath(document));
         }
 
         return migrated;
@@ -1794,5 +1829,21 @@ public class KarmaMain {
         }
 
         return number;
+    }
+
+    /**
+     * Get KarmaAPI configuration
+     *
+     * @return the KarmaAPI configuration
+     */
+    public static KarmaMain getConfiguration() {
+        KarmaMain main = new KarmaMain(APISource.getOriginal(false), "config.kf")
+                .internal(KarmaMain.class.getResourceAsStream("/config.kf"));
+
+        try {
+            main.validate();
+        } catch (Throwable ignored) {}
+
+        return main;
     }
 }

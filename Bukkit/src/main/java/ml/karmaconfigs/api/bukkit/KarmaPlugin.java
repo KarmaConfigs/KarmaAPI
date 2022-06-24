@@ -342,6 +342,15 @@ public abstract class KarmaPlugin extends JavaPlugin implements KarmaSource {
     }
 
     /**
+     * Get the ABC plugin
+     *
+     * @return the ABC plugin
+     */
+    public static KarmaPlugin getABC() {
+        return (KarmaPlugin) Bukkit.getServer().getPluginManager().getPlugin("AnotherBarelyCodedKarmaPlugin");
+    }
+
+    /**
      * Register globally a player placeholder
      *
      * @param placeholders the player placeholder

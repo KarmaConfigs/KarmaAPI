@@ -32,22 +32,24 @@ import ml.karmaconfigs.api.bukkit.region.dummy.DummyListener;
 import ml.karmaconfigs.api.bukkit.region.wall.util.Wall;
 import ml.karmaconfigs.api.bukkit.region.wall.util.WallType;
 import ml.karmaconfigs.api.common.ResourceDownloader;
-import ml.karmaconfigs.api.common.karma.KarmaAPI;
-import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.utils.url.URLUtils;
 import ml.karmaconfigs.api.common.utils.enums.Level;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredListener;
 
 import java.io.File;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -62,8 +64,6 @@ import java.util.UUID;
 @SuppressWarnings("unused")
 public abstract class Cuboid implements Serializable {
 
-    private static boolean tried = false;
-    private static Plugin hooked = null;
     private static Listener dummy = null;
     private static Listener blocks = null;
 
@@ -71,62 +71,90 @@ public abstract class Cuboid implements Serializable {
 
     /**
      * Initialize the cuboid region
-     *
-     * @param plugin the cuboid owner
      */
-    public Cuboid(final KarmaPlugin plugin) {
-        KarmaConfig config = new KarmaConfig();
-        KarmaSource source = KarmaAPI.source(false);
-        PluginManager manager = plugin.getServer().getPluginManager();
+    public Cuboid() {
+        boolean hooked = dummy != null && blocks != null;
+        if (hooked) {
+            boolean dummy = false;
+            boolean block = false;
 
-        if (!manager.isPluginEnabled(hooked)) {
-            if (hooked != null && dummy != null && blocks != null) {
-                HandlerList.unregisterAll(dummy);
-                HandlerList.unregisterAll(blocks);
+            RegisteredListener[] dummyListeners = PlayerMoveEvent.getHandlerList().getRegisteredListeners();
+            RegisteredListener[] blockListeners = BlockPlaceEvent.getHandlerList().getRegisteredListeners();
+
+            for (RegisteredListener listener : dummyListeners) {
+                Listener l = listener.getListener();
+                if (l instanceof DummyListener) {
+                    dummy = true;
+                    break;
+                }
             }
 
-            boolean proceed = true;
-            if (!manager.isPluginEnabled("BKCommonLib") && !tried) {
-                tried = true;
+            for (RegisteredListener listener : blockListeners) {
+                Listener l = listener.getListener();
+                if (l instanceof BlockListener) {
+                    block = true;
+                    break;
+                }
+            }
+
+            hooked = dummy && block;
+        }
+
+        if (!hooked) {
+            KarmaPlugin abc = KarmaPlugin.getABC();
+            PluginManager manager = Bukkit.getPluginManager();
+
+            abc.console().send("Hooking into KarmaAPI region listeners to completely enable the region API", Level.WARNING);
+            if (!manager.isPluginEnabled("BKCommonLib")) {
+                KarmaConfig config = new KarmaConfig();
 
                 if (config.debug(Level.GRAVE)) {
-                    source.console().send("KarmaAPI region API needs BKCommonLib to work but we didn't found it. We will download it", Level.GRAVE);
+                    abc.console().send("KarmaAPI region API needs BKCommonLib to work but we didn't found it. We will download it", Level.GRAVE);
                 }
 
-                File pluginsFolder = new File(plugin.getServer().getWorldContainer(), "plugins");
+                File pluginsFolder = new File(abc.getServer().getWorldContainer(), "plugins");
                 File destination = new File(pluginsFolder, "BKCommonLib.jar");
 
-                ResourceDownloader downloader = new ResourceDownloader(destination,  URLUtils.getOrBackup(
-                        "https://ci.mg-dev.eu/job/BKCommonLib/1334/artifact/target/BKCommonLib-1.19-v1-1334.jar").toString());
-                downloader.download();
+                URL dlURL = URLUtils.getOrNull(
+                        "https://ci.mg-dev.eu/job/BKCommonLib/1334/artifact/target/BKCommonLib-1.19-v1-1334.jar");
 
-                try {
-                    Plugin result = manager.loadPlugin(destination);
-                    if (result != null) {
-                        if (config.log(Level.OK)) {
-                            source.console().send("Downloaded and enabled BKCommonLib", Level.OK);
+                if (dlURL != null) {
+                    ResourceDownloader downloader = new ResourceDownloader(destination, dlURL.toString());
+                    downloader.downloadAsync().whenComplete((dl) -> {
+                        if (dl) {
+                            try {
+                                Plugin result = manager.loadPlugin(destination);
+                                if (result != null) {
+                                    abc.console().send("Downloaded and enabled BKCommonLib", Level.OK);
+
+                                    if (dummy == null) {
+                                        dummy = new DummyListener(abc);
+                                        manager.registerEvents(dummy, abc);
+                                    }
+                                    if (blocks == null) {
+                                        blocks = new DummyListener(abc);
+                                        manager.registerEvents(blocks, abc);
+                                    }
+                                } else {
+                                    abc.console().send("BKCommonLib is downloaded, but couldn't be loaded", Level.GRAVE);
+                                }
+                            } catch (Throwable error) {
+                                abc.console().send("Corrupted BKCommonLib. Please download it manually", Level.GRAVE);
+                            }
+                        } else {
+                            abc.console().send("Couldn't download BKCommonLib. Is this server connected to the internet?", Level.GRAVE);
                         }
-                    } else {
-                        if (config.debug(Level.WARNING)) {
-                            source.console().send("BKCommonLib has been downloaded but couldn't be enabled", Level.WARNING);
-                        }
-                        proceed = false;
-                    }
-                } catch (Throwable ex) {
-                    ex.printStackTrace();
-                    proceed = false;
+                    });
                 }
-            }
-
-            if (proceed) {
-                dummy = new DummyListener(plugin);
-                blocks = new BlockListener();
-                hooked = plugin;
-
-                manager.registerEvents(dummy, plugin);
-                manager.registerEvents(blocks, plugin);
-
-                source.console().send("Registered region event listeners", Level.INFO);
+            } else {
+                if (dummy == null) {
+                    dummy = new DummyListener(abc);
+                    manager.registerEvents(dummy, abc);
+                }
+                if (blocks == null) {
+                    blocks = new DummyListener(abc);
+                    manager.registerEvents(blocks, abc);
+                }
             }
         }
 

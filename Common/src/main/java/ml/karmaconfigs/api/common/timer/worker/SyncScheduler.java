@@ -1,7 +1,7 @@
 package ml.karmaconfigs.api.common.timer.worker;
 
 import ml.karmaconfigs.api.common.karma.KarmaSource;
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
+import ml.karmaconfigs.api.common.karma.KarmaConfig;
 import ml.karmaconfigs.api.common.timer.scheduler.Scheduler;
 import ml.karmaconfigs.api.common.timer.worker.event.TaskListener;
 import ml.karmaconfigs.api.common.utils.enums.Level;

@@ -25,7 +25,6 @@ package ml.karmaconfigs.api.common.karma;
  *  SOFTWARE.
  */
 
-import ml.karmaconfigs.api.common.karma.file.KarmaConfig;
 import ml.karmaconfigs.api.common.karma.loader.BruteLoader;
 import ml.karmaconfigs.api.common.karma.loader.component.NameComponent;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
