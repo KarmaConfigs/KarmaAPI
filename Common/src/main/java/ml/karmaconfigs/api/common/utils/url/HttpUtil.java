@@ -28,19 +28,34 @@ package ml.karmaconfigs.api.common.utils.url;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.stream.JsonReader;
+import com.google.gson.JsonObject;
+import ml.karmaconfigs.api.common.JavaVM;
+import ml.karmaconfigs.api.common.karma.KarmaAPI;
+import ml.karmaconfigs.api.common.utils.string.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -65,7 +80,7 @@ public final class HttpUtil {
             httpClient = HttpClientBuilder.create()
                     .disableRedirectHandling()
                     .disableDefaultUserAgent()
-                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
+                    .setUserAgent("KarmaAPI/" + KarmaAPI.getVersion() + " (" + JavaVM.getSystem().getName() + " " + JavaVM.osVersion() + "; " + JavaVM.osModel() + "; " + JavaVM.osArchitecture() + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
                     .build();
         }
     }
@@ -85,14 +100,89 @@ public final class HttpUtil {
     /**
      * Get the response
      *
+     * @param data the post data
+     * @param headers the request headers
      * @return the url response
      */
     @NotNull
-    public String getResponse() {
+    public String getResponse(final Post data, final Header... headers) {
+        String response = "";
+
+        try {
+            HttpPost postRequest = new HttpPost(url);
+
+            for (Header h : headers)
+                postRequest.addHeader(h);
+
+            if (StringUtils.isNullOrEmpty(data.getJson())) {
+                List<NameValuePair> params = new ArrayList<>();
+                data.getData().forEach((key) -> params.add(new BasicNameValuePair(key, data.get(key))));
+
+                postRequest.setEntity(new UrlEncodedFormEntity(params));
+            } else {
+                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+
+                JsonObject json = gson.fromJson(data.getJson(), JsonObject.class);
+
+                data.getData().forEach((k) -> {
+                    json.addProperty(k, data.get(k));
+                });
+
+                String string = gson.toJson(json);
+
+                postRequest.setEntity(new StringEntity(string));
+            }
+
+            HttpResponse httpResponse = httpClient.execute(postRequest);
+            Header[] contentType = httpResponse.getHeaders("Content-type");
+
+            boolean json = false;
+            for (Header header : contentType) {
+                if (header.getValue().equalsIgnoreCase("application/json")) {
+                    json = true;
+                    break;
+                }
+            }
+            Scanner sc = new Scanner(httpResponse.getEntity().getContent());
+
+            StringBuilder sb = new StringBuilder();
+            while (sc.hasNext()) {
+                sb.append(sc.next());
+            }
+
+            response = sb.toString();
+
+            if (json) {
+                Gson gson = new GsonBuilder().setLenient().setPrettyPrinting().create();
+                JsonElement object = gson.fromJson(response, JsonElement.class);
+
+                //Set json to pretty print
+                response = gson.toJson(object);
+            }
+        } catch (HttpHostConnectException ex) {
+            response = "403 - Connection refused";
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        return response;
+    }
+
+    /**
+     * Get the response
+     *
+     * @param headers the request headers
+     * @return the url response
+     */
+    @NotNull
+    public String getResponse(final Header... headers) {
         String response = "";
 
         try {
             HttpGet httpget = new HttpGet(url);
+
+            for (Header h : headers)
+                httpget.addHeader(h);
 
             HttpResponse httpresponse = httpClient.execute(httpget);
             Header[] contentType = httpresponse.getHeaders("Content-type");

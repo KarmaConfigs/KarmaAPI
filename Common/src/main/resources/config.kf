@@ -146,4 +146,16 @@
         'password' -> ""
         'token' -> ""
     )
+
+    *(
+        The credentials used for WebLog API.
+        The syntax is: 'LOG_API' -> "ACCESS KEY"
+
+        Known WebLog APIs are:
+        - mclo.gs ( Free without API token )
+        - Paste.ee ( Free with API token )
+    )*
+    ("paste_credentials"
+        'PASTE_EE' -> ""
+    )
 )

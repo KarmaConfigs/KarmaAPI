@@ -1,11 +1,11 @@
 ("main"
 
     */The token
-    "token" -> ""
+    'token' -> ""
 
     */The token salt
-    "salt" -> ""
+    'salt' -> ""
 
     */The token expiration
-    "expiration" -> ""
+    'expiration' -> ""
 )

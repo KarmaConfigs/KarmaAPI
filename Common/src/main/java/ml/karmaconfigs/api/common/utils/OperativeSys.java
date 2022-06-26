@@ -45,4 +45,13 @@ public enum OperativeSys {
      * Unknown OS
      */
     OTHER;
+
+    /**
+     * Get the OS name
+     *
+     * @return the OS name
+     */
+    public final String getName() {
+        return name().substring(0, 1).toUpperCase() + name().substring(1).toLowerCase().replace("_", " ");
+    }
 }

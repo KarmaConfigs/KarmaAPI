@@ -30,6 +30,7 @@ import ml.karmaconfigs.api.common.karma.file.element.KarmaArray;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaElement;
 import ml.karmaconfigs.api.common.karma.file.element.KarmaObject;
 import ml.karmaconfigs.api.common.utils.enums.Level;
+import ml.karmaconfigs.api.common.utils.logging.WebTarget;
 import ml.karmaconfigs.api.common.utils.string.StringUtils;
 
 /**
@@ -229,5 +230,21 @@ public final class KarmaConfig {
         }
 
         return true;
+    }
+
+    /**
+     * Get the access key of the web log target
+     *
+     * @param target the web target
+     * @return the log API access key
+     */
+    public String getAccessKey(final WebTarget target) {
+        if (mn != null) {
+            KarmaElement key = mn.get("paste_credentials." + target.name());
+            if (key != null && key.isString())
+                return key.getObjet().getString();
+        }
+
+        return "";
     }
 }
